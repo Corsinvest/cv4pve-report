@@ -1,0 +1,23 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": ".NET Core Launch (console)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/Corsinvest.ProxmoxVE.Diagnostic/bin/Debug/net10.0/cv4pve-diag.dll",
+            "args": [
+                "@Parm.Parm"
+            ],
+            "cwd": "${workspaceFolder}/src/Corsinvest.ProxmoxVE.Diagnostic",
+            "console": "internalConsole",
+            "stopAtEntry": false
+        },
+        {
+            "name": ".NET Core Attach",
+            "type": "coreclr",
+            "request": "attach"
+        }
+    ]
+}

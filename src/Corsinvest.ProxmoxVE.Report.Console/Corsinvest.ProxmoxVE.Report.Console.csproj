@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>cv4pve-report</AssemblyName>
+    <Product>Corsinvest for Proxmox VE Report</Product>
+    <AssemblyTitle>Corsinvest for Proxmox VE Report</AssemblyTitle>
+    <Description>Corsinvest for Proxmox VE Report</Description>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <PredefinedCulturesOnly>false</PredefinedCulturesOnly>
+    <RepositoryUrl>https://github.com/Corsinvest/cv4pve-report</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Corsinvest.ProxmoxVE.Api.Console" />
+    <ProjectReference Include="..\Corsinvest.ProxmoxVE.Report\Corsinvest.ProxmoxVE.Report.csproj" />
+  </ItemGroup>
+</Project>
