@@ -14,5 +14,5 @@ jobs:
       AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
 
     with:
-      project-name: cv4pve-diag
-      project-path: src/Corsinvest.ProxmoxVE.Diagnostic/Corsinvest.ProxmoxVE.Diagnostic.csproj
+      project-name: cv4pve-report
+      project-path: src/Corsinvest.ProxmoxVE.Report.Console/Corsinvest.ProxmoxVE.Report.Console.csproj
