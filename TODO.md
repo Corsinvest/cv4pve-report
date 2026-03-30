@@ -7,6 +7,6 @@
 
 ## Settings / Filtering
 
-- [ ] **Tasks filter** — add options to `SettingsNode` and `SettingsGuest`:
-  - `TasksOnlyErrors` (bool) — show only failed tasks
-  - `TasksMaxCount` (int) — maximum number of tasks to display
+- [ ] **Audit log** — add `IncludeAuditLog` to `SettingsCluster`:
+  - `AuditLogMaxEntries` (int, default 500) — limit entries via `client.Cluster.Log.Log(max)`
+  - `AuditLogOnlyErrors` (bool) — filter by severity (Error/Critical/Alert/Panic)

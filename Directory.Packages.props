@@ -4,8 +4,8 @@
     <PackageOutputPath>..\nupkgs\</PackageOutputPath>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Corsinvest.ProxmoxVE.Api.Extension" Version="9.1.8" />
-    <PackageVersion Include="Corsinvest.ProxmoxVE.Api.Console" Version="9.1.8" />
+    <PackageVersion Include="Corsinvest.ProxmoxVE.Api.Extension" Version="9.1.9-a" />
+    <PackageVersion Include="Corsinvest.ProxmoxVE.Api.Console" Version="9.1.9-a" />
     <PackageVersion Include="ClosedXML" Version="0.105.0" />
   </ItemGroup>
 </Project>

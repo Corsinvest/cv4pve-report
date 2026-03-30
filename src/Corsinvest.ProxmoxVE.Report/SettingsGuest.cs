@@ -21,9 +21,9 @@ public class SettingsGuest
     public SettingsRrdData RrdData { get; set; } = new();
 
     /// <summary>
-    /// Include task history
+    /// Task history settings
     /// </summary>
-    public bool IncludeTasks { get; set; } = true;
+    public SettingsTask Tasks { get; set; } = new();
 
     /// <summary>
     /// Include backup files
@@ -36,9 +36,9 @@ public class SettingsGuest
     public bool IncludeSnapshots { get; set; } = true;
 
     /// <summary>
-    /// Include firewall rules
+    /// Firewall settings
     /// </summary>
-    public bool IncludeFirewall { get; set; } = true;
+    public SettingsFirewall Firewall { get; set; } = new();
 
     /// <summary>
     /// Include QEMU agent info (network interfaces and filesystem info) — only for running VMs with agent enabled

@@ -59,4 +59,9 @@ public class SettingsCluster
     /// Include resource pools
     /// </summary>
     public bool IncludePools { get; set; } = true;
+
+    /// <summary>
+    /// Include High Availability configuration: resources, groups and status
+    /// </summary>
+    public bool IncludeHa { get; set; } = true;
 }

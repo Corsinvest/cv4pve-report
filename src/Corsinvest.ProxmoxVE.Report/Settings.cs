@@ -44,20 +44,20 @@ public class Settings
         {
             IncludeSmartData = false,
             IncludeServices = false,
-            IncludeFirewall = false,
+            Firewall = new() { Enabled = false },
             IncludeSslCertificates = false,
             IncludeAptUpdates = false,
             IncludeAptVersions = false,
-            IncludeTasks = false,
+            Tasks = new() { Enabled = false },
             RrdData = new() { Enabled = false },
         },
         Guest = new()
         {
-            IncludeFirewall = false,
+            Firewall = new() { Enabled = false },
             IncludeSnapshots = false,
             IncludeBackups = false,
             IncludeQemuAgent = false,
-            IncludeTasks = false,
+            Tasks = new() { Enabled = false },
             RrdData = new() { Enabled = false },
         },
         Storage = new()
@@ -70,19 +70,26 @@ public class Settings
     public static Settings Standard() => new();
 
     /// <summary>Full profile — everything enabled, RRD on week timeframe.</summary>
-    public static Settings Full() => new()
+    public static Settings Full()
     {
-        Node = new()
+        var lastWeek = DateOnly.FromDateTime(DateTime.Now.AddDays(-7));
+        return new()
         {
-            RrdData = new() { TimeFrame = Api.Shared.Models.Common.RrdDataTimeFrame.Week },
-        },
-        Guest = new()
-        {
-            RrdData = new() { TimeFrame = Api.Shared.Models.Common.RrdDataTimeFrame.Week },
-        },
-        Storage = new()
-        {
-            RrdData = new() { TimeFrame = Api.Shared.Models.Common.RrdDataTimeFrame.Week },
-        },
-    };
+            Node = new()
+            {
+                RrdData = new() { TimeFrame = Api.Shared.Models.Common.RrdDataTimeFrame.Week },
+                Firewall = new() { LogMaxCount = 1000, LogSince = lastWeek },
+                Syslog = new() { Enabled = true, MaxCount = 1000, Since = lastWeek },
+            },
+            Guest = new()
+            {
+                RrdData = new() { TimeFrame = Api.Shared.Models.Common.RrdDataTimeFrame.Week },
+                Firewall = new() { LogMaxCount = 1000, LogSince = lastWeek },
+            },
+            Storage = new()
+            {
+                RrdData = new() { TimeFrame = Api.Shared.Models.Common.RrdDataTimeFrame.Week },
+            },
+        };
+    }
 }

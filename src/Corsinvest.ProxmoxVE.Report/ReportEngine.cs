@@ -1,4 +1,5 @@
 /*
+using Corsinvest.ProxmoxVE.Api.Shared.Models.Common;
  * SPDX-FileCopyrightText: Copyright Corsinvest Srl
  * SPDX-License-Identifier: GPL-3.0-only
  */
@@ -7,6 +8,7 @@ using ClosedXML.Excel;
 using Corsinvest.ProxmoxVE.Api;
 using Corsinvest.ProxmoxVE.Api.Extension;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
+using Corsinvest.ProxmoxVE.Api.Shared.Models.Common;
 using System.Text.RegularExpressions;
 
 namespace Corsinvest.ProxmoxVE.Report;
@@ -46,18 +48,20 @@ public partial class ReportEngine(PveClient client, Settings settings)
         }
     }
 
-    /// <summary>Generates the Excel report and saves it to the specified file path.</summary>
-    public async Task<string> GenerateAsync(string fileName, IProgress<ReportProgress>? progress = null)
+    /// <summary>Generates the Excel report and returns it as a stream.</summary>
+    public async Task<Stream> GenerateAsync(IProgress<ReportProgress>? progress = null)
     {
         _progress = progress;
-        await GenerateExcelAsync(fileName);
-        return fileName;
+        var stream = new MemoryStream();
+        await GenerateExcelAsync(stream);
+        stream.Position = 0;
+        return stream;
     }
 
     private void ReportGlobal(string step)
         => _progress?.Report(new ReportProgress { Step = step });
 
-    private async Task GenerateExcelAsync(string fileName)
+    private async Task GenerateExcelAsync(Stream stream)
     {
         ReportGlobal("Init");
         await BuildSheetLinksAsync();
@@ -81,7 +85,7 @@ public partial class ReportEngine(PveClient client, Settings settings)
         await AddVmsDataAsync(workbook);
 
         ReportGlobal("Saving");
-        workbook.SaveAs(fileName);
+        workbook.SaveAs(stream);
     }
 
     private static double ToGB(double bytes) => Math.Round(bytes / 1024 / 1024 / 1024, 2);
@@ -119,19 +123,40 @@ public partial class ReportEngine(PveClient client, Settings settings)
         workbook.Properties.Company = "Corsinvest Srl";
     }
 
-    private static void AddFirewallRules(SheetWriter sw, IEnumerable<Api.Shared.Models.Common.FirewallRule> rules)
+    private static void AddFirewallRules(SheetWriter sw, IEnumerable<FirewallRule> rules)
         => sw.CreateTable("Firewall Rules",
-                          rules.Select(r => new
+                          rules.Select(a => new
                           {
-                              r.Positon,
-                              r.Type,
-                              r.Action,
-                              r.Enable,
-                              r.Source,
-                              r.Dest,
-                              r.Protocol,
-                              r.DestinationPort,
-                              r.SourcePort,
-                              r.Comment
+                              a.Positon,
+                              a.Type,
+                              a.Action,
+                              a.Enable,
+                              a.Source,
+                              a.Dest,
+                              a.Protocol,
+                              a.DestinationPort,
+                              a.SourcePort,
+                              a.Comment
                           }));
+
+    private static void AddFirewallAlias(SheetWriter sw, IEnumerable<FirewallAlias> alias)
+        => sw.CreateTable("Firewall Alias",
+                          alias.Select(a => new
+                          {
+                              a.Name,
+                              a.Cidr,
+                              a.IpVersion,
+                              a.Comment
+                          }));
+
+    private static void AddFirewallIpSet(SheetWriter sw, IEnumerable<FirewallIpSet> ipSets)
+        => sw.CreateTable("Firewall Alias",
+                          ipSets.Select(a => new
+                          {
+                              a.Name,
+                              a.Comment
+                          }));
+    private static void AddLogs(SheetWriter sw, string title, IEnumerable<string> logs)
+        => sw.CreateTable(title, logs.Select(a => new { Log = a, }));
+
 }

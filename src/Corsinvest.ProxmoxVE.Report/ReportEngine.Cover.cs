@@ -19,8 +19,15 @@ public partial class ReportEngine
             ws.Cell(row, 1).Value = value;
             ws.Cell(row, 1).Style.Font.SetBold(true);
             ws.Cell(row, 1).Style.Font.SetFontSize(14);
+            row++;
         }
 
+        void AddKV(string key, string value)
+        {
+            ws.Cell(row, 1).Value = key;
+            ws.Cell(row, 2).Value = value;
+            row++;
+        }
 
         ws.Cell(row, 1).Value = "INFRASTRUCTURE REPORT";
         ws.Cell(row, 1).Style.Font.SetBold(true);
@@ -29,57 +36,38 @@ public partial class ReportEngine
         row += 2;
 
         Add("Report Information");
-        row++;
 
-        ws.Cell(row, 1).Value = "Generated:";
-        ws.Cell(row, 2).Value = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-        row++;
+        AddKV("Generated:", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
 
         ws.Cell(row, 1).Value = "Application:";
         ws.Cell(row, 2).Value = $"cv4pve-report v{typeof(ReportEngine).Assembly.GetName().Version?.ToString(3)}";
         row += 2;
 
         Add("Filters Applied");
-        row++;
 
-        ws.Cell(row, 1).Value = "Nodes:";
-        ws.Cell(row, 2).Value = settings.Node.Names;
-        row++;
+        AddKV("Nodes:", settings.Node.Names);
+        AddKV("VMs/Containers:", settings.Guest.Ids);
+        AddKV("Storages:", settings.Storage.Names);
 
-        ws.Cell(row, 1).Value = "VMs/Containers:";
-        ws.Cell(row, 2).Value = settings.Guest.Ids;
-        row++;
+        if (settings.Node.RrdData.Enabled)
+        {
+            AddKV("Node RRD TimeFrame:", settings.Node.RrdData.TimeFrame.ToString());
+            AddKV("Node RRD Consolidation:", settings.Node.RrdData.Consolidation.ToString());
+        }
 
-        ws.Cell(row, 1).Value = "Storages:";
-        ws.Cell(row, 2).Value = settings.Storage.Names;
-        row++;
+        if (settings.Guest.RrdData.Enabled)
+        {
+            AddKV("Guest RRD TimeFrame:", settings.Guest.RrdData.TimeFrame.ToString());
+            AddKV("Guest RRD Consolidation:", settings.Guest.RrdData.Consolidation.ToString());
+        }
 
-        ws.Cell(row, 1).Value = "Node RRD TimeFrame:";
-        ws.Cell(row, 2).Value = settings.Node.RrdData.TimeFrame.ToString();
-        row++;
-
-        ws.Cell(row, 1).Value = "Node RRD Consolidation:";
-        ws.Cell(row, 2).Value = settings.Node.RrdData.Consolidation.ToString();
-        row++;
-
-        ws.Cell(row, 1).Value = "Guest RRD TimeFrame:";
-        ws.Cell(row, 2).Value = settings.Guest.RrdData.TimeFrame.ToString();
-        row++;
-
-        ws.Cell(row, 1).Value = "Guest RRD Consolidation:";
-        ws.Cell(row, 2).Value = settings.Guest.RrdData.Consolidation.ToString();
-        row++;
-
-        ws.Cell(row, 1).Value = "Storage RRD TimeFrame:";
-        ws.Cell(row, 2).Value = settings.Storage.RrdData.TimeFrame.ToString();
-        row++;
-
-        ws.Cell(row, 1).Value = "Storage RRD Consolidation:";
-        ws.Cell(row, 2).Value = settings.Storage.RrdData.Consolidation.ToString();
-        row += 2;
+        if (settings.Storage.RrdData.Enabled)
+        {
+            AddKV("Storage RRD TimeFrame:", settings.Storage.RrdData.TimeFrame.ToString());
+            AddKV("Storage RRD Consolidation:", settings.Storage.RrdData.Consolidation.ToString());
+        }
 
         Add("Contents");
-        row++;
 
         var sections = new[]
         {

@@ -1,9 +1,11 @@
 /*
+using Corsinvest.ProxmoxVE.Api.Shared.Models.Vm;
  * SPDX-FileCopyrightText: Copyright Corsinvest Srl
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
 using ClosedXML.Excel;
+using Corsinvest.ProxmoxVE.Api;
 using Corsinvest.ProxmoxVE.Api.Extension;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Common;
@@ -127,9 +129,10 @@ public partial class ReportEngine
                        + (settings.Node.RrdData.Enabled ? 1 : 0)
                        + (settings.Node.IncludeAptUpdates ? 1 : 0)
                        + (settings.Node.IncludeAptVersions ? 1 : 0)
-                       + (settings.Node.IncludeFirewall ? 1 : 0)
+                       + (settings.Node.Firewall.Enabled ? 2 : 0)
                        + (settings.Node.IncludeSslCertificates ? 1 : 0)
-                       + (settings.Node.IncludeTasks ? 1 : 0);
+                       + (settings.Node.Tasks.Enabled ? 1 : 0)
+                       + (settings.Node.Syslog.Enabled ? 1 : 0);
 
         sw.ReserveIndexRows(tableCount);
 
@@ -315,10 +318,16 @@ public partial class ReportEngine
                            }));
         }
 
-        if (settings.Node.IncludeFirewall)
+        if (settings.Node.Firewall.Enabled)
         {
             pt.Step("Firewall");
+            var fw = settings.Node.Firewall;
             AddFirewallRules(sw, await client.Nodes[node].Firewall.Rules.GetAsync());
+            AddLogs(sw, "Firewall Logs", await client.Nodes[node].Firewall.Log.GetAsync(
+                limit: fw.LogMaxCount > 0 ? fw.LogMaxCount : null,
+                since: fw.LogSince.HasValue ? (int)new DateTimeOffset(fw.LogSince.Value.ToDateTime(TimeOnly.MinValue)).ToUnixTimeSeconds() : null,
+                until: fw.LogUntil.HasValue ? (int)new DateTimeOffset(fw.LogUntil.Value.ToDateTime(TimeOnly.MinValue)).ToUnixTimeSeconds() : null
+            ));
         }
 
         if (settings.Node.IncludeSslCertificates)
@@ -336,11 +345,16 @@ public partial class ReportEngine
                            }));
         }
 
-        if (settings.Node.IncludeTasks)
+        if (settings.Node.Tasks.Enabled)
         {
             pt.Step("Tasks");
+            var taskSettings = settings.Node.Tasks;
             sw.CreateTable("Tasks",
-                           (await client.Nodes[node].Tasks.GetAsync()).Select(a => new
+                           (await client.Nodes[node].Tasks.GetAsync(
+                               errors: taskSettings.OnlyErrors ? true : null,
+                               limit: taskSettings.MaxCount > 0 ? taskSettings.MaxCount : null,
+                               source: taskSettings.Source == "all" ? null : taskSettings.Source
+                           )).Select(a => new
                            {
                                a.UniqueTaskId,
                                a.Type,
@@ -353,6 +367,18 @@ public partial class ReportEngine
                                a.VmId
                            }),
                            tbl => sw.ApplyVmIdLinks(tbl));
+        }
+
+        if (settings.Node.Syslog.Enabled)
+        {
+            pt.Step("Syslog");
+            var s = settings.Node.Syslog;
+            var logs = (await client.Nodes[node].Syslog.Syslog(limit: s.MaxCount > 0 ? s.MaxCount : null,
+                                                               service: string.IsNullOrWhiteSpace(s.Service) ? null : s.Service,
+                                                               since: s.Since.HasValue ? s.Since.Value.ToString("yyyy-MM-dd") : null,
+                                                               until: s.Until.HasValue ? s.Until.Value.ToString("yyyy-MM-dd") : null))
+                                                       .ToLogs();
+            sw.CreateTable("Syslog", logs.Select(a => new { Log = a }));
         }
 
         sw.WriteIndex();

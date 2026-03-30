@@ -21,9 +21,9 @@ public class SettingsNode
     public SettingsRrdData RrdData { get; set; } = new();
 
     /// <summary>
-    /// Include task history
+    /// Task history settings
     /// </summary>
-    public bool IncludeTasks { get; set; } = true;
+    public SettingsTask Tasks { get; set; } = new();
 
     /// <summary>
     /// Include network interfaces
@@ -46,9 +46,9 @@ public class SettingsNode
     public bool IncludeServices { get; set; } = true;
 
     /// <summary>
-    /// Include firewall rules
+    /// Firewall settings
     /// </summary>
-    public bool IncludeFirewall { get; set; } = true;
+    public SettingsFirewall Firewall { get; set; } = new();
 
     /// <summary>
     /// Include SSL certificates
@@ -69,4 +69,9 @@ public class SettingsNode
     /// Include replication jobs
     /// </summary>
     public bool IncludeReplication { get; set; } = true;
+
+    /// <summary>
+    /// Syslog settings
+    /// </summary>
+    public SettingsSyslog Syslog { get; set; } = new();
 }

@@ -139,9 +139,11 @@ Overview table → dedicated sheet per node containing:
 - **RRD Data** — CPU, memory, network, disk metrics over time *(if enabled)*
 - **Apt Update** — available package updates
 - **Package Version** — installed package versions
-- **Firewall Rules** — node-level rules
+- **Firewall Rules** — node-level rules *(if enabled)*
+- **Firewall Logs** — node firewall log *(if enabled)*
 - **SSL Certificates** — certificate validity and expiry
-- **Tasks** — recent task history with VM ID links
+- **Tasks** — recent task history with VM ID links *(if enabled)*
+- **Syslog** — system log *(if enabled)*
 
 ### VMs Sheet
 
@@ -155,7 +157,8 @@ Overview table → dedicated sheet per VM/CT containing:
 - **Backup** — backup files found in all storages
 - **Snapshots** — snapshot list
 - **Firewall Rules** — VM-level rules *(if enabled)*
-- **Tasks** — recent task history
+- **Firewall Logs** — VM firewall log *(if enabled)*
+- **Tasks** — recent task history *(if enabled)*
 
 ---
 
@@ -181,7 +184,8 @@ Full `settings.json` structure with all defaults:
     "IncludeMetricServers": true,  // metric server configuration
     "IncludeSdn": true,            // SDN zones, vnets and controllers
     "IncludeMapping": true,        // hardware mappings (directory, PCI, USB)
-    "IncludePools": true           // resource pools with member list
+    "IncludePools": true,          // resource pools with member list
+    "IncludeHa": true              // HA resources, groups and status
   },
   "Node": {
     "Names": "@all",               // @all | pve1 | pve1,pve2 | pve*
@@ -190,12 +194,29 @@ Full `settings.json` structure with all defaults:
       "TimeFrame": "Day",          // Hour | Day | Week | Month | Year
       "Consolidation": "Average"   // Average | Maximum
     },
-    "IncludeTasks": true,          // recent task history
+    "Tasks": {
+      "Enabled": true,
+      "OnlyErrors": false,         // show only failed tasks
+      "MaxCount": 0,               // 0 = unlimited
+      "Source": "all"              // all | local | active
+    },
+    "Firewall": {
+      "Enabled": true,
+      "LogMaxCount": 0,            // 0 = unlimited
+      "LogSince": null,            // DateOnly e.g. "2024-01-01"
+      "LogUntil": null
+    },
+    "Syslog": {
+      "Enabled": false,
+      "MaxCount": 500,
+      "Service": "",               // filter by service e.g. pvedaemon
+      "Since": null,               // DateOnly e.g. "2024-01-01"
+      "Until": null
+    },
     "IncludeNetwork": true,        // network interface configuration
     "IncludeDisks": true,          // physical disk list
     "IncludeSmartData": true,      // SMART health data per disk (one API call per disk)
     "IncludeServices": true,       // system service status
-    "IncludeFirewall": true,       // node-level firewall rules
     "IncludeSslCertificates": true,// SSL certificate validity and expiry
     "IncludeAptUpdates": true,     // available APT package updates
     "IncludeAptVersions": true,    // installed APT package versions
@@ -208,10 +229,19 @@ Full `settings.json` structure with all defaults:
       "TimeFrame": "Day",          // Hour | Day | Week | Month | Year
       "Consolidation": "Average"   // Average | Maximum
     },
-    "IncludeTasks": true,          // recent task history
+    "Tasks": {
+      "Enabled": true,
+      "OnlyErrors": false,         // show only failed tasks
+      "MaxCount": 0                // 0 = unlimited
+    },
+    "Firewall": {
+      "Enabled": true,
+      "LogMaxCount": 0,            // 0 = unlimited
+      "LogSince": null,            // DateOnly e.g. "2024-01-01"
+      "LogUntil": null
+    },
     "IncludeBackups": true,        // backup files found in all storages
     "IncludeSnapshots": true,      // snapshot list
-    "IncludeFirewall": true,       // VM-level firewall rules
     "IncludeQemuAgent": true       // OS info, network interfaces, filesystems (only running QEMU VMs with agent enabled)
   },
   "Storage": {
@@ -337,24 +367,37 @@ cv4pve-report create-settings --full
 | IncludeSdn | | ✓ | ✓ |
 | IncludeMapping | | ✓ | ✓ |
 | IncludePools | ✓ | ✓ | ✓ |
+| IncludeHa | ✓ | ✓ | ✓ |
 | **Node** | | | |
 | IncludeNetwork | ✓ | ✓ | ✓ |
 | IncludeDisks | ✓ | ✓ | ✓ |
 | IncludeSmartData | | | ✓ |
 | IncludeServices | | ✓ | ✓ |
 | IncludeReplication | ✓ | ✓ | ✓ |
-| IncludeFirewall | | ✓ | ✓ |
+| Firewall.Enabled | | ✓ | ✓ |
+| Firewall.LogMaxCount | | 0 | 1000 |
+| Firewall.LogSince | | — | last 7 days |
 | IncludeSslCertificates | | ✓ | ✓ |
 | IncludeAptUpdates | | ✓ | ✓ |
 | IncludeAptVersions | | | ✓ |
-| IncludeTasks | | | ✓ |
+| Tasks.Enabled | | ✓ | ✓ |
+| Tasks.OnlyErrors | | false | false |
+| Tasks.MaxCount | | 0 | 0 |
+| Tasks.Source | | all | all |
+| Syslog.Enabled | | | ✓ |
+| Syslog.MaxCount | | — | 1000 |
+| Syslog.Since | | — | last 7 days |
 | RrdData | | ✓ | ✓ (Week) |
 | **Guest** | | | |
-| IncludeFirewall | | ✓ | ✓ |
+| Firewall.Enabled | | ✓ | ✓ |
+| Firewall.LogMaxCount | | 0 | 1000 |
+| Firewall.LogSince | | — | last 7 days |
 | IncludeSnapshots | | ✓ | ✓ |
 | IncludeBackups | | ✓ | ✓ |
 | IncludeQemuAgent | | ✓ | ✓ |
-| IncludeTasks | | | ✓ |
+| Tasks.Enabled | | ✓ | ✓ |
+| Tasks.OnlyErrors | | false | false |
+| Tasks.MaxCount | | 0 | 0 |
 | RrdData | | ✓ | ✓ (Week) |
 | **Storage** | | | |
 | RrdData | | ✓ | ✓ (Week) |

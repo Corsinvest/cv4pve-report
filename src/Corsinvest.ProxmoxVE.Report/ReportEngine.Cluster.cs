@@ -17,15 +17,16 @@ public partial class ReportEngine
 
         var tableCount = 1  // Status
                        + (settings.Cluster.IncludeOptions ? 1 : 0)
-                       + (settings.Cluster.IncludeSecurity ? 6 : 0)
-                       + (settings.Cluster.IncludeFirewall ? 2 : 0)
+                       + (settings.Cluster.IncludeSecurity ? 7 : 0)
+                       + (settings.Cluster.IncludeFirewall ? 4 : 0)
                        + (settings.Cluster.IncludeBackupJobs ? 1 : 0)
                        + (settings.Cluster.IncludeReplication ? 1 : 0)
                        + (settings.Cluster.IncludeStorages ? 1 : 0)
                        + (settings.Cluster.IncludeMetricServers ? 1 : 0)
-                       + (settings.Cluster.IncludeSdn ? 3 : 0)
+                       + (settings.Cluster.IncludeSdn ? 5 : 0)
                        + (settings.Cluster.IncludeMapping ? 3 : 0)
-                       + (settings.Cluster.IncludePools ? 1 : 0);
+                       + (settings.Cluster.IncludePools ? 1 : 0)
+                       + (settings.Cluster.IncludeHa ? 3 : 0);
 
         var clusterStatus = (await client.Cluster.Status.GetAsync()).FirstOrDefault(a => a.Type == "cluster");
 
@@ -37,7 +38,6 @@ public partial class ReportEngine
             ["Quorate"] = clusterStatus?.Quorate == 1 ? "Yes" : "No",
         });
 
-        sw.Row++;
         sw.ReserveIndexRows(tableCount);
 
         ReportGlobal("Cluster: Status");
@@ -149,6 +149,10 @@ public partial class ReportEngine
             var fwOptions = await client.Cluster.Firewall.Options.GetAsync();
             sw.CreateTable("Firewall Options",
                            [new { fwOptions.Enable, fwOptions.PolicyIn, fwOptions.PolicyOut, fwOptions.LogRatelimit }]);
+
+            AddFirewallAlias(sw, await client.Cluster.Firewall.Aliases.GetAsync());
+
+            AddFirewallIpSet(sw, await client.Cluster.Firewall.Ipset.GetAsync());
         }
 
         if (settings.Cluster.IncludeBackupJobs)
@@ -262,6 +266,30 @@ public partial class ReportEngine
                                a.Node,
                                a.State
                            }));
+
+            sw.CreateTable("SDN Ipams",
+                           (await client.Cluster.Sdn.Ipams.GetAsync()).Select(a => new
+                           {
+                               a.Ipam,
+                               a.Type,
+                           }));
+
+            var subnets = new List<dynamic>();
+            foreach (var vnet in await client.Cluster.Sdn.Vnets.GetAsync())
+            {
+                foreach (var subnet in await client.Cluster.Sdn.Vnets[vnet.Vnet].Subnets.GetAsync())
+                {
+                    subnets.Add(new
+                    {
+                        Vnet = vnet.Vnet,
+                        subnet.Subnet,
+                        subnet.Type,
+                        subnet.Gateway,
+                        subnet.Snat,
+                    });
+                }
+            }
+            sw.CreateTable("SDN Subnets", subnets);
         }
 
         if (settings.Cluster.IncludeMapping)
@@ -298,8 +326,7 @@ public partial class ReportEngine
             var poolItems = new List<dynamic>();
             foreach (var pool in await client.Pools.GetAsync())
             {
-                var detail = await client.Pools[pool.Id].GetAsync();
-                foreach (var member in detail.Members)
+                foreach (var member in (await client.Pools[pool.Id].GetAsync()).Members)
                 {
                     poolItems.Add(new
                     {
@@ -321,6 +348,47 @@ public partial class ReportEngine
                 sw.ApplyVmIdLinks(tbl);
                 sw.ApplyStorageLinks(tbl);
             });
+        }
+
+        if (settings.Cluster.IncludeHa)
+        {
+            ReportGlobal("Cluster: HA");
+
+            sw.CreateTable("HA Resources",
+                           (await client.Cluster.Ha.Resources.GetAsync()).Select(a => new
+                           {
+                               a.Sid,
+                               a.Type,
+                               a.State,
+                               a.Group,
+                               a.Failback,
+                               a.MaxRestart,
+                               a.MaxRelocate,
+                               a.Comment
+                           }));
+
+            sw.CreateTable("HA Groups",
+                           (await client.Cluster.Ha.Groups.GetAsync()).Select(a => new
+                           {
+                               a.Group,
+                               a.Nodes,
+                               a.Nofailback,
+                               a.Restricted,
+                               a.Comment
+                           }));
+
+            sw.CreateTable("HA Status",
+                           (await client.Cluster.Ha.Status.Current.GetAsync()).Select(a => new
+                           {
+                               a.Id,
+                               a.Type,
+                               a.Status,
+                               a.Node,
+                               a.Sid,
+                               a.State,
+                               a.CrmState,
+                               a.Quorate,
+                           }));
         }
 
         sw.WriteIndex();

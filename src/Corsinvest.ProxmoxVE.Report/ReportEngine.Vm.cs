@@ -291,8 +291,8 @@ public partial class ReportEngine
                        + (settings.Guest.RrdData.Enabled ? 1 : 0)
                        + (settings.Guest.IncludeBackups ? 1 : 0)
                        + (settings.Guest.IncludeSnapshots ? 1 : 0)
-                       + (settings.Guest.IncludeFirewall ? 1 : 0)
-                       + (settings.Guest.IncludeTasks ? 1 : 0);
+                       + (settings.Guest.Firewall.Enabled ? 4 : 0)
+                       + (settings.Guest.Tasks.Enabled ? 1 : 0);
 
         sw.ReserveIndexRows(tableCount);
 
@@ -424,21 +424,46 @@ public partial class ReportEngine
                             }));
         }
 
-        if (settings.Guest.IncludeFirewall)
+        if (settings.Guest.Firewall.Enabled)
         {
             pt.Step("Firewall");
-            var fwRules = item.VmType == VmType.Qemu
-                            ? await client.Nodes[item.Node].Qemu[item.VmId].Firewall.Rules.GetAsync()
-                            : await client.Nodes[item.Node].Lxc[item.VmId].Firewall.Rules.GetAsync();
+            var fw = settings.Guest.Firewall;
+            var fwLogLimit = fw.LogMaxCount > 0 ? fw.LogMaxCount : (int?)null;
+            var fwLogSince = fw.LogSince.HasValue ? (int)new DateTimeOffset(fw.LogSince.Value.ToDateTime(TimeOnly.MinValue)).ToUnixTimeSeconds() : (int?)null;
+            var fwLogUntil = fw.LogUntil.HasValue ? (int)new DateTimeOffset(fw.LogUntil.Value.ToDateTime(TimeOnly.MinValue)).ToUnixTimeSeconds() : (int?)null;
 
-            AddFirewallRules(sw, fwRules);
+            AddFirewallRules(sw,
+                             item.VmType == VmType.Qemu
+                                ? await client.Nodes[item.Node].Qemu[item.VmId].Firewall.Rules.GetAsync()
+                                : await client.Nodes[item.Node].Lxc[item.VmId].Firewall.Rules.GetAsync());
+
+            AddFirewallAlias(sw,
+                             item.VmType == VmType.Qemu
+                                ? await client.Nodes[item.Node].Qemu[item.VmId].Firewall.Aliases.GetAsync()
+                                : await client.Nodes[item.Node].Lxc[item.VmId].Firewall.Aliases.GetAsync());
+
+            AddFirewallIpSet(sw,
+                             item.VmType == VmType.Qemu
+                                ? await client.Nodes[item.Node].Qemu[item.VmId].Firewall.Ipset.GetAsync()
+                                : await client.Nodes[item.Node].Lxc[item.VmId].Firewall.Ipset.GetAsync());
+
+            AddLogs(sw,
+                    "Firewall Logs",
+                    item.VmType == VmType.Qemu
+                                ? await client.Nodes[item.Node].Qemu[item.VmId].Firewall.Log.GetAsync(limit: fwLogLimit, since: fwLogSince, until: fwLogUntil)
+                                : await client.Nodes[item.Node].Lxc[item.VmId].Firewall.Log.GetAsync(limit: fwLogLimit, since: fwLogSince, until: fwLogUntil));
         }
 
-        if (settings.Guest.IncludeTasks)
+        if (settings.Guest.Tasks.Enabled)
         {
             pt.Step("Tasks");
+            var taskSettings = settings.Guest.Tasks;
             sw.CreateTable("Tasks",
-                           (await client.Nodes[item.Node].Tasks.GetAsync(vmid: (int)item.VmId)).Select(a => new
+                           (await client.Nodes[item.Node].Tasks.GetAsync(
+                               vmid: (int)item.VmId,
+                               errors: taskSettings.OnlyErrors ? true : null,
+                               limit: taskSettings.MaxCount > 0 ? taskSettings.MaxCount : null
+                           )).Select(a => new
                            {
                                a.UniqueTaskId,
                                a.Type,

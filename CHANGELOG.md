@@ -2,6 +2,20 @@
 
 ---
 
+## [1.1.0] — 2026-03-30
+
+### What's new
+
+- **HA (High Availability)** — the Cluster sheet now includes HA resources, groups and current status
+- **Resource Pools** — the Cluster sheet now lists all pools with their members (VMs, CTs and storages)
+- **SDN Ipams and Subnets** — SDN section now also covers IP address management and subnets per vnet
+- **Syslog** — each node detail sheet can now include the system log (disabled by default, enabled in Full profile)
+- **Firewall logs** — node and VM/CT firewall logs now support date range and line count filters
+- **Task filters** — tasks on nodes and VMs/CTs can now be filtered by errors only, limited by count, and filtered by source (node only, all, active)
+- **Full profile** — now includes syslog and firewall logs limited to the last 7 days (1000 lines max)
+
+---
+
 ## [1.0.0] — 2026-03-27
 
 ### Initial release

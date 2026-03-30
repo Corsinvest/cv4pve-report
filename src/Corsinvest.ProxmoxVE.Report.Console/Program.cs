@@ -63,10 +63,13 @@ cmdExport.SetAction(async (action) =>
     var outputPath = !string.IsNullOrWhiteSpace(output)
                          ? output
                          : Path.Combine(".", $"Report_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
-    var fileName = await engine.GenerateAsync(outputPath, progress);
+
+    using var stream = await engine.GenerateAsync(progress);
+    using var file = File.Create(outputPath);
+    await stream.CopyToAsync(file);
 
     if (!Console.IsOutputRedirected) { Console.WriteLine(); }
-    Console.Out.WriteLine($"Report generated: {fileName}");
+    Console.Out.WriteLine($"Report generated: {outputPath}");
 });
 
 return await app.ExecuteAppAsync(args, loggerFactory.CreateLogger(nameof(Program)));
