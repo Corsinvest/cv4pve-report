@@ -15,6 +15,13 @@ public partial class ReportEngine
     {
         var sw = new SheetWriter(workbook.Worksheets.Add("Cluster"), _sheetLinks);
 
+        var pveVersion = await client.Version.GetAsync();
+        var pveMajor = int.TryParse(pveVersion.Version?.Split('.')[0], out var v) 
+                        ? v 
+                        : 0;
+                        
+        var haGroupsSupported = pveMajor < 9;
+
         var tableCount = 1  // Status
                        + (settings.Cluster.IncludeOptions ? 1 : 0)
                        + (settings.Cluster.IncludeSecurity ? 7 : 0)
@@ -26,7 +33,7 @@ public partial class ReportEngine
                        + (settings.Cluster.IncludeSdn ? 5 : 0)
                        + (settings.Cluster.IncludeMapping ? 3 : 0)
                        + (settings.Cluster.IncludePools ? 1 : 0)
-                       + (settings.Cluster.IncludeHa ? 3 : 0);
+                       + (settings.Cluster.IncludeHa ? (haGroupsSupported ? 3 : 2) : 0);
 
         var clusterStatus = (await client.Cluster.Status.GetAsync()).FirstOrDefault(a => a.Type == "cluster");
 
@@ -367,15 +374,18 @@ public partial class ReportEngine
                                a.Comment
                            }));
 
-            sw.CreateTable("HA Groups",
-                           (await client.Cluster.Ha.Groups.GetAsync()).Select(a => new
-                           {
-                               a.Group,
-                               a.Nodes,
-                               a.Nofailback,
-                               a.Restricted,
-                               a.Comment
-                           }));
+            if (haGroupsSupported)
+            {
+                sw.CreateTable("HA Groups",
+                               (await client.Cluster.Ha.Groups.GetAsync()).Select(a => new
+                               {
+                                   a.Group,
+                                   a.Nodes,
+                                   a.Nofailback,
+                                   a.Restricted,
+                                   a.Comment
+                               }));
+            }
 
             sw.CreateTable("HA Status",
                            (await client.Cluster.Ha.Status.Current.GetAsync()).Select(a => new
