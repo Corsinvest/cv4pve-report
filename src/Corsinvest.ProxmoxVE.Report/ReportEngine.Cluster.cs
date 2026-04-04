@@ -172,7 +172,7 @@ public partial class ReportEngine
                                a.Id,
                                a.Enabled,
                                a.All,
-                               VmId = a.VmId.Replace(",", Environment.NewLine),
+                               VmId = a.VmId?.Replace(",", Environment.NewLine),
                                a.Mode,
                                a.Storage,
                                a.StartTime,
