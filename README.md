@@ -72,6 +72,8 @@ RVTools is a pure inventory tool for VMware — it exports infrastructure data t
 | API tokens | | ✓ | |
 | APT packages / updates | | ✓ | |
 | Syslog / audit log | | ✓ | |
+| Syslog parsed into columns (date, time, host, service, message) | | ✓ | |
+| Global Syslog sheet (all nodes in one place) | | ✓ | |
 | **Diagnostics** | | | |
 | CD-ROM / floppy connected | ✓ | | ✓ |
 | Old / missing snapshots | ✓ | | ✓ |
@@ -212,22 +214,20 @@ Overview table → dedicated sheet per storage containing:
 ### Nodes Sheet
 
 Overview table → dedicated sheet per node containing:
-- **Services** — system service status
-- **Network** — interface configuration with full IPv4/IPv6 details
+- **Services** — system service status (always included)
+- **Network** — interface configuration with full IPv4/IPv6, bond, VLAN, OVS, VXLAN details (always included)
 - **Disks** — physical disk list with partitions, health, SMART summary *(if enabled)*
 - **SMART Data** — SMART attributes per disk *(if enabled)*
 - **Directory** — filesystem mount points *(if enabled)*
-- **ZFS Pools** — ZFS pool list with health, usage and vdev tree *(if enabled)*
-- **Replication** — per-node replication jobs with links to source/target nodes and VMs
+- **ZFS Pools** / **ZFS Pool Status** — ZFS pool list with health, usage and vdev tree *(if enabled)*
+- **Replication** — per-node replication jobs with links to source/target nodes and VMs *(if enabled)*
 - **RRD Data** — CPU, memory, network, disk metrics over time *(if enabled)*
 - **Apt Repository** — configured APT repositories *(if enabled)*
 - **Apt Update** — available package updates *(if enabled)*
 - **Package Version** — installed package versions *(if enabled)*
-- **Firewall Rules** — node-level rules *(if enabled)*
-- **Firewall Logs** — node firewall log *(if enabled)*
-- **SSL Certificates** — certificate validity and expiry
+- **Firewall Rules** / **Firewall Logs** — node-level firewall *(if enabled)*
+- **SSL Certificates** — certificate validity, expiry, fingerprint, SANs *(if enabled)*
 - **Tasks** — recent task history with VM ID links *(if enabled)*
-- **Syslog** — system log *(if enabled)*
 
 ### VMs Sheet
 
@@ -250,16 +250,32 @@ Global network inventory across all nodes and VMs/CTs:
 
 | Table | Contents |
 |-------|----------|
-| Node Networks | All node interfaces with bridge ports, VLAN settings, CIDR (IPv4 and IPv6) |
+| Nodes Networks | All node interfaces with bridge ports, VLAN settings, CIDR (IPv4 and IPv6) |
 | VM Networks | All VM/CT network interfaces with MAC, bridge, VLAN, IP addresses, model, firewall flag and OS info |
 
 ### Disks Sheet
 
-Global disk inventory across all VMs/CTs:
+Global disk and storage inventory:
 
 | Table | Contents |
 |-------|----------|
+| Storage Configuration | Cluster-level storage list with type, path, shared flag and all configuration parameters |
+| Storages | Per-node storage status with usage, size and availability |
 | VM Disks | All VM/CT disks with storage, size, cache, backup flag, unused flag, mount point |
+
+### Syslog Sheet
+
+Global syslog inventory across all nodes *(if enabled)*:
+
+One table per node, each row parsed into columns:
+
+| Column | Contents |
+|--------|----------|
+| Date | Log date (e.g. `Mar 27`) |
+| Time | Log time (e.g. `00:00:03`) |
+| Host | Hostname |
+| Service | Service name and PID (e.g. `pvedaemon[3116203]`) |
+| Message | Log message |
 
 ---
 
@@ -282,7 +298,6 @@ cv4pve-report create-settings
     "IncludeFirewall": true,       // cluster-level firewall rules and options
     "IncludeBackupJobs": true,     // scheduled backup job configuration
     "IncludeReplication": true,    // replication job configuration
-    "IncludeStorages": true,       // cluster-level storage list
     "IncludeMetricServers": true,  // metric server configuration
     "IncludeSdn": true,            // SDN zones, vnets and controllers
     "IncludeMapping": true,        // hardware mappings (directory, PCI, USB)
@@ -326,9 +341,7 @@ cv4pve-report create-settings
       "IncludeZfs": true,          // ZFS pool list and vdev tree
       "IncludeDirectory": true     // filesystem mount points
     },
-    "IncludeNetwork": true,        // network interface configuration
-    "IncludeServices": true,       // system service status
-    "IncludeSslCertificates": true,// SSL certificate validity and expiry
+    "IncludeSslCertificates": true, // SSL certificate validity and expiry
     "IncludeAptRepositories": true,// configured APT repositories
     "IncludeAptUpdates": true,     // available APT package updates
     "IncludeAptVersions": false,   // installed APT package versions
@@ -483,7 +496,6 @@ cv4pve-report create-settings --full
 | IncludeFirewall | | ✓ | ✓ |
 | IncludeBackupJobs | ✓ | ✓ | ✓ |
 | IncludeReplication | ✓ | ✓ | ✓ |
-| IncludeStorages | ✓ | ✓ | ✓ |
 | IncludeMetricServers | | ✓ | ✓ |
 | IncludeSdn | | ✓ | ✓ |
 | IncludeMapping | | ✓ | ✓ |
@@ -492,12 +504,10 @@ cv4pve-report create-settings --full
 | AuditLog.Enabled | | | ✓ |
 | AuditLog.MaxCount | | — | 1000 |
 | **Node** | | | |
-| IncludeNetwork | ✓ | ✓ | ✓ |
 | Disk.Enabled | ✓ | ✓ | ✓ |
 | Disk.IncludeSmartData | | | ✓ |
 | Disk.IncludeZfs | | ✓ | ✓ |
 | Disk.IncludeDirectory | | ✓ | ✓ |
-| IncludeServices | | ✓ | ✓ |
 | IncludeReplication | ✓ | ✓ | ✓ |
 | Firewall.Enabled | | ✓ | ✓ |
 | Firewall.LogMaxCount | | 0 | 1000 |

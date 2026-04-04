@@ -29,4 +29,14 @@ public class SettingsFirewall
     /// Display firewall log until this date
     /// </summary>
     public DateOnly? LogUntil { get; set; }
+
+    internal int? LogSinceUnix
+        => LogSince.HasValue
+            ? (int)new DateTimeOffset(LogSince.Value.ToDateTime(TimeOnly.MinValue)).ToUnixTimeSeconds()
+            : null;
+
+    internal int? LogUntilUnix
+        => LogUntil.HasValue
+            ? (int)new DateTimeOffset(LogUntil.Value.ToDateTime(TimeOnly.MinValue)).ToUnixTimeSeconds()
+            : null;
 }

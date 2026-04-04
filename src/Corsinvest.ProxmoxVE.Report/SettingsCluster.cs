@@ -36,11 +36,6 @@ public class SettingsCluster
     public bool IncludeReplication { get; set; } = true;
 
     /// <summary>
-    /// Include cluster-level storage list
-    /// </summary>
-    public bool IncludeStorages { get; set; } = true;
-
-    /// <summary>
     /// Include metric servers
     /// </summary>
     public bool IncludeMetricServers { get; set; } = true;

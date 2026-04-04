@@ -43,6 +43,7 @@ public partial class ReportEngine
 
         Add("Filters Applied");
 
+        AddKV("Empty Tables:", settings.SkipEmptyTables ? "Skip" : "Include");
         AddKV("Nodes:", settings.Node.Names);
         AddKV("VMs/Containers:", settings.Guest.Ids);
         AddKV("Storages:", settings.Storage.Names);
@@ -67,15 +68,20 @@ public partial class ReportEngine
 
         Add("Contents");
 
-        var sections = new[]
+        var sections = new List<(string, string)>
         {
             ("Cluster",  "Cluster overview, users, roles, ACL, firewall, backup, replication"),
             ("Storages", "Storage list with links to details"),
             ("Nodes",    "Node list with links to details"),
             ("Vms",      "VM/Container list with links to details"),
             ("Network",  "Global network overview: node interfaces and VM/CT network inventory"),
-            ("Disks",    "Global disk inventory: all VM/CT disks across all nodes and storages"),
+            ("Disks",    "Global disk inventory: storage configuration, node storages and VM/CT disks"),
         };
+
+        if (settings.Node.Syslog.Enabled)
+        {
+            sections.Add(("Syslog", "Systemd journal per node parsed into date, time, host, service, pid and message"));
+        }
 
         foreach (var (sheetName, description) in sections)
         {

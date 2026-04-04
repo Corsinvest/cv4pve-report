@@ -1,10 +1,11 @@
 /*
+using DocumentFormat.OpenXml.Spreadsheet;
  * SPDX-FileCopyrightText: Copyright Corsinvest Srl
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
-using ClosedXML.Excel;
 using System.Text.RegularExpressions;
+using ClosedXML.Excel;
 
 namespace Corsinvest.ProxmoxVE.Report;
 
@@ -17,6 +18,7 @@ internal partial class SheetWriter(IXLWorksheet ws, Dictionary<string, string> s
     public int Col { get; set; } = 1;
     public bool SkipEmptyCollections { get; set; }
     public string SheetName => ws.Name;
+    public IXLWorksheet Worksheet => ws;
 
     private static readonly HashSet<string> WrapColumnNames = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -56,7 +58,7 @@ internal partial class SheetWriter(IXLWorksheet ws, Dictionary<string, string> s
             ws.Cell(Row, col).Value = key;
             ws.Cell(Row, col).Style.Font.SetBold(true);
             var valueCell = ws.Cell(Row, col + 1);
-            valueCell.Value = value?.ToString() ?? "";
+            valueCell.Value = value?.ToString() ?? string.Empty;
             if (key.Equals("Node", StringComparison.OrdinalIgnoreCase) && value is string nodeName)
             {
                 SetHyperlink(valueCell, $"node:{nodeName}");
@@ -142,7 +144,7 @@ internal partial class SheetWriter(IXLWorksheet ws, Dictionary<string, string> s
             {
                 if (cell.Value.IsBoolean)
                 {
-                    cell.Value = cell.Value.GetBoolean() ? "X" : "";
+                    cell.Value = cell.Value.GetBoolean() ? "X" : string.Empty;
                     cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                 }
             }

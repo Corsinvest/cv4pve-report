@@ -15,16 +15,14 @@ public partial class ReportEngine
     private async Task AddStoragesDataAsync(XLWorkbook workbook)
     {
         var sw = CreateSheetWriter(workbook, "Storages");
-        var resources = await client.GetResourcesAsync(ClusterResourceType.Storage);
-        var filtered = resources.Where(a => CheckNames(settings.Storage.Names, a.Storage)).OrderBy(a => a.Node).ToList();
-        var items = new List<dynamic>();
+        var filtered = _resources.Where(a => a.ResourceType == ClusterResourceType.Storage && CheckNames(settings.Storage.Names, a.Storage)).OrderBy(a => a.Node).ToList();
         var pt = new ProgressTracker(_progress, filtered.Count);
 
         foreach (var item in filtered)
         {
             pt.Next(item);
 
-            items.Add(new
+            _storageRows.Add(new
             {
                 item.Node,
                 item.Storage,
@@ -40,11 +38,7 @@ public partial class ReportEngine
             if (!item.IsUnknown) { await AddStorageDetailAsync(workbook, item, pt); }
         }
 
-        sw.CreateTable("Storages", items, tbl =>
-        {
-            sw.ApplyNodeLinks(tbl);
-            sw.ApplyStorageLinks(tbl);
-        });
+        WriteStorage(sw);
         sw.AdjustColumns();
     }
 
@@ -81,12 +75,15 @@ public partial class ReportEngine
                            a.ContentDescription,
                            a.CreationDate,
                            a.Encrypted,
+                           //a.Volume,
                            a.FileName,
                            a.Format,
                            a.Name,
+                           a.Parent,
                            a.Notes,
                            a.Protected,
                            SizeGB = ToGB(a.Size),
+                           //UsedGB = a.Used.HasValue ? ToGB(a.Used.Value) : (double?)null,
                            a.Verified,
                            VmId = a.VmId > 0 ? a.VmId.ToString() : ""
                        }),

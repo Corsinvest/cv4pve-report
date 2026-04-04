@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
+using System.ComponentModel;
 using ClosedXML.Excel;
 using Corsinvest.ProxmoxVE.Api.Extension;
 using Corsinvest.ProxmoxVE.Api.Extension.Utils;
@@ -10,7 +11,6 @@ using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Common;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Vm;
 using Corsinvest.ProxmoxVE.Api.Shared.Utils;
-using System.ComponentModel;
 
 namespace Corsinvest.ProxmoxVE.Report;
 
@@ -37,8 +37,7 @@ public partial class ReportEngine
     private async Task AddVmsDataAsync(XLWorkbook workbook)
     {
         var sw = CreateSheetWriter(workbook, "Vms");
-        var allResources = (await client.GetResourcesAsync(ClusterResourceType.All)).ToList();
-        allResources.CalculateHostUsage();
+        var allResources = _resources.ToList();
 
         var vmIds = (await client.GetVmsAsync(settings.Guest.Ids))
                         .Select(a => a.VmId)
@@ -187,7 +186,7 @@ public partial class ReportEngine
                                               hostname ?? string.Empty,
                                               agentVersion,
                                               agentRunning,
-                                              _vmNetworkRows.Where(a => a.VmId == item.VmId).ToList(),
+                                              [.. _vmNetworkRows.Where(a => a.VmId == item.VmId)],
                                               vmQemuAgentOsInfo);
 
             items.Add(new
@@ -198,6 +197,11 @@ public partial class ReportEngine
                 item.Description,
                 item.Type,
                 item.Status,
+                item.Pool,
+                Tags = (item.Tags + string.Empty).Split(',').JoinAsString(Environment.NewLine),
+                item.HaState,
+                item.Lock,
+                item.IsTemplate,
                 item.CpuSize,
                 item.CpuUsagePercentage,
                 item.HostCpuUsage,
@@ -208,12 +212,16 @@ public partial class ReportEngine
                 DiskSizeGB = ToGB(item.DiskSize),
                 DiskUsageGB = ToGB(item.DiskUsage),
                 item.DiskUsagePercentage,
+                //NetInMB = ToMB(item.NetIn),
+                //NetOutMB = ToMB(item.NetOut),
+                //DiskReadGB = ToGB(item.DiskRead),
+                //DiskWriteGB = ToGB(item.DiskWrite),
                 Uptime = FormatHelper.UptimeInfo(item.Uptime),
-                Hostname = vmRuntime.Hostname,
+                vmRuntime.Hostname,
 
                 Networks = vmRuntime.Networks
                             .Where(a => !a.IsInternal)
-                            .Select(a => $"{a.Network.MacAddress} {a.Network.Bridge}{(a.Network.Tag.HasValue ? $"/{a.Network.Tag}" : "")}")
+                            .Select(a => $"{a.Network.MacAddress} {a.Network.Bridge}{(a.Network.Tag.HasValue ? $"/{a.Network.Tag}" : string.Empty)}")
                             .JoinAsString(Environment.NewLine),
 
                 IpAddresses = vmRuntime.Networks
@@ -224,10 +232,10 @@ public partial class ReportEngine
                             .Where(s => !string.IsNullOrEmpty(s))
                             .JoinAsString(Environment.NewLine),
 
-                ConfigOnBoot = config?.OnBoot,
-                ConfigArch = config?.Arch,
-                ConfigOsType = config?.OsType,
-                ConfigOsVersion = osVersion,
+                config?.OnBoot,
+                //config?.Arch,
+                config?.OsType,
+                OsVersion = osVersion,
                 ConfigProtection = config?.Protection,
                 LxcCores = configLxc?.Cores,
                 LxcNameserver = configLxc?.Nameserver,
@@ -276,11 +284,11 @@ public partial class ReportEngine
 
         var configKv = new Dictionary<string, object?>
         {
-            ["On Boot"] = runtime.Config.OnBoot,
-            ["Arch"] = runtime.Config.Arch,
+            ["On Boot"] = ToX(runtime.Config.OnBoot),
+            //["Arch"] = runtime.Config.Arch,
             ["OS Type"] = runtime.Config.OsTypeDecode,
-            ["Protection"] = runtime.Config.Protection,
-            ["Template"] = runtime.Config.Template,
+            ["Protection"] = ToX(runtime.Config.Protection),
+            ["Template"] = ToX(runtime.Config.Template),
             ["Lock"] = runtime.Config.Lock,
             ["Tags"] = runtime.Config.Tags,
         };
@@ -293,13 +301,24 @@ public partial class ReportEngine
             configKv["CPU"] = qemuConfig.Cpu;
             configKv["Sockets"] = qemuConfig.Sockets;
             configKv["Cores"] = qemuConfig.Cores;
+            configKv["vCPUs"] = qemuConfig.Vcpus;
+            configKv["CPU Limit"] = qemuConfig.CpuLimit;
+            configKv["CPU Units"] = qemuConfig.CpuUnits;
+            configKv["Affinity"] = qemuConfig.Affinity;
+            configKv["Hotplug"] = qemuConfig.Hotplug;
+            configKv["Hugepages"] = qemuConfig.Hugepages;
             configKv["Memory (MB)"] = qemuConfig.Memory;
             configKv["Balloon"] = qemuConfig.Balloon;
+            configKv["Shares"] = qemuConfig.Shares;
             configKv["KVM"] = qemuConfig.Kvm;
             configKv["NUMA"] = qemuConfig.Numa;
+            configKv["Tablet"] = qemuConfig.Tablet;
             configKv["ScsiHw"] = qemuConfig.ScsiHw;
             configKv["Vga"] = qemuConfig.Vga;
             configKv["Agent"] = qemuConfig.AgentEnabled;
+            configKv["TPM State"] = qemuConfig.Tpmstate0;
+            configKv["Watchdog"] = qemuConfig.Watchdog;
+            configKv["Rng0"] = qemuConfig.Rng0;
             configKv["Start Up"] = qemuConfig.StartUp;
             configKv["Hookscript"] = qemuConfig.Hookscript;
         }
@@ -480,12 +499,17 @@ public partial class ReportEngine
                            rrdData.Select(a => new
                            {
                                a.TimeDate,
-                               NetInMB = ToMB(a.NetIn),
-                               NetOutMB = ToMB(a.NetOut),
                                a.CpuUsagePercentage,
                                MemorySizeGB = ToGB(a.MemorySize),
                                MemoryUsageGB = ToGB(a.MemoryUsage),
                                a.MemoryUsagePercentage,
+                               NetInMB = ToMB(a.NetIn),
+                               NetOutMB = ToMB(a.NetOut),
+                               DiskReadMB = ToMB(a.DiskRead),
+                               DiskWriteMB = ToMB(a.DiskWrite),
+                               DiskSizeGB = ToGB(a.DiskSize),
+                               DiskUsageGB = ToGB(a.DiskUsage),
+                               a.DiskUsagePercentage,
                                PsiCpuSomePercentage = a.PressureCpuSome,
                                PsiCpuFullPercentage = a.PressureCpuFull,
                                PsiIoSomePercentage = a.PressureIoSome,
@@ -520,14 +544,17 @@ public partial class ReportEngine
         {
             pt.Step("Snapshots");
             sw.CreateTable("Snapshots",
-                           (await SnapshotHelper.GetSnapshotsAsync(client, runtime.Item.Node, runtime.Item.VmType, runtime.Item.VmId))
+                           (await SnapshotHelper.GetSnapshotsAsync(client, 
+                                                                   runtime.Item.Node, 
+                                                                   runtime.Item.VmType, 
+                                                                   runtime.Item.VmId))
                             .Select(a => new
                             {
                                 a.Name,
-                                a.Description,
                                 a.Parent,
-                                a.VmStatus,
                                 a.Date,
+                                IncludeRam = a.VmStatus,
+                                a.Description,
                             }));
         }
 
@@ -535,7 +562,9 @@ public partial class ReportEngine
         {
             pt.Step("Firewall");
             var fw = settings.Guest.Firewall;
+
             var fwLogLimit = fw.LogMaxCount > 0 ? fw.LogMaxCount : (int?)null;
+
             var fwLogSince = fw.LogSince.HasValue
                                 ? (int)new DateTimeOffset(fw.LogSince.Value.ToDateTime(TimeOnly.MinValue)).ToUnixTimeSeconds()
                                 : (int?)null;

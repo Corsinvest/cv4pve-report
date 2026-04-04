@@ -26,19 +26,9 @@ public class SettingsNode
     public SettingsTask Tasks { get; set; } = new();
 
     /// <summary>
-    /// Include network interfaces
-    /// </summary>
-    public bool IncludeNetwork { get; set; } = true;
-
-    /// <summary>
     /// Disk settings
     /// </summary>
     public SettingsDisk Disk { get; set; } = new();
-
-    /// <summary>
-    /// Include system services
-    /// </summary>
-    public bool IncludeServices { get; set; } = true;
 
     /// <summary>
     /// Firewall settings

@@ -17,11 +17,15 @@ public partial class ReportEngine
                              string Status,
                              VmDisk Disk);
 
-    private Task AddDisksDataAsync(XLWorkbook workbook)
+    private async Task AddDisksDataAsync(XLWorkbook workbook)
     {
         var sw = CreateSheetWriter(workbook, "Disks");
 
-        sw.ReserveIndexRows(1);
+        sw.ReserveIndexRows(3);
+
+        await WriteClusterStorageAsync(sw, "Storage Configuration");
+
+        WriteStorage(sw);
 
         sw.CreateTable("VM Disks",
                        _vmDiskRows.Select(a => new
@@ -54,7 +58,5 @@ public partial class ReportEngine
 
         sw.WriteIndex();
         sw.AdjustColumns();
-
-        return Task.CompletedTask;
     }
 }

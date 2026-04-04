@@ -16,14 +16,16 @@ public partial class ReportEngine
         var tableCount = 2; // Node Networks + VM Networks
         sw.ReserveIndexRows(tableCount);
 
-        sw.CreateTable("Node Networks",
+        sw.CreateTable("Nodes Networks",
                        _nodeNetworks.SelectMany(kv => kv.Value.Select(a => new
                        {
                            Node = kv.Key,
                            a.Active,
                            a.AutoStart,
+                           a.Exists,
                            a.Type,
                            a.Interface,
+                           a.LinkType,
                            a.Method,
                            a.Cidr,
                            a.Address,
@@ -35,17 +37,30 @@ public partial class ReportEngine
                            a.Netmask6,
                            a.Gateway6,
                            a.Priority,
+                           a.Mtu,
                            a.BondMode,
                            a.BondMiimon,
+                           a.BondPrimary,
+                           a.BondXmitHashPolicy,
                            a.Slaves,
                            a.BridgeStp,
                            a.BridgeVlanAware,
                            a.BridgeVids,
                            a.BridgeFd,
                            a.BridgePorts,
+                           a.VlanId,
+                           a.VlanRawDevice,
+                           a.VlanProtocol,
+                           a.OvsBridge,
+                           a.OvsBonds,
+                           a.OvsPorts,
+                           a.OvsOptions,
+                           a.OvsTag,
+                           a.VxlanId,
+                           a.VxlanLocalTunnelIp,
+                           a.VxlanPhysDev,
                            a.Comments,
                            a.Comments6,
-                           a.Mtu
                        })),
                        tbl => sw.ApplyNodeLinks(tbl));
 

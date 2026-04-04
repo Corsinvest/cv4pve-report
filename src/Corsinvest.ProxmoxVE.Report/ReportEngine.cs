@@ -3,13 +3,14 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
+using System.Text.RegularExpressions;
 using ClosedXML.Excel;
 using Corsinvest.ProxmoxVE.Api;
 using Corsinvest.ProxmoxVE.Api.Extension;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Common;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Node;
-using System.Text.RegularExpressions;
+using Corsinvest.ProxmoxVE.Api.Shared.Models.Storage;
 
 namespace Corsinvest.ProxmoxVE.Report;
 
@@ -21,6 +22,46 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
     private readonly Dictionary<string, IEnumerable<NodeNetwork>> _nodeNetworks = [];
     private readonly List<VmNetworkRow> _vmNetworkRows = [];
     private readonly List<VmDiskRow> _vmDiskRows = [];
+    private readonly List<dynamic> _storageRows = [];
+    private IEnumerable<StorageItem>? _clusterStorageRows;
+    private IEnumerable<ClusterResource> _resources = [];
+
+    private void WriteStorage(SheetWriter sw)
+    {
+        sw.CreateTable("Storages", _storageRows, tbl =>
+        {
+            sw.ApplyNodeLinks(tbl);
+            sw.ApplyStorageLinks(tbl);
+        });
+    }
+
+    private async Task WriteClusterStorageAsync(SheetWriter sw, string title)
+    {
+        _clusterStorageRows ??= await client.Storage.GetAsync();
+
+        sw.CreateTable(title,
+                       _clusterStorageRows.Select(a => new
+                       {
+                           a.Storage,
+                           a.Type,
+                           a.Content,
+                           a.Shared,
+                           a.Disable,
+                           a.Nodes,
+                           a.Path,
+                           a.Mountpoint,
+                           a.Server,
+                           a.Export,
+                           a.Datastore,
+                           a.Pool,
+                           a.Username,
+                           a.Monhost,
+                           a.Sparse,
+                           a.Krbd,
+                           a.Preallocation,
+                           a.PruneBackups,
+                       }));
+    }
 
     private string? GetSheetName(ClusterResourceType type, params string[] values)
         => _sheetLinks.TryGetValue(SheetLinkKey(type, values), out var name)
@@ -30,7 +71,7 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
     private SheetWriter CreateSheetWriter(XLWorkbook workbook, string name)
         => new(workbook.Worksheets.Add(name), _sheetLinks)
         {
-            SkipEmptyCollections = settings.SkipEmptyCollections
+            SkipEmptyCollections = settings.SkipEmptyTables
         };
 
     internal static string SheetLinkKey(ClusterResourceType type, params string[] values)
@@ -53,7 +94,10 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
 
     private async Task BuildSheetLinksAsync()
     {
-        foreach (var item in await client.Cluster.Resources.GetAsync())
+        _resources = await client.GetResourcesAsync(ClusterResourceType.All);
+        _resources.CalculateHostUsage();
+
+        foreach (var item in _resources)
         {
             switch (item.ResourceType)
             {
@@ -93,26 +137,29 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
         using var workbook = new XLWorkbook();
         ConfigureWorkbook(workbook);
 
-        ReportGlobal("Cover");
-        AddCoverPage(workbook);
+        // ReportGlobal("Cover");
+        // AddCoverPage(workbook);
 
-        ReportGlobal("Cluster");
-        await AddClusterDataAsync(workbook);
+        // ReportGlobal("Cluster");
+        // await AddClusterDataAsync(workbook);
 
-        ReportGlobal("Storages");
-        await AddStoragesDataAsync(workbook);
+        // ReportGlobal("Storages");
+        // await AddStoragesDataAsync(workbook);
 
-        ReportGlobal("Nodes");
-        await AddNodesDataAsync(workbook);
+        // ReportGlobal("Nodes");
+        // await AddNodesDataAsync(workbook);
 
-        ReportGlobal("Vms");
-        await AddVmsDataAsync(workbook);
+        // ReportGlobal("Vms");
+        // await AddVmsDataAsync(workbook);
 
-        ReportGlobal("Network");
-        await AddNetworkDataAsync(workbook);
+        // ReportGlobal("Network");
+        // await AddNetworkDataAsync(workbook);
 
-        ReportGlobal("Disks");
-        await AddDisksDataAsync(workbook);
+        // ReportGlobal("Disks");
+        // await AddDisksDataAsync(workbook);
+
+        ReportGlobal("Syslog");
+        await AddSyslogDataAsync(workbook);
 
         ReportGlobal("Saving");
         workbook.SaveAs(stream);
@@ -120,6 +167,12 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
 
     private static double ToGB(double bytes) => Math.Round(bytes / 1024 / 1024 / 1024, 2);
     private static double ToMB(double bytes) => Math.Round(bytes / 1024 / 1024, 2);
+    private static string ToX(bool value) => value ? "X" : string.Empty;
+
+    private static DateTime? FromUnixTime(long seconds)
+        => seconds == 0
+            ? null
+            : DateTimeOffset.FromUnixTimeSeconds(seconds).DateTime;
 
     private static bool CheckNames(string names, string name)
     {
@@ -142,14 +195,14 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
         return false;
     }
 
-    private static void ConfigureWorkbook(XLWorkbook workbook)
+    private void ConfigureWorkbook(XLWorkbook workbook)
     {
-        workbook.Author = "cv4pve-report";
-        workbook.Properties.Author = "cv4pve-report Corsinvest Srl";
+        workbook.Author = info.ApplicationName;
+        workbook.Properties.Author = info.ApplicationName;
         workbook.Properties.Title = "Infrastructure Report";
-        workbook.Properties.Subject = "cv4pve-report System Report";
+        workbook.Properties.Subject = $"{info.ApplicationName} v{info.ApplicationVersion} System Report";
         workbook.Properties.Category = "IT Infrastructure";
-        workbook.Properties.Comments = "Automated report generated by cv4pve-report for Proxmox VE";
+        workbook.Properties.Comments = $"Automated report generated by {info.ApplicationName} for Proxmox VE";
         workbook.Properties.Company = "Corsinvest Srl";
     }
 
@@ -161,11 +214,16 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
                               a.Type,
                               a.Action,
                               a.Enable,
+                              a.Macro,
+                              a.Iface,
+                              a.IpVersion,
+                              a.Protocol,
+                              a.IcmpType,
                               a.Source,
                               a.Dest,
-                              a.Protocol,
                               a.DestinationPort,
                               a.SourcePort,
+                              a.Log,
                               a.Comment
                           }));
 

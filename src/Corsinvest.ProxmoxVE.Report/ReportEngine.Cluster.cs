@@ -28,7 +28,7 @@ public partial class ReportEngine
                        + (settings.Cluster.IncludeFirewall ? 4 : 0)
                        + (settings.Cluster.IncludeBackupJobs ? 1 : 0)
                        + (settings.Cluster.IncludeReplication ? 1 : 0)
-                       + (settings.Cluster.IncludeStorages ? 1 : 0)
+                       + 1  // Storages
                        + (settings.Cluster.IncludeMetricServers ? 1 : 0)
                        + (settings.Cluster.IncludeSdn ? 5 : 0)
                        + (settings.Cluster.IncludeMapping ? 3 : 0)
@@ -93,18 +93,25 @@ public partial class ReportEngine
                                a.Id,
                                a.Enable,
                                a.Email,
-                               Expire = DateTimeOffset.FromUnixTimeSeconds(a.Expire).DateTime
+                               a.Firstname,
+                               a.Lastname,
+                               a.Groups,
+                               a.Comment,
+                               a.Keys,
+                               a.TotpLocked,
+                               TfaLockedUntil = a.TfaLockedUntil.HasValue ? FromUnixTime(a.TfaLockedUntil.Value) : null,
+                               Expire = FromUnixTime(a.Expire)
                            }));
 
             sw.CreateTable("API Tokens",
-                           users.SelectMany(a => a.Tokens)
-                                .Select(a => new
-                                {
-                                    a.Id,
-                                    Expire = DateTimeOffset.FromUnixTimeSeconds(a.Expire).DateTime,
-                                    PrivSeparated = a.Privsep == 1,
-                                    a.Comment
-                                }));
+                           users.SelectMany(a => a.Tokens.Select(t => new
+                           {
+                               User = a.Id,
+                               TokenId = t.Id,
+                               Expire = FromUnixTime(t.Expire),
+                               PrivSeparated = t.Privsep == 1,
+                               t.Comment
+                           })));
 
             sw.CreateTable("Two-Factor Authentication",
                            (await client.Access.Tfa.GetAsync()).Select(t => new
@@ -143,8 +150,9 @@ public partial class ReportEngine
             sw.CreateTable("Domains",
                            (await client.Access.Domains.GetAsync()).Select(a => new
                            {
-                               a.Type,
                                a.Realm,
+                               a.Type,
+                               a.Tfa,
                                a.Comment
                            }));
         }
@@ -176,14 +184,17 @@ public partial class ReportEngine
                                a.Mode,
                                a.Storage,
                                a.StartTime,
-                               a.Mailto,
-                               a.Pool,
+                               a.Schedule,
                                a.DayOfWeek,
                                a.Compress,
                                a.Type,
-                               a.Schedule,
-                               NextRun = DateTimeOffset.FromUnixTimeSeconds(a.NextRun).DateTime,
-                               a.Node
+                               a.Mailto,
+                               a.MailNotification,
+                               a.NotesTemplate,
+                               a.Pool,
+                               a.Node,
+                               a.Quiet,
+                               NextRun = FromUnixTime(a.NextRun),
                            }));
         }
 
@@ -194,32 +205,22 @@ public partial class ReportEngine
                            (await client.Cluster.Replication.GetAsync()).Select(a => new
                            {
                                a.Id,
-                               a.Schedule,
                                a.Type,
                                a.Guest,
                                a.Source,
                                a.Target,
+                               a.Schedule,
                                a.Disable,
-                               a.Rate
+                               a.Rate,
+                               a.JobNum,
+                               a.RemoveJob,
+                               a.Comment
                            }),
                            tbl => sw.ApplyReplicationLinks(tbl));
         }
 
-        if (settings.Cluster.IncludeStorages)
-        {
-            ReportGlobal("Cluster: Storages");
-            sw.CreateTable("Storages",
-                           (await client.Storage.GetAsync()).Select(a => new
-                           {
-                               a.Storage,
-                               a.Type,
-                               a.Content,
-                               a.Shared,
-                               a.Disable,
-                               a.Path,
-                               a.Nodes
-                           }));
-        }
+        ReportGlobal("Cluster: Storages");
+        await WriteClusterStorageAsync(sw, "Storages");
 
         if (settings.Cluster.IncludeMetricServers)
         {
@@ -249,7 +250,7 @@ public partial class ReportEngine
                                a.Controller,
                                a.Ipam,
                                a.Dns,
-                               a.State
+                               a.State,
                            }));
 
             sw.CreateTable("SDN Vnets",
@@ -289,11 +290,13 @@ public partial class ReportEngine
                 {
                     subnets.Add(new
                     {
-                        Vnet = vnet.Vnet,
+                        vnet.Vnet,
                         subnet.Subnet,
                         subnet.Type,
                         subnet.Gateway,
                         subnet.Snat,
+                        subnet.DhcpDnsServer,
+                        subnet.DnsZonePrefix,
                     });
                 }
             }
@@ -398,7 +401,12 @@ public partial class ReportEngine
                                a.Sid,
                                a.State,
                                a.CrmState,
+                               a.RequestState,
                                a.Quorate,
+                               a.Failback,
+                               a.MaxRelocate,
+                               a.MaxRestart,
+                               Timestamp = FromUnixTime(a.Timestamp),
                            }));
         }
 

@@ -18,12 +18,11 @@ public partial class ReportEngine
     private async Task AddNodesDataAsync(XLWorkbook workbook)
     {
         var sw = CreateSheetWriter(workbook, "Nodes");
-        var resources = await client.GetResourcesAsync(ClusterResourceType.Node);
         var items = new List<dynamic>();
 
-        var filtered = resources.Where(a => CheckNames(settings.Node.Names, a.Node))
-                                .OrderBy(a => a.Node)
-                                .ToList();
+        var filtered = _resources.Where(a => a.ResourceType == ClusterResourceType.Node && CheckNames(settings.Node.Names, a.Node))
+                                 .OrderBy(a => a.Node)
+                                 .ToList();
 
         var pt = new ProgressTracker(_progress, filtered.Count);
 
@@ -119,8 +118,8 @@ public partial class ReportEngine
                              ["Subscription Expiry"] = subscription.RegDate,
                          });
 
-        var tableCount = (settings.Node.IncludeServices ? 1 : 0)
-                       + (settings.Node.IncludeNetwork ? 1 : 0)
+        var tableCount = 1  // Services
+                       + 1  // Network
                        + (settings.Node.Disk.Enabled ? 1 : 0)
                        + (settings.Node.Disk.IncludeSmartData ? 1 : 0)
                        + (settings.Node.Disk.IncludeZfs ? 2 : 0)
@@ -132,62 +131,72 @@ public partial class ReportEngine
                        + (settings.Node.IncludeAptVersions ? 1 : 0)
                        + (settings.Node.Firewall.Enabled ? 2 : 0)
                        + (settings.Node.IncludeSslCertificates ? 1 : 0)
-                       + (settings.Node.Tasks.Enabled ? 1 : 0)
-                       + (settings.Node.Syslog.Enabled ? 1 : 0);
+                       + (settings.Node.Tasks.Enabled ? 1 : 0);
 
         sw.ReserveIndexRows(tableCount);
 
-        if (settings.Node.IncludeServices)
-        {
-            pt.Step("Services");
-            sw.CreateTable("Services",
-                           (await client.Nodes[node].Services.GetAsync())
-                           .Select(a => new
-                           {
-                               a.Name,
-                               a.State,
-                               a.Service,
-                               a.Description
-                           }));
-        }
+        pt.Step("Services");
+        sw.CreateTable("Services",
+                       (await client.Nodes[node].Services.GetAsync())
+                       .Select(a => new
+                       {
+                           a.Name,
+                           a.Description,
+                           a.State,
+                           a.ActiveState,
+                           a.UnitState,
+                           a.Service,
+                       }));
 
-        if (settings.Node.IncludeNetwork)
-        {
-            pt.Step("Network");
-            var nodeNets = await client.Nodes[node].Network.GetAsync();
-            _nodeNetworks[node] = nodeNets;
-            sw.CreateTable("Network",
-                           nodeNets.Select(a => new
-                           {
-                               a.Active,
-                               a.AutoStart,
-                               a.Type,
-                               a.Interface,
-                               a.Method,
-                               a.Cidr,
-                               a.Address,
-                               a.Netmask,
-                               a.Gateway,
-                               a.Method6,
-                               a.Cidr6,
-                               a.Address6,
-                               a.Netmask6,
-                               a.Gateway6,
-                               a.Priority,
-                               a.BondMode,
-                               a.BondMiimon,
-                               a.Slaves,
-                               a.BridgeStp,
-                               a.BridgeVlanAware,
-                               a.BridgeVids,
-                               a.BridgeFd,
-                               a.BridgePorts,
-                               a.Comments,
-                               a.Comments6,
-                               a.Mtu,
-                           }),
-                           tbl => sw.RegisterNetworkLinks(tbl, node));
-        }
+        pt.Step("Network");
+        var nodeNets = await client.Nodes[node].Network.GetAsync();
+        _nodeNetworks[node] = nodeNets;
+        sw.CreateTable("Network",
+                       nodeNets.Select(a => new
+                       {
+                           a.Active,
+                           a.AutoStart,
+                           a.Exists,
+                           a.Type,
+                           a.Interface,
+                           a.LinkType,
+                           a.Method,
+                           a.Cidr,
+                           a.Address,
+                           a.Netmask,
+                           a.Gateway,
+                           a.Method6,
+                           a.Cidr6,
+                           a.Address6,
+                           a.Netmask6,
+                           a.Gateway6,
+                           a.Priority,
+                           a.Mtu,
+                           a.BondMode,
+                           a.BondMiimon,
+                           a.BondPrimary,
+                           a.BondXmitHashPolicy,
+                           a.Slaves,
+                           a.BridgeStp,
+                           a.BridgeVlanAware,
+                           a.BridgeVids,
+                           a.BridgeFd,
+                           a.BridgePorts,
+                           a.VlanId,
+                           a.VlanRawDevice,
+                           a.VlanProtocol,
+                           a.OvsBridge,
+                           a.OvsBonds,
+                           a.OvsPorts,
+                           a.OvsOptions,
+                           a.OvsTag,
+                           a.VxlanId,
+                           a.VxlanLocalTunnelIp,
+                           a.VxlanPhysDev,
+                           a.Comments,
+                           a.Comments6,
+                       }),
+                       tbl => sw.RegisterNetworkLinks(tbl, node));
 
         if (settings.Node.Disk.Enabled || settings.Node.Disk.IncludeSmartData)
         {
@@ -231,13 +240,17 @@ public partial class ReportEngine
                         {
                             Disk = disk.DevPath,
                             disk.Model,
+                            DiskType = disk.Type,
+                            DiskHealth = disk.Health,
+                            SmartHealth = smart.Health,
                             attr.Id,
                             attr.Name,
                             attr.Value,
                             attr.Worst,
                             attr.Threshold,
                             attr.Flags,
-                            attr.Raw
+                            attr.Raw,
+                            attr.Fail,
                         });
                     }
                 }
@@ -300,18 +313,23 @@ public partial class ReportEngine
                            (await client.Nodes[node].Replication.GetAsync())
                             .Select(a => new
                             {
-                                a.Disable,
                                 a.Id,
                                 a.Type,
+                                a.VmType,
                                 a.Guest,
                                 a.Source,
                                 a.Target,
                                 a.Schedule,
+                                a.JobNum,
+                                a.Disable,
                                 a.FailCount,
                                 a.Duration,
-                                LastSync = DateTimeOffset.FromUnixTimeSeconds(a.LastSync).DateTime,
-                                NextSync = DateTimeOffset.FromUnixTimeSeconds(a.NextSync).DateTime,
-                                a.Error
+                                a.Rate,
+                                LastSync = FromUnixTime(a.LastSync),
+                                NextSync = FromUnixTime(a.NextSync),
+                                LastTry = FromUnixTime(a.LastTry),
+                                a.Error,
+                                a.Comment,
                             }),
                            tbl => sw.ApplyReplicationLinks(tbl));
         }
@@ -354,7 +372,7 @@ public partial class ReportEngine
                              (file, repo) => new
                              {
                                  FilePath = file.Path,
-                                 FileType = file.FileType,
+                                 file.FileType,
                                  repo.Enabled,
                                  Types = repo.Types.JoinAsString(Environment.NewLine),
                                  URIs = repo.URIs.JoinAsString(Environment.NewLine),
@@ -408,12 +426,16 @@ public partial class ReportEngine
         {
             pt.Step("Firewall");
             var fw = settings.Node.Firewall;
+
             AddFirewallRules(sw, await client.Nodes[node].Firewall.Rules.GetAsync());
-            AddLogs(sw, "Firewall Logs", await client.Nodes[node].Firewall.Log.GetAsync(
-                limit: fw.LogMaxCount > 0 ? fw.LogMaxCount : null,
-                since: fw.LogSince.HasValue ? (int)new DateTimeOffset(fw.LogSince.Value.ToDateTime(TimeOnly.MinValue)).ToUnixTimeSeconds() : null,
-                until: fw.LogUntil.HasValue ? (int)new DateTimeOffset(fw.LogUntil.Value.ToDateTime(TimeOnly.MinValue)).ToUnixTimeSeconds() : null
-            ));
+
+            AddLogs(sw,
+                    "Firewall Logs",
+                    await client.Nodes[node].Firewall.Log.GetAsync(limit: fw.LogMaxCount > 0
+                                                                            ? fw.LogMaxCount
+                                                                            : null,
+                                                                   since: fw.LogSinceUnix,
+                                                                   until: fw.LogUntilUnix));
         }
 
         if (settings.Node.IncludeSslCertificates)
@@ -425,9 +447,13 @@ public partial class ReportEngine
                                cert.FileName,
                                cert.Subject,
                                cert.Issuer,
-                               NotBefore = DateTimeOffset.FromUnixTimeSeconds(cert.NotBefore).DateTime,
-                               NotAfter = DateTimeOffset.FromUnixTimeSeconds(cert.NotAfter).DateTime,
-                               DaysUntilExpiry = (DateTimeOffset.FromUnixTimeSeconds(cert.NotAfter).DateTime - DateTime.UtcNow).Days,
+                               cert.Fingerprint,
+                               cert.PublicKeyType,
+                               cert.PublicKeyBits,
+                               San = string.Join(", ", cert.San ?? []),
+                               NotBefore = FromUnixTime(cert.NotBefore),
+                               NotAfter = FromUnixTime(cert.NotAfter),
+                               DaysUntilExpiry = (FromUnixTime(cert.NotAfter)!.Value - DateTime.UtcNow).Days,
                            }));
         }
 
@@ -453,18 +479,6 @@ public partial class ReportEngine
                                a.VmId
                            }),
                            tbl => sw.ApplyVmIdLinks(tbl));
-        }
-
-        if (settings.Node.Syslog.Enabled)
-        {
-            pt.Step("Syslog");
-            var s = settings.Node.Syslog;
-            var logs = (await client.Nodes[node].Syslog.Syslog(limit: s.MaxCount > 0 ? s.MaxCount : null,
-                                                               service: string.IsNullOrWhiteSpace(s.Service) ? null : s.Service,
-                                                               since: s.Since.HasValue ? s.Since.Value.ToString("yyyy-MM-dd") : null,
-                                                               until: s.Until.HasValue ? s.Until.Value.ToString("yyyy-MM-dd") : null))
-                                                       .ToLogs();
-            sw.CreateTable("Syslog", logs.Select(a => new { Log = a }));
         }
 
         sw.WriteIndex();

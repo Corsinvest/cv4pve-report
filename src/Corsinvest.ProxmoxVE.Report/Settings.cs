@@ -33,7 +33,7 @@ public class Settings
     /// <summary>
     /// Whether to skip empty collections (e.g. no snapshots) or include them as empty tables in the report.
     /// </summary>
-    public bool SkipEmptyCollections { get; set; } = true;
+    public bool SkipEmptyTables { get; set; } = true;
 
     /// <summary>Fast profile — structure only, no heavy data.</summary>
     public static Settings Fast() => new()
@@ -48,7 +48,6 @@ public class Settings
         Node = new()
         {
             Disk = new() { IncludeSmartData = false, IncludeZfs = false, IncludeDirectory = false },
-            IncludeServices = false,
             Firewall = new() { Enabled = false },
             IncludeSslCertificates = false,
             IncludeAptRepositories = false,
@@ -79,7 +78,7 @@ public class Settings
     /// <summary>Full profile — everything enabled, RRD on week timeframe.</summary>
     public static Settings Full()
     {
-        var lastWeek = DateOnly.FromDateTime(DateTime.Now.AddDays(-7));
+        var lastWeek = DateOnly.FromDateTime(DateTime.Now.AddDays(-3));
         return new()
         {
             Cluster = new()
@@ -92,7 +91,12 @@ public class Settings
                 IncludeAptVersions = true,
                 RrdData = new() { TimeFrame = Api.Shared.Models.Common.RrdDataTimeFrame.Week },
                 Firewall = new() { LogMaxCount = 1000, LogSince = lastWeek },
-                Syslog = new() { Enabled = true, MaxCount = 1000, Since = lastWeek },
+                Syslog = new()
+                {
+                    Enabled = true,
+                    MaxEntries = 1000,
+                    // Since = lastWeek
+                },
             },
             Guest = new()
             {
