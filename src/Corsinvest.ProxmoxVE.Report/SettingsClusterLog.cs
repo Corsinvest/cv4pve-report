@@ -6,17 +6,17 @@
 namespace Corsinvest.ProxmoxVE.Report;
 
 /// <summary>
-/// Cluster settings
+/// Cluster log settings
 /// </summary>
-public class SettingsCluster
+public class SettingsClusterLog
 {
     /// <summary>
-    /// Cluster log settings
+    /// Enable cluster log sheet
     /// </summary>
-    public SettingsClusterLog Log { get; set; } = new();
+    public bool Enabled { get; set; }
 
     /// <summary>
-    /// Include cluster tasks sheet
+    /// Maximum number of entries to return (0 = unlimited)
     /// </summary>
-    public bool IncludeTasks { get; set; } = true;
+    public int MaxCount { get; set; }
 }

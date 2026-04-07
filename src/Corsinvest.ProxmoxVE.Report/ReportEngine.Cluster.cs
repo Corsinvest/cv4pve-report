@@ -23,20 +23,21 @@ public partial class ReportEngine
         var haGroupsSupported = pveMajor < 9;
 
         var tableCount = 1  // Status
-                       + (settings.Cluster.IncludeOptions ? 1 : 0)
-                       + (settings.Cluster.IncludeSecurity ? 7 : 0)
-                       + (settings.Cluster.IncludeFirewall ? 4 : 0)
-                       + (settings.Cluster.IncludeBackupJobs ? 1 : 0)
-                       + (settings.Cluster.IncludeReplication ? 1 : 0)
-                       + (settings.Cluster.IncludeStorages ? 1 : 0)
-                       + (settings.Cluster.IncludeMetricServers ? 1 : 0)
-                       + (settings.Cluster.IncludeSdn ? 5 : 0)
-                       + (settings.Cluster.IncludeMapping ? 3 : 0)
-                       + (settings.Cluster.IncludePools ? 1 : 0)
-                       + (settings.Cluster.IncludeHa ? (haGroupsSupported ? 3 : 2) : 0)
-                       + (settings.Cluster.AuditLog.Enabled ? 1 : 0);
+                       + 1  // Options
+                       + 7  // Security
+                       + (settings.Firewall.Enabled ? 1 : 0)  // Firewall Options
+                       + 1  // Backup Jobs
+                       + 1  // Replication
+                       + 1  // Storages
+                       + 1  // Metric Servers
+                       + 5  // SDN
+                       + 3  // Mapping
+                       + 1  // Pools
+                       + (haGroupsSupported ? 3 : 2)  // HA
+                       ;
 
-        var clusterStatus = (await client.Cluster.Status.GetAsync()).FirstOrDefault(a => a.Type == "cluster");
+        var allClusterStatus = await client.Cluster.Status.GetAsync();
+        var clusterStatus = allClusterStatus.FirstOrDefault(a => a.Type == "cluster");
 
         sw.WriteKeyValue("Cluster", new()
         {
@@ -50,377 +51,361 @@ public partial class ReportEngine
 
         ReportGlobal("Cluster: Status");
         sw.CreateTable("Status",
-                       (await client.Cluster.Status.GetAsync())
-                        .Select(a => new
-                        {
-                            a.Id,
-                            a.Name,
-                            a.Type,
-                            a.Nodes,
-                            a.Version,
-                            a.Quorate,
-                            Level = NodeHelper.DecodeLevelSupport(a.Level),
-                            a.IpAddress,
-                            a.NodeId,
-                            a.IsOnline
-                        }));
+                       allClusterStatus.Select(a => new
+                       {
+                           a.Id,
+                           a.Name,
+                           IsOnlineFlag = ToX(a.IsOnline),
+                           a.Type,
+                           a.Nodes,
+                           a.Version,
+                           a.Quorate,
+                           Level = NodeHelper.DecodeLevelSupport(a.Level),
+                           a.IpAddress,
+                           a.NodeId,
+                       }));
 
-        if (settings.Cluster.IncludeOptions)
-        {
-            ReportGlobal("Cluster: Options");
-            var options = await client.Cluster.Options.GetAsync();
-            sw.CreateTable("Options",
-                           [new
+        ReportGlobal("Cluster: Options");
+        var options = await client.Cluster.Options.GetAsync();
+        sw.CreateTable("Options",
+                       [new
                            {
                                options.Console,
                                options.Keyboard,
                                options.MacPrefix,
-                               options.Description,
-                               AllowedTags = string.Join(", ", options.AllowedTags ?? []),
+                               DescriptionWrap = options.Description,
+                               AllowedTags = ToNewLine(string.Join(",", options.AllowedTags ?? [])),
                                MigrationType = options.Migration?.Type,
                                MigrationNetwork = options.Migration?.Network,
                            }]);
-        }
 
-        if (settings.Cluster.IncludeSecurity)
+        ReportGlobal("Cluster: Security");
+        var users = await client.Access.Users.GetAsync(full: true);
+
+        sw.CreateTable("Users",
+                       users.Select(a => new
+                       {
+                           a.Id,
+                           EnableFlag = ToX(a.Enable),
+                           a.Firstname,
+                           a.Lastname,
+                           a.Email,
+                           a.Groups,
+                           a.Keys,
+                           TotpLockedFlag = ToX(a.TotpLocked),
+                           TfaLockedUntil = FromUnixTime(a.TfaLockedUntil ?? 0),
+                           Expire = FromUnixTime(a.Expire),
+                           CommentWrap = a.Comment,
+                       }));
+
+        sw.CreateTable("API Tokens",
+                       users.SelectMany(a => a.Tokens.Select(t => new
+                       {
+                           User = a.Id,
+                           TokenId = t.Id,
+                           Expire = FromUnixTime(t.Expire),
+                           PrivSeparatedFlag = ToX(t.Privsep == 1),
+                           CommentWrap = t.Comment
+                       })));
+
+        sw.CreateTable("Two-Factor Authentication",
+                       (await client.Access.Tfa.GetAsync()).Select(t => new
+                       {
+                           User = t.UserId,
+                           TfaTypes = string.Join(", ", t.Entries?.Select(e => e.Type).Distinct() ?? []),
+                           TfaCount = t.Entries?.Count() ?? 0
+                       }));
+
+        sw.CreateTable("Groups",
+                       (await client.Access.Groups.GetAsync()).Select(a => new
+                       {
+                           a.Id,
+                           a.Users,
+                           a.Comment
+                       }));
+
+        sw.CreateTable("Roles",
+                       (await client.Access.Roles.GetAsync()).Select(a => new
+                       {
+                           a.Id,
+                           Privileges = ToNewLine(a.Privileges),
+                           SpecialFlag = ToX(a.Special == 1)
+                       }));
+
+        sw.CreateTable("ACL",
+                       (await client.Access.Acl.GetAsync()).Select(a => new
+                       {
+                           a.Path,
+                           UsersOrGroup = a.UsersGroupid,
+                           a.Type,
+                           Id = a.Roleid,
+                           PropagateFlag = ToX(a.Propagate == 1),
+                       }));
+
+        sw.CreateTable("Domains",
+                       (await client.Access.Domains.GetAsync()).Select(a => new
+                       {
+                           a.Realm,
+                           a.Type,
+                           a.Tfa,
+                           a.Comment
+                       }));
+
+        if (settings.Firewall.Enabled)
         {
-            ReportGlobal("Cluster: Security");
-            var users = await client.Access.Users.GetAsync(full: true);
-
-            sw.CreateTable("Users",
-                           users.Select(a => new
-                           {
-                               a.Id,
-                               a.Enable,
-                               a.Email,
-                               Expire = DateTimeOffset.FromUnixTimeSeconds(a.Expire).DateTime
-                           }));
-
-            sw.CreateTable("API Tokens",
-                           users.SelectMany(a => a.Tokens)
-                                .Select(a => new
-                                {
-                                    a.Id,
-                                    Expire = DateTimeOffset.FromUnixTimeSeconds(a.Expire).DateTime,
-                                    PrivSeparated = a.Privsep == 1,
-                                    a.Comment
-                                }));
-
-            sw.CreateTable("Two-Factor Authentication",
-                           (await client.Access.Tfa.GetAsync()).Select(t => new
-                           {
-                               User = t.UserId,
-                               TfaTypes = string.Join(", ", t.Entries?.Select(e => e.Type).Distinct() ?? []),
-                               TfaCount = t.Entries?.Count() ?? 0
-                           }));
-
-            sw.CreateTable("Groups",
-                           (await client.Access.Groups.GetAsync()).Select(a => new
-                           {
-                               a.Id,
-                               a.Users,
-                               a.Comment
-                           }));
-
-            sw.CreateTable("Roles",
-                           (await client.Access.Roles.GetAsync()).Select(a => new
-                           {
-                               a.Id,
-                               Privileges = a.Privileges.Replace(",", Environment.NewLine),
-                               Special = a.Special == 1
-                           }));
-
-            sw.CreateTable("ACL",
-                           (await client.Access.Acl.GetAsync()).Select(a => new
-                           {
-                               Id = a.Roleid,
-                               a.Path,
-                               UsersOrGroup = a.UsersGroupid,
-                               Propagate = a.Propagate == 1,
-                               a.Type
-                           }));
-
-            sw.CreateTable("Domains",
-                           (await client.Access.Domains.GetAsync()).Select(a => new
-                           {
-                               a.Type,
-                               a.Realm,
-                               a.Comment
-                           }));
-        }
-
-        if (settings.Cluster.IncludeFirewall)
-        {
-            ReportGlobal("Cluster: Firewall");
-            AddFirewallRules(sw, await client.Cluster.Firewall.Rules.GetAsync());
-
+            ReportGlobal("Cluster: Firewall Options");
             var fwOptions = await client.Cluster.Firewall.Options.GetAsync();
             sw.CreateTable("Firewall Options",
-                           [new { fwOptions.Enable, fwOptions.PolicyIn, fwOptions.PolicyOut, fwOptions.LogRatelimit }]);
-
-            AddFirewallAlias(sw, await client.Cluster.Firewall.Aliases.GetAsync());
-
-            AddFirewallIpSet(sw, await client.Cluster.Firewall.Ipset.GetAsync());
+                           [new
+                           {
+                                fwOptions.Enable,
+                                fwOptions.PolicyIn,
+                                fwOptions.PolicyOut,
+                                fwOptions.LogRatelimit
+                            }]);
         }
 
-        if (settings.Cluster.IncludeBackupJobs)
+        ReportGlobal("Cluster: Backup Jobs");
+        sw.CreateTable("Backup Jobs",
+                       (await client.Cluster.Backup.GetAsync()).Select(a => new
+                       {
+                           a.Id,
+                           a.Enabled,
+                           a.All,
+                           VmId = ToNewLine(a.VmId),
+                           a.Mode,
+                           a.Storage,
+                           a.StartTime,
+                           a.Schedule,
+                           a.DayOfWeek,
+                           a.Compress,
+                           a.Type,
+                           a.Mailto,
+                           a.MailNotification,
+                           a.NotesTemplate,
+                           a.Pool,
+                           a.Node,
+                           a.Quiet,
+                           NextRun = FromUnixTime(a.NextRun),
+                       }));
+
+        ReportGlobal("Cluster: Replication");
+        sw.CreateTable("Replication",
+                       (await client.Cluster.Replication.GetAsync()).Select(a => new
+                       {
+                           a.Id,
+                           a.Type,
+                           a.Guest,
+                           a.Source,
+                           a.Target,
+                           a.Schedule,
+                           DisableFlag = ToX(a.Disable),
+                           a.Rate,
+                           a.Comment,
+                           a.JobNum,
+                           a.RemoveJob,
+                       }),
+                       tbl => sw.ApplyReplicationLinks(tbl));
+
+        ReportGlobal("Cluster: Storages");
+        sw.CreateTable("Storages",
+                       (await client.Storage.GetAsync()).Select(a => new
+                       {
+                           a.Storage,
+                           a.Type,
+                           ContentWrap = ToNewLine(a.Content),
+                           SharedFlag = ToX(a.Shared),
+                           DisableFlag = ToX(a.Disable),
+                           a.Nodes,
+                           a.Path,
+                           a.Mountpoint,
+                           a.Server,
+                           a.Export,
+                           a.Datastore,
+                           a.Pool,
+                           a.Username,
+                           a.Monhost,
+                           a.Sparse,
+                           a.Krbd,
+                           a.Preallocation,
+                           a.PruneBackups,
+                       }));
+
+        ReportGlobal("Cluster: Metric Servers");
+        sw.CreateTable("Metric Servers",
+                       (await client.Cluster.Metrics.Server.GetAsync()).Select(a => new
+                       {
+                           a.Id,
+                           a.Server,
+                           a.Port,
+                           a.Type,
+                           DisableFlag = ToX(a.Disable)
+                       }));
+
+        ReportGlobal("Cluster: SDN");
+        sw.CreateTable("SDN Zones",
+                       (await client.Cluster.Sdn.Zones.GetAsync()).Select(a => new
+                       {
+                           a.Zone,
+                           a.Type,
+                           a.Mtu,
+                           a.Nodes,
+                           a.Bridge,
+                           a.Controller,
+                           a.Ipam,
+                           a.Dns,
+                           a.State,
+                       }));
+
+        var vnets = await client.Cluster.Sdn.Vnets.GetAsync();
+
+        sw.CreateTable("SDN Vnets",
+                       vnets.Select(a => new
+                       {
+                           a.Vnet,
+                           a.Zone,
+                           a.Type,
+                           a.Tag,
+                           a.Alias,
+                           a.VlanAware,
+                           a.State
+                       }));
+
+        sw.CreateTable("SDN Controllers",
+                       (await client.Cluster.Sdn.Controllers.GetAsync()).Select(a => new
+                       {
+                           a.Controller,
+                           a.Type,
+                           a.Asn,
+                           a.Peers,
+                           a.Node,
+                           a.State
+                       }));
+
+        sw.CreateTable("SDN Ipams",
+                       (await client.Cluster.Sdn.Ipams.GetAsync()).Select(a => new
+                       {
+                           a.Ipam,
+                           a.Type,
+                       }));
+
+        var subnets = new List<dynamic>();
+        foreach (var vnet in vnets)
         {
-            ReportGlobal("Cluster: Backup Jobs");
-            sw.CreateTable("Backup Jobs",
-                           (await client.Cluster.Backup.GetAsync()).Select(a => new
-                           {
-                               a.Id,
-                               a.Enabled,
-                               a.All,
-                               VmId = a.VmId?.Replace(",", Environment.NewLine),
-                               a.Mode,
-                               a.Storage,
-                               a.StartTime,
-                               a.Mailto,
-                               a.Pool,
-                               a.DayOfWeek,
-                               a.Compress,
-                               a.Type,
-                               a.Schedule,
-                               NextRun = DateTimeOffset.FromUnixTimeSeconds(a.NextRun).DateTime,
-                               a.Node
-                           }));
-        }
-
-        if (settings.Cluster.IncludeReplication)
-        {
-            ReportGlobal("Cluster: Replication");
-            sw.CreateTable("Replication",
-                           (await client.Cluster.Replication.GetAsync()).Select(a => new
-                           {
-                               a.Id,
-                               a.Schedule,
-                               a.Type,
-                               a.Guest,
-                               a.Source,
-                               a.Target,
-                               a.Disable,
-                               a.Rate
-                           }),
-                           tbl => sw.ApplyReplicationLinks(tbl));
-        }
-
-        if (settings.Cluster.IncludeStorages)
-        {
-            ReportGlobal("Cluster: Storages");
-            sw.CreateTable("Storages",
-                           (await client.Storage.GetAsync()).Select(a => new
-                           {
-                               a.Storage,
-                               a.Type,
-                               a.Content,
-                               a.Shared,
-                               a.Disable,
-                               a.Path,
-                               a.Nodes
-                           }));
-        }
-
-        if (settings.Cluster.IncludeMetricServers)
-        {
-            ReportGlobal("Cluster: Metric Servers");
-            sw.CreateTable("Metric Servers",
-                           (await client.Cluster.Metrics.Server.GetAsync()).Select(a => new
-                           {
-                               a.Id,
-                               a.Server,
-                               a.Port,
-                               a.Type,
-                               a.Disable
-                           }));
-        }
-
-        if (settings.Cluster.IncludeSdn)
-        {
-            ReportGlobal("Cluster: SDN");
-            sw.CreateTable("SDN Zones",
-                           (await client.Cluster.Sdn.Zones.GetAsync()).Select(a => new
-                           {
-                               a.Zone,
-                               a.Type,
-                               a.Mtu,
-                               a.Nodes,
-                               a.Bridge,
-                               a.Controller,
-                               a.Ipam,
-                               a.Dns,
-                               a.State
-                           }));
-
-            sw.CreateTable("SDN Vnets",
-                           (await client.Cluster.Sdn.Vnets.GetAsync()).Select(a => new
-                           {
-                               a.Vnet,
-                               a.Zone,
-                               a.Type,
-                               a.Tag,
-                               a.Alias,
-                               a.VlanAware,
-                               a.State
-                           }));
-
-            sw.CreateTable("SDN Controllers",
-                           (await client.Cluster.Sdn.Controllers.GetAsync()).Select(a => new
-                           {
-                               a.Controller,
-                               a.Type,
-                               a.Asn,
-                               a.Peers,
-                               a.Node,
-                               a.State
-                           }));
-
-            sw.CreateTable("SDN Ipams",
-                           (await client.Cluster.Sdn.Ipams.GetAsync()).Select(a => new
-                           {
-                               a.Ipam,
-                               a.Type,
-                           }));
-
-            var subnets = new List<dynamic>();
-            foreach (var vnet in await client.Cluster.Sdn.Vnets.GetAsync())
+            foreach (var subnet in await client.Cluster.Sdn.Vnets[vnet.Vnet].Subnets.GetAsync())
             {
-                foreach (var subnet in await client.Cluster.Sdn.Vnets[vnet.Vnet].Subnets.GetAsync())
+                subnets.Add(new
                 {
-                    subnets.Add(new
-                    {
-                        Vnet = vnet.Vnet,
-                        subnet.Subnet,
-                        subnet.Type,
-                        subnet.Gateway,
-                        subnet.Snat,
-                    });
-                }
+                    vnet.Vnet,
+                    subnet.Subnet,
+                    subnet.Type,
+                    subnet.Gateway,
+                    subnet.Snat,
+                    subnet.DhcpDnsServer,
+                    subnet.DnsZonePrefix,
+                });
             }
-            sw.CreateTable("SDN Subnets", subnets);
         }
+        sw.CreateTable("SDN Subnets", subnets);
 
-        if (settings.Cluster.IncludeMapping)
+        ReportGlobal("Cluster: Mapping");
+        sw.CreateTable("Mapping Dir",
+                       (await client.Cluster.Mapping.Dir.GetAsync()).Select(a => new
+                       {
+                           a.Id,
+                           DescriptionWrap = a.Description,
+                           MapWrap = a.Map.JoinAsString(Environment.NewLine)
+                       }));
+
+        sw.CreateTable("Mapping PCI",
+                       (await client.Cluster.Mapping.Pci.GetAsync()).Select(a => new
+                       {
+                           a.Id,
+                           DescriptionWrap = a.Description,
+                           MapWrap = a.Map.JoinAsString(Environment.NewLine)
+                       }));
+
+        sw.CreateTable("Mapping USB",
+                       (await client.Cluster.Mapping.Usb.GetAsync()).Select(a => new
+                       {
+                           a.Id,
+                           DescriptionWrap = a.Description,
+                           MapWrap = a.Map.JoinAsString(Environment.NewLine)
+                       }));
+
+        ReportGlobal("Cluster: Pools");
+        var poolItems = new List<dynamic>();
+        foreach (var pool in await client.Pools.GetAsync())
         {
-            ReportGlobal("Cluster: Mapping");
-            sw.CreateTable("Mapping Dir",
-                           (await client.Cluster.Mapping.Dir.GetAsync()).Select(a => new
-                           {
-                               a.Id,
-                               a.Description,
-                               Map = a.Map.JoinAsString(Environment.NewLine)
-                           }));
-
-            sw.CreateTable("Mapping PCI",
-                           (await client.Cluster.Mapping.Pci.GetAsync()).Select(a => new
-                           {
-                               a.Id,
-                               a.Description,
-                               Map = a.Map.JoinAsString(Environment.NewLine)
-                           }));
-
-            sw.CreateTable("Mapping USB",
-                           (await client.Cluster.Mapping.Usb.GetAsync()).Select(a => new
-                           {
-                               a.Id,
-                               a.Description,
-                               Map = a.Map.JoinAsString(Environment.NewLine)
-                           }));
-        }
-
-        if (settings.Cluster.IncludePools)
-        {
-            ReportGlobal("Cluster: Pools");
-            var poolItems = new List<dynamic>();
-            foreach (var pool in await client.Pools.GetAsync())
+            foreach (var member in (await client.Pools[pool.Id].GetAsync()).Members)
             {
-                foreach (var member in (await client.Pools[pool.Id].GetAsync()).Members)
+                poolItems.Add(new
                 {
-                    poolItems.Add(new
-                    {
-                        Pool = pool.Id,
-                        pool.Comment,
-                        member.Type,
-                        member.Description,
-                        member.VmId,
-                        member.Storage,
-                        member.Node,
-                        member.Status,
-                    });
-                }
+                    Pool = pool.Id,
+                    member.Type,
+                    member.Node,
+                    member.VmId,
+                    member.Storage,
+                    member.Status,
+                    DescriptionWrap = member.Description,
+                    CommentWrap = pool.Comment,
+                });
             }
-
-            sw.CreateTable("Pools", poolItems, tbl =>
-            {
-                sw.ApplyNodeLinks(tbl);
-                sw.ApplyVmIdLinks(tbl);
-                sw.ApplyStorageLinks(tbl);
-            });
         }
 
-        if (settings.Cluster.IncludeHa)
-        {
-            ReportGlobal("Cluster: HA");
+        sw.CreateTable("Pools",
+                       poolItems,
+                       tbl =>
+                       {
+                           sw.ApplyNodeLinks(tbl);
+                           sw.ApplyVmIdLinks(tbl);
+                           sw.ApplyStorageLinks(tbl);
+                       });
 
-            sw.CreateTable("HA Resources",
-                           (await client.Cluster.Ha.Resources.GetAsync()).Select(a => new
+        ReportGlobal("Cluster: HA");
+        sw.CreateTable("HA Resources",
+                       (await client.Cluster.Ha.Resources.GetAsync()).Select(a => new
+                       {
+                           a.Sid,
+                           a.Type,
+                           a.State,
+                           a.Group,
+                           a.Failback,
+                           a.MaxRestart,
+                           a.MaxRelocate,
+                           a.Comment
+                       }));
+
+        if (haGroupsSupported)
+        {
+            sw.CreateTable("HA Groups",
+                           (await client.Cluster.Ha.Groups.GetAsync()).Select(a => new
                            {
-                               a.Sid,
-                               a.Type,
-                               a.State,
                                a.Group,
-                               a.Failback,
-                               a.MaxRestart,
-                               a.MaxRelocate,
+                               a.Nodes,
+                               a.Nofailback,
+                               a.Restricted,
                                a.Comment
                            }));
-
-            if (haGroupsSupported)
-            {
-                sw.CreateTable("HA Groups",
-                               (await client.Cluster.Ha.Groups.GetAsync()).Select(a => new
-                               {
-                                   a.Group,
-                                   a.Nodes,
-                                   a.Nofailback,
-                                   a.Restricted,
-                                   a.Comment
-                               }));
-            }
-
-            sw.CreateTable("HA Status",
-                           (await client.Cluster.Ha.Status.Current.GetAsync()).Select(a => new
-                           {
-                               a.Id,
-                               a.Type,
-                               a.Status,
-                               a.Node,
-                               a.Sid,
-                               a.State,
-                               a.CrmState,
-                               a.Quorate,
-                           }));
         }
 
-        if (settings.Cluster.AuditLog.Enabled)
-        {
-            var logs = await client.Cluster.Log.GetAsync(max: settings.Cluster.AuditLog.MaxCount > 0
-                                                            ? settings.Cluster.AuditLog.MaxCount
-                                                            : null);
-            sw.CreateTable("Audit Log",
-                           (settings.Cluster.AuditLog.OnlyErrors
-                            ? logs.Where(a => a.Severity <= 3)
-                            : logs)
-                           .Select(a => new
-                           {
-                               a.TimeDate,
-                               a.Node,
-                               a.User,
-                               a.Service,
-                               a.SeverityEnum,
-                               a.Message,
-                           }));
-        }
+        sw.CreateTable("HA Status",
+                       (await client.Cluster.Ha.Status.Current.GetAsync()).Select(a => new
+                       {
+                           a.Id,
+                           a.Type,
+                           a.Status,
+                           a.Node,
+                           a.Sid,
+                           a.State,
+                           a.CrmState,
+                           a.RequestState,
+                           QuorateFlag = ToX(a.Quorate),
+                           FailbackFlag = ToX(a.Failback),
+                           a.MaxRelocate,
+                           a.MaxRestart,
+                           Timestamp = FromUnixTime(a.Timestamp),
+                       }));
 
         sw.WriteIndex();
         sw.AdjustColumns();

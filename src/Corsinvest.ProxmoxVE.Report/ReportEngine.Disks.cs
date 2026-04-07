@@ -4,57 +4,61 @@
  */
 
 using ClosedXML.Excel;
+using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Vm;
 
 namespace Corsinvest.ProxmoxVE.Report;
 
 public partial class ReportEngine
 {
-    private record VmDiskRow(long VmId,
-                             string Name,
-                             string Node,
-                             string Type,
-                             string Status,
-                             VmDisk Disk);
-
-    private Task AddDisksDataAsync(XLWorkbook workbook)
+    private void AppendDiskRows(XLWorkbook workbook, ClusterResource vm, IEnumerable<VmDisk> disks)
     {
-        var sw = CreateSheetWriter(workbook, "Disks");
+        var rows = disks.Select(a =>
+        {
+            var storageRes = _resources.FirstOrDefault(r => r.ResourceType == ClusterResourceType.Storage
+                                                            && r.Node == vm.Node
+                                                            && r.Storage == a.Storage);
+            return new
+            {
+                vm.Node,
+                vm.VmId,
+                VmName = vm.Name,
+                VmType = vm.Type,
+                VmStatus = vm.Status,
+                a.Id,
+                a.Storage,
+                StorageType = storageRes?.PluginType,
+                StorageSharedFlag = ToX(storageRes?.Shared),
+                a.FileName,
+                SizeGB = ToGB(a.SizeBytes),
 
-        sw.ReserveIndexRows(1);
+                StorageUsagePct = storageRes is { DiskSize: > 0 }
+                                    ? (double)a.SizeBytes / storageRes.DiskSize
+                                    : (double?)null,
 
-        sw.CreateTable("VM Disks",
-                       _vmDiskRows.Select(a => new
-                       {
-                           a.Node,
-                           a.VmId,
-                           a.Name,
-                           a.Type,
-                           a.Status,
-                           a.Disk.Id,
-                           a.Disk.Storage,
-                           a.Disk.FileName,
-                           SizeGB = ToGB(a.Disk.SizeBytes),
-                           a.Disk.Cache,
-                           a.Disk.Backup,
-                           a.Disk.IsUnused,
-                           a.Disk.Device,
-                           a.Disk.MountPoint,
-                           a.Disk.MountSourcePath,
-                           a.Disk.Passthrough,
-                           a.Disk.Prealloc,
-                           a.Disk.Format,
-                       }),
-                       tbl =>
-                       {
-                           sw.ApplyNodeLinks(tbl);
-                           sw.ApplyVmIdLinks(tbl);
-                           sw.ApplyStorageLinks(tbl);
-                       });
+                a.Cache,
+                BackupFlag = ToX(a.Backup),
+                IsUnusedFlag = ToX(a.IsUnused),
+                a.Device,
+                a.MountPoint,
+                a.MountSourcePath,
+                PassthroughFlag = ToX(a.Passthrough),
+                a.Prealloc,
+                a.Format,
+            };
+        })
+        .OrderBy(a => a.Id)
+        .ToList();
 
-        sw.WriteIndex();
-        sw.AdjustColumns();
-
-        return Task.CompletedTask;
+        _diskSw ??= CreateSheetWriter(workbook, "Disks");
+        _diskSw.CreateOrAddTable(ref _diskTable,
+                                 null,
+                                 rows,
+                                 tbl =>
+                                 {
+                                     _diskSw.ApplyNodeLinks(tbl);
+                                     _diskSw.ApplyVmIdLinks(tbl);
+                                     _diskSw.ApplyStorageLinks(tbl);
+                                 });
     }
 }

@@ -18,7 +18,7 @@ public class SettingsNode
     /// <summary>
     /// Include RRD metrics data
     /// </summary>
-    public SettingsRrdData RrdData { get; set; } = new();
+    public SettingsRrdData RrdData { get; set; } = new() { MaxParallelRequests = 3 };
 
     /// <summary>
     /// Task history settings
@@ -26,48 +26,17 @@ public class SettingsNode
     public SettingsTask Tasks { get; set; } = new();
 
     /// <summary>
-    /// Include network interfaces
-    /// </summary>
-    public bool IncludeNetwork { get; set; } = true;
-
-    /// <summary>
     /// Disk settings
     /// </summary>
     public SettingsDisk Disk { get; set; } = new();
 
     /// <summary>
-    /// Include system services
+    /// Include APT repositories, available updates and installed package versions
     /// </summary>
-    public bool IncludeServices { get; set; } = true;
+    public bool IncludeApt { get; set; } = true;
 
     /// <summary>
-    /// Firewall settings
-    /// </summary>
-    public SettingsFirewall Firewall { get; set; } = new();
-
-    /// <summary>
-    /// Include SSL certificates
-    /// </summary>
-    public bool IncludeSslCertificates { get; set; } = true;
-
-    /// <summary>
-    /// Include APT available updates
-    /// </summary>
-    public bool IncludeAptUpdates { get; set; } = true;
-
-    /// <summary>
-    /// Include APT repositories
-    /// </summary>
-    public bool IncludeAptRepositories { get; set; } = true;
-
-    /// <summary>
-    /// Include APT installed package versions
-    /// </summary>
-    public bool IncludeAptVersions { get; set; }
-
-
-    /// <summary>
-    /// Include replication jobs
+    /// Include replication jobs global sheet
     /// </summary>
     public bool IncludeReplication { get; set; } = true;
 

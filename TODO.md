@@ -8,3 +8,5 @@
 
 - [ ] **Thin/Thick per VM** — show disk provisioning type per disk in VM detail sheet
 - [ ] **Charts** *(idea)* — add Excel charts for CPU/memory/disk usage trends from RRD data
+
+

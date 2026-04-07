@@ -11,22 +11,12 @@ namespace Corsinvest.ProxmoxVE.Report;
 public class SettingsDisk
 {
     /// <summary>
-    /// Include physical disk list
+    /// Include disk detail: physical disk list, ZFS pools and directory mount points
     /// </summary>
-    public bool Enabled { get; set; } = true;
+    public bool IncludeDiskDetail { get; set; } = true;
 
     /// <summary>
-    /// Include SMART health data per disk (one API call per disk)
+    /// Include SMART health data per disk (one API call per disk — can be slow)
     /// </summary>
     public bool IncludeSmartData { get; set; }
-
-    /// <summary>
-    /// Include ZFS pool status and vdev tree
-    /// </summary>
-    public bool IncludeZfs { get; set; } = true;
-
-    /// <summary>
-    /// Include directory mount points
-    /// </summary>
-    public bool IncludeDirectory { get; set; } = true;
 }

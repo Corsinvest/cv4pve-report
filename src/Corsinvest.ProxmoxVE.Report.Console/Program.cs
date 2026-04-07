@@ -54,9 +54,13 @@ cmdExport.SetAction(async (action) =>
     var progress = new Progress<ReportProgress>(p =>
     {
         if (Console.IsOutputRedirected)
+        {
             Console.Out.WriteLine(p);
+        }
         else
+        {
             Console.Write($"\r{p,-60}");
+        }
     });
 
     var output = action.GetValue(optOutput);

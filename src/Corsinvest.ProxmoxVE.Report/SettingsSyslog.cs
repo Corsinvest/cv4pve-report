@@ -16,22 +16,34 @@ public class SettingsSyslog
     public bool Enabled { get; set; }
 
     /// <summary>
-    /// Maximum number of lines to return (0 = unlimited)
+    /// Maximum number of entries to return (0 = unlimited)
     /// </summary>
-    public int MaxCount { get; set; } = 500;
+    public int MaxEntries { get; set; } = 500;
+
+    internal int? Limit
+        => SinceUnix.HasValue
+            ? null
+            : MaxEntries > 0
+                ? MaxEntries
+                : 500;
 
     /// <summary>
-    /// Filter by service name (e.g. pvedaemon, pveproxy)
-    /// </summary>
-    public string Service { get; set; } = "";
-
-    /// <summary>
-    /// Display log since this date (e.g. 2024-01-01)
+    /// Display Syslog since this date
     /// </summary>
     public DateOnly? Since { get; set; }
 
     /// <summary>
-    /// Display log until this date (e.g. 2024-01-01)
+    /// Display Syslog until this date
     /// </summary>
     public DateOnly? Until { get; set; }
+
+    internal int? SinceUnix
+            => Since.HasValue
+                ? (int)new DateTimeOffset(Since.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).ToUnixTimeSeconds()
+                : null;
+
+    internal int? UntilUnix
+        => Until.HasValue
+            ? (int)new DateTimeOffset(Until.Value.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero).ToUnixTimeSeconds()
+            : null;
 }

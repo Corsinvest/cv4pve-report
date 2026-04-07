@@ -1,4 +1,5 @@
 /*
+using DocumentFormat.OpenXml.Spreadsheet;
  * SPDX-FileCopyrightText: Copyright Corsinvest Srl
  * SPDX-License-Identifier: GPL-3.0-only
  */
@@ -15,19 +16,6 @@ internal partial class SheetWriter(IXLWorksheet ws, Dictionary<string, string> s
 
     public int Row { get; set; } = 1;
     public int Col { get; set; } = 1;
-    public bool SkipEmptyCollections { get; set; }
-    public string SheetName => ws.Name;
-
-    private static readonly HashSet<string> WrapColumnNames = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "Description",
-        "Notes",
-        "Comments",
-        "Tags",
-        "AllowedTags",
-        "Title",
-        "Content"
-    };
 
     [GeneratedRegex("(?<=[a-z])([A-Z])|(?<=[A-Z])([A-Z][a-z])")]
     private static partial Regex PascalCaseSplitRegex();
@@ -35,20 +23,35 @@ internal partial class SheetWriter(IXLWorksheet ws, Dictionary<string, string> s
     private static string PascalCaseToWords(string name)
         => PascalCaseSplitRegex().Replace(name, " $1$2").Trim();
 
+    private static bool IsGB(string name) => name.EndsWith("GB", StringComparison.OrdinalIgnoreCase);
+    private static bool IsMB(string name) => name.EndsWith("MB", StringComparison.OrdinalIgnoreCase);
+    private static bool IsPct(string name) => name.EndsWith("Pct", StringComparison.OrdinalIgnoreCase);
+    private static bool IsWrap(string name) => name.EndsWith("Wrap", StringComparison.OrdinalIgnoreCase);
+    private static bool IsDateOnly(string name) => name.EndsWith("Date", StringComparison.OrdinalIgnoreCase);
+    private static bool IsFlag(string name) => name.EndsWith("Flag", StringComparison.OrdinalIgnoreCase);
+
     public void AdjustColumns() => ws.Columns().AdjustToContents();
+
+    public void WriteBackLink(string label, string linkKey)
+    {
+        if (!sheetLinks.TryGetValue(linkKey, out var target)) { return; }
+        var cell = ws.Cell(1, 2);
+        cell.Value = $"← {label}";
+        cell.SetHyperlink(new XLHyperlink($"'{target}'!A1"));
+        cell.Style.Font.SetFontColor(XLColor.Blue);
+        cell.Style.Font.SetUnderline(XLFontUnderlineValues.Single);
+        cell.Style.Font.SetItalic(true);
+    }
 
     /// <summary>Writes a key-value block starting at current Row/Col and advances Row.</summary>
     public void WriteKeyValue(string title, Dictionary<string, object?> items)
     {
-        if (SkipEmptyCollections && items.Count == 0) { return; }
-
         var startRow = Row;
         var col = Col;
 
         ws.Cell(Row, col).Value = title;
         ws.Cell(Row, col).Style.Font.SetBold(true);
         ws.Cell(Row, col).Style.Font.SetFontSize(12);
-        ws.Range(Row, col, Row, col + 1).Merge();
         Row++;
 
         foreach (var (key, value) in items)
@@ -56,8 +59,19 @@ internal partial class SheetWriter(IXLWorksheet ws, Dictionary<string, string> s
             ws.Cell(Row, col).Value = key;
             ws.Cell(Row, col).Style.Font.SetBold(true);
             var valueCell = ws.Cell(Row, col + 1);
-            valueCell.Value = value?.ToString() ?? "";
-            if (key.Equals("Node", StringComparison.OrdinalIgnoreCase) && value is string nodeName)
+            var strValue = value?.ToString() ?? "";
+            valueCell.Value = value switch
+            {
+                bool b => b ? "X" : "",
+                double or float or int or long => Convert.ToDouble(value),
+                _ => strValue
+            };
+
+            if (value is bool)
+            {
+                valueCell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            }
+            else if (key.Equals("Node", StringComparison.OrdinalIgnoreCase) && value is string nodeName)
             {
                 SetHyperlink(valueCell, $"node:{nodeName}");
             }
@@ -81,6 +95,7 @@ internal partial class SheetWriter(IXLWorksheet ws, Dictionary<string, string> s
     /// <summary>Writes the index at the previously reserved rows.</summary>
     public void WriteIndex()
     {
+        if (_indexStartRow == 0) { return; }
         var r = _indexStartRow;
         var c = Col;
         ws.Cell(r, c).Value = "Index";
@@ -97,60 +112,86 @@ internal partial class SheetWriter(IXLWorksheet ws, Dictionary<string, string> s
         }
     }
 
-    /// <summary>Creates a table at current Row/Col, registers it in the index, and advances Row.</summary>
-    public IXLTable CreateTable<T>(string title, IEnumerable<T> data, Action<IXLTable>? configure = null)
+    public void CreateOrAddTable<T>(ref IXLTable? table, string? title, IEnumerable<T> data, Action<IXLTable>? configure = null)
     {
-        if (SkipEmptyCollections && !data.Any()) { return null!; }
+        if (table == null)
+        {
+            table = CreateTable(title, data.ToList(), configure);
+        }
+        else
+        {
+            AppendData(table, data.ToList(), configure);
+        }
+    }
 
-        _tableIndex.Add((title, Row));
-        ws.Cell(Row, Col).Value = title;
-        ws.Cell(Row, Col).Style.Font.SetBold(true);
-        Row++;
+    /// <summary>Creates a table at current Row/Col, registers it in the index, and advances Row.</summary>
+    public IXLTable CreateTable<T>(string? title, IEnumerable<T> data, Action<IXLTable>? configure = null)
+    {
+        if (title != null)
+        {
+            _tableIndex.Add((title, Row));
+            ws.Cell(Row, Col).Value = title;
+            ws.Cell(Row, Col).Style.Font.SetBold(true);
+            Row++;
+        }
 
         var table = ws.Cell(Row, Col).InsertTable(data, true);
         table.AutoFilter.IsEnabled = true;
 
         foreach (var col in table.Fields)
         {
-            if (col.Name.EndsWith("Percentage", StringComparison.OrdinalIgnoreCase))
+            var dataCol = table.DataRange.Column(col.Index + 1);
+
+            if (IsPct(col.Name))
             {
-                col.HeaderCell.Value = PascalCaseToWords(col.Name[..^"Percentage".Length]) + " %";
-                table.DataRange.Column(col.Index + 1).Style.NumberFormat.Format = "0.00%";
+                col.HeaderCell.Value = PascalCaseToWords(col.Name[..^"Pct".Length]) + " %";
+                dataCol.Style.NumberFormat.Format = "0.00%";
             }
-            else if (col.Name.EndsWith("GB", StringComparison.OrdinalIgnoreCase) ||
-                     col.Name.EndsWith("MB", StringComparison.OrdinalIgnoreCase))
+            else if (IsGB(col.Name) || IsMB(col.Name))
             {
                 col.HeaderCell.Value = PascalCaseToWords(col.Name);
-                table.DataRange.Column(col.Index + 1).Style.NumberFormat.Format = "#,##0.00";
+                dataCol.Style.NumberFormat.Format = "#,##0.00";
+            }
+            else if (IsWrap(col.Name))
+            {
+                col.HeaderCell.Value = PascalCaseToWords(col.Name[..^"Wrap".Length]);
+                table.Worksheet.Column(dataCol.FirstCell().Address.ColumnNumber).Width = 40;
+                dataCol.Style.Alignment.WrapText = true;
+            }
+            else if (IsFlag(col.Name))
+            {
+                col.HeaderCell.Value = PascalCaseToWords(col.Name[..^"Flag".Length]);
+                dataCol.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
             }
             else
             {
                 col.HeaderCell.Value = PascalCaseToWords(col.Name);
             }
 
-            var dataCol = table.DataRange.Column(col.Index + 1);
-            if (WrapColumnNames.Contains(col.Name))
+            if (dataCol.FirstCell().Value.IsDateTime)
             {
-                table.Worksheet.Column(dataCol.FirstCell().Address.ColumnNumber).Width = 40;
-                dataCol.Style.Alignment.WrapText = true;
-            }
-
-            var firstCell = dataCol.FirstCell();
-            if (firstCell.Value.IsDateTime) { dataCol.Style.NumberFormat.Format = "dd/MM/yyyy HH:mm:ss"; }
-
-            foreach (var cell in dataCol.Cells())
-            {
-                if (cell.Value.IsBoolean)
-                {
-                    cell.Value = cell.Value.GetBoolean() ? "X" : "";
-                    cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                }
+                dataCol.Style.NumberFormat.Format = IsDateOnly(col.Name)
+                    ? "dd/MM/yyyy"
+                    : "dd/MM/yyyy HH:mm:ss";
             }
         }
 
         configure?.Invoke(table);
         Row += table.RowCount() + 2;
         return table;
+    }
+
+    /// <summary>Appends data to an existing table. Column formats are inherited; only booleans need fixing.</summary>
+    public void AppendData<T>(IXLTable table, IEnumerable<T> data, Action<IXLTable>? configure = null)
+    {
+        var beforeCount = table.RowCount();
+        table.AppendData(data);
+        var afterCount = table.RowCount();
+
+        if (afterCount <= beforeCount) { return; }
+
+        configure?.Invoke(table);
+        Row += afterCount - beforeCount;
     }
 
     private void SetHyperlink(IXLCell cell, string linkKey)
@@ -172,7 +213,9 @@ internal partial class SheetWriter(IXLWorksheet ws, Dictionary<string, string> s
         {
             var key = getKey(cell);
             if (!string.IsNullOrWhiteSpace(key))
+            {
                 sheetLinks[key] = $"{ws.Name}!A{cell.Address.RowNumber}";
+            }
         }
     }
 
@@ -213,27 +256,20 @@ internal partial class SheetWriter(IXLWorksheet ws, Dictionary<string, string> s
 
     public void ApplyReplicationLinks(IXLTable table)
     {
-        ApplyColumnLinks(table, "Guest", cell => $"vm:{cell.Value}");
+        ApplyNodeLinks(table);
+        ApplyVmIdLinks(table);
         ApplyColumnLinks(table, "Source", cell => $"node:{cell.Value}");
         ApplyColumnLinks(table, "Target", cell => $"node:{cell.Value}");
     }
 
-    public void ApplyStorageLinks(IXLTable table, string node)
-        => ApplyColumnLinks(table, "Storage", cell => $"storage:{node}:{cell.Value}");
-
     public void ApplyStorageLinks(IXLTable table)
-        => ApplyColumnLinks(table, "Storage", cell =>
-        {
-            var storage = cell.Value.ToString();
-            if (string.IsNullOrWhiteSpace(storage)) { return null; }
-            var nodeCol = table.Fields.FirstOrDefault(f => f.Name == "Node");
-            var node = nodeCol != null
-                ? table.DataRange.Column(nodeCol.Index + 1).Cell(cell.Address.RowNumber - table.DataRange.FirstRow().RowNumber() + 1).Value.ToString()
-                : string.Empty;
-            return $"storage:{node}:{storage}";
-        });
+        => ApplyColumnLinks(table,
+                            "Storage",
+                            cell => string.IsNullOrWhiteSpace(cell.Value.ToString())
+                                    ? null
+                                    : "storage:link");
+
 
     public void RegisterNetworkLinks(IXLTable table, string node)
         => RegisterRowLinks(table, "Interface", cell => $"node:{node}:network:{cell.Value}");
-
 }

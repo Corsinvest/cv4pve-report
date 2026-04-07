@@ -47,78 +47,45 @@ RVTools is a pure inventory tool for VMware — it exports infrastructure data t
 
 | Feature | RVTools | [cv4pve-report](https://github.com/Corsinvest/cv4pve-report) | [cv4pve-diag](https://github.com/Corsinvest/cv4pve-diag) |
 |---------|:-------:|:-------------:|:-----------:|
-| **Inventory** | | | |
 | VM / CT inventory | ✓ | ✓ | |
 | Node / host inventory | ✓ | ✓ | |
-| CPU details per VM | ✓ | ✓ | |
-| Memory details per VM | ✓ | ✓ | |
-| Disk inventory | ✓ | ✓ | |
-| Guest disk partitions | ✓ | ✓ | |
+| CPU / memory / disk details | ✓ | ✓ | |
 | Network inventory (NICs, IPs, MACs) | ✓ | ✓ | |
 | Storage / datastore inventory | ✓ | ✓ | |
 | Snapshot inventory | ✓ | ✓ | |
+| Snapshot with RAM state | ✓ | ✓ | |
 | Resource pools | ✓ | ✓ | |
 | Cluster configuration | ✓ | ✓ | |
 | License / subscription inventory | ✓ | ✓ | |
-| SSL certificates | ✓ | ✓ | |
-| RRD metrics (CPU / memory / disk / net) | ✓ | ✓ | |
+| SSL certificates | | ✓ | |
+| RRD metrics (CPU / memory / disk / net) | | ✓ | |
+| Guest disk partitions (via agent) | ✓ | ✓ | |
+| Guest OS info / hostname (via agent) | | ✓ | |
 | SMART data per disk | | ✓ | |
 | Backup job configuration | | ✓ | |
-| Replication configuration | | ✓ | |
+| Replication status | | ✓ | |
 | HA configuration | | ✓ | |
-| Firewall rules export | | ✓ | |
+| Firewall rules | | ✓ | |
 | SDN zones / vnets | | ✓ | |
-| Users / roles / ACL / TFA | | ✓ | |
-| API tokens | | ✓ | |
+| Users / roles / ACL / TFA / API tokens | | ✓ | |
 | APT packages / updates | | ✓ | |
-| Syslog / audit log | | ✓ | |
-| **Diagnostics** | | | |
-| CD-ROM / floppy connected | ✓ | | ✓ |
-| Old / missing snapshots | ✓ | | ✓ |
-| Snapshot with RAM state | ✓ | | ✓ |
-| Agent / VMware Tools version & status | ✓ | ✓ | ✓ |
-| Datastore / disk usage thresholds | ✓ | | ✓ |
-| Orphan disk images | ✓ | | ✓ |
-| Orphan backups | ✓ | | ✓ |
-| vCPU overcommit per core | ✓ | | ✓ |
-| Zombie VM / orphan VM | ✓ | | ✓ |
-| Duplicate MAC address | | | ✓ |
-| CPU / memory / network usage thresholds | | | ✓ |
-| Health score (composite CPU + RAM) | | | ✓ |
-| Cluster quorum / HA health | | | ✓ |
-| Node offline / version mismatch | | | ✓ |
-| Node reboot required (kernel mismatch) | | | ✓ |
-| DNS / NTP / timezone / APT drift between nodes | | | ✓ |
-| NIC inactive / MTU mismatch between nodes | | | ✓ |
-| CPU level mismatch between nodes | | | ✓ |
-| IOMMU not enabled | | | ✓ |
-| ZFS pool / vdev health and errors | | | ✓ |
-| Thin provisioning overcommit | | | ✓ |
-| SMART failures / disk temperature | | | ✓ |
-| Backup storage not reachable from all nodes | | | ✓ |
-| VM misconfigurations (VirtIO, cache, CPU type, passthrough…) | | | ✓ |
-| Pending config changes (reboot required) | | | ✓ |
-| LXC security (privileged, nesting, raw config…) | | | ✓ |
-| Missing backup / no recent backup | | | ✓ |
-| Firewall / security issues (TFA, ACL, tokens) | | | ✓ |
-| Snapshot age / count violations | | | ✓ |
-| PSI pressure (PVE 9+) | | | ✓ |
-| Severity levels (Critical / Warning / Info) | | | ✓ |
-| Ignore rules for known issues | | | ✓ |
+| Syslog (all nodes, parsed into columns) | | ✓ | |
+| Cluster log & cluster tasks | | ✓ | |
+| Health checks & diagnostics | | | ✓ |
 
 > **cv4pve-report** shows you *what* is in your infrastructure.
-> **cv4pve-diag** tells you *what is wrong* with it.
+> **[cv4pve-diag](https://github.com/Corsinvest/cv4pve-diag)** tells you *what is wrong* with it.
 
 ---
 
 ## Features
 
-- **Single `.xlsx` file** — one sheet per node, VM and storage
-- **Fully navigable** — summary rows link to detail sheets; detail sheets have a clickable index
-- **Cluster** — users, API tokens, TFA, groups, roles, ACL, firewall, domains, backup jobs, replication
-- **Nodes** — services, network, disks, SMART, replication, RRD metrics, APT updates, firewall, SSL certificates, tasks
-- **VMs/CTs** — config, network, disks, RRD metrics, backups, snapshots, firewall, tags, tasks, QEMU agent info
-- **Storages** — content inventory, RRD metrics
+- **Single `.xlsx` file** — global sheets plus a dedicated detail sheet per node, VM and container
+- **Fully navigable** — summary rows link to detail sheets; detail sheets have a `← Back` link and a clickable index
+- **Cluster** — users, API tokens, TFA, groups, roles, ACL, firewall options, domains, backup jobs, HA, SDN, pools
+- **Nodes** — services, network, disks, SMART, ZFS, APT, SSL certificates, replication, syslog, firewall logs, tasks
+- **VMs/CTs** — config, network, disks, snapshots, firewall logs, tasks, QEMU agent info
+- **Global sheets** — Firewall (rules/aliases/ipsets), RRD Nodes, RRD Storage, RRD Guests, Syslog, Cluster Log, Cluster Tasks, Replication, Network, Disks, Partitions, Snapshots, Storage Content, Backups
 - **Flexible filtering** — `@all`, pools, tags, nodes, ID ranges, wildcards, exclusions (same syntax as cv4pve-autosnap)
 - **API token** support, cross-platform (Windows, Linux, macOS), no root access required
 
@@ -161,105 +128,105 @@ cv4pve-report --host=pve.local --api-token=report@pve!token=uuid export
 
 ## Report Contents
 
-### Navigation
+### Sheet Order
 
-Every resource reference in the report is a clickable hyperlink:
+| # | Sheet | Description |
+|---|-------|-------------|
+| 1 | **Summary** | Report metadata, filters, hyperlinked table of contents |
+| 2 | **Cluster** | Cluster-wide configuration and security |
+| 3 | **Nodes** | Node overview table → links to node detail sheets |
+| 4 | **Vms** | VM overview table → links to VM detail sheets |
+| 5 | **Containers** | Container overview table → links to CT detail sheets |
+| 6 | **Disks** | Global physical disk inventory across all nodes |
+| 7 | **Partitions** | Guest disk partitions via QEMU agent |
+| 8 | **Snapshots** | Global snapshot inventory across all VMs/CTs |
+| 9 | **Network** | Global network inventory (node interfaces + VM/CT NICs) |
+| 10 | **Storages** | Storage overview |
+| 11 | **Storage Content** | All storage files/images with size and VM ID links *(if enabled)* |
+| 12 | **Backups** | All backup files across all storages *(if enabled)* |
+| 13 | **Firewall** | Global firewall rules, aliases and IP sets *(if enabled)* |
+| 14 | **Replication** | Global replication job status *(if enabled)* |
+| 15 | **RRD Nodes** | Historical metrics for all nodes *(if enabled)* |
+| 16 | **RRD Storage** | Historical metrics for all storages *(if enabled)* |
+| 17 | **RRD Guests** | Historical metrics for all VMs/CTs *(if enabled)* |
+| 18 | **Syslog** | Parsed systemd journal across all nodes *(if enabled)* |
+| 19 | **Cluster Log** | Cluster event log *(if enabled)* |
+| 20 | **Cluster Tasks** | All recent tasks across the cluster *(if enabled)* |
+| … | **Node `<name>`** | Per-node detail sheets (at end) |
+| … | **VM `<id>`** | Per-VM detail sheets (at end) |
+| … | **CT `<id>`** | Per-CT detail sheets (at end) |
 
-| Where | What is linked |
-|-------|----------------|
-| Summary sheet | All sheets (nodes, VMs, storages, cluster) |
-| Nodes sheet | Each node row → node detail sheet |
-| VMs sheet | Each VM/CT row → VM detail sheet; Node column → node detail sheet |
-| Storages sheet | Each storage row → storage detail sheet; Node column → node detail sheet |
-| Node detail | Index at top → each table in the sheet; Replication Guest/Source/Target → VM and node sheets |
-| VM detail | Index at top → each table in the sheet; Node → node detail sheet |
-| Storage detail | Index at top → each table in the sheet; Content VM ID column → VM detail sheet |
-| Network sheet | Node column → node detail sheet; VM ID column → VM detail sheet |
-| Disks sheet | Node column → node detail sheet; VM ID column → VM detail sheet; Storage column → storage detail sheet |
-| Tasks tables | VM ID column → VM detail sheet |
-
-### Summary Sheet
-
-- Report generation timestamp
-- Filters applied (nodes, VMs, storages, RRD settings)
-- Hyperlinked table of contents to all sheets
 
 ### Cluster Sheet
 
 | Table | Contents |
 |-------|----------|
-| Status | Cluster nodes, quorum, IP addresses, versions, support level |
+| Status | Nodes, quorum, IP addresses, versions, support level |
 | Users | User list with expiry dates |
 | API Tokens | Token list with expiry dates |
-| Two-Factor Authentication | TFA type and count per user |
+| Two-Factor Authentication | TFA type per user |
 | Groups | Group membership |
 | Roles | Role privileges |
 | ACL | Access control entries |
-| Firewall Rules | Cluster-level rules |
 | Firewall Options | Global firewall policy |
 | Domains | Authentication realms |
-| Backup | Backup job configuration |
-| Replication | Replication job configuration |
-| Pools | Resource pools with member list (VM/CT and storage) |
-| Audit Log | Cluster-level event log *(if enabled)* |
+| Backup Jobs | Scheduled backup job configuration |
+| HA Resources / Groups / Status | High Availability configuration |
+| Metric Servers | External metric server configuration |
+| SDN Zones / VNets / Controllers | Software-defined networking |
+| Hardware Mappings | Directory, PCI and USB mappings |
+| Pools | Resource pools with member list |
 
-### Storages Sheet
+### Node Detail Sheet
 
-Overview table → dedicated sheet per storage containing:
-- **Content** — all files/images with size, metadata and VM ID links
-- **RRD Data** — usage over time *(if enabled)*
-
-### Nodes Sheet
-
-Overview table → dedicated sheet per node containing:
-- **Services** — system service status
-- **Network** — interface configuration with full IPv4/IPv6 details
-- **Disks** — physical disk list with partitions, health, SMART summary *(if enabled)*
-- **SMART Data** — SMART attributes per disk *(if enabled)*
-- **Directory** — filesystem mount points *(if enabled)*
-- **ZFS Pools** — ZFS pool list with health, usage and vdev tree *(if enabled)*
-- **Replication** — per-node replication jobs with links to source/target nodes and VMs
-- **RRD Data** — CPU, memory, network, disk metrics over time *(if enabled)*
-- **Apt Repository** — configured APT repositories *(if enabled)*
-- **Apt Update** — available package updates *(if enabled)*
-- **Package Version** — installed package versions *(if enabled)*
-- **Firewall Rules** — node-level rules *(if enabled)*
-- **Firewall Logs** — node firewall log *(if enabled)*
-- **SSL Certificates** — certificate validity and expiry
-- **Tasks** — recent task history with VM ID links *(if enabled)*
-- **Syslog** — system log *(if enabled)*
-
-### VMs Sheet
-
-Overview table → dedicated sheet per VM/CT containing:
-- **Agent OS Info** — OS name, kernel, version from QEMU agent *(if agent active)*
-- **Agent Network** — network interfaces reported by QEMU agent *(if agent active)*
-- **Agent Disks** — filesystems reported by QEMU agent *(if agent active)*
-- **Network** — interface configuration from VM config
-- **Disks** — disk list with storage and size
-- **RRD Data** — CPU, memory, network, disk metrics over time *(if enabled)*
-- **Backup** — backup files found in all storages
-- **Snapshots** — snapshot list
-- **Firewall Rules** — VM-level rules *(if enabled)*
-- **Firewall Logs** — VM firewall log *(if enabled)*
-- **Tasks** — recent task history *(if enabled)*
-
-### Network Sheet
-
-Global network inventory across all nodes and VMs/CTs:
+Per-node sheet (linked from Nodes list), with `← Back` to Nodes:
 
 | Table | Contents |
 |-------|----------|
-| Node Networks | All node interfaces with bridge ports, VLAN settings, CIDR (IPv4 and IPv6) |
-| VM Networks | All VM/CT network interfaces with MAC, bridge, VLAN, IP addresses, model, firewall flag and OS info |
+| Services | System service status |
+| Network | Interface configuration with IPv4/IPv6, bond, VLAN, OVS details |
+| Disks | Physical disk list *(if `Node.Disk.IncludeDiskDetail`)* |
+| SMART Data | SMART attributes per disk *(if `Node.Disk.IncludeSmartData`)* |
+| ZFS Pools / ZFS Pool Status | ZFS pool health, usage, vdev tree *(if `Node.Disk.IncludeDiskDetail`)* |
+| Directory | Filesystem mount points *(if `Node.Disk.IncludeDiskDetail`)* |
+| APT Repository / APT Update / Package Versions | APT info *(if `Node.IncludeApt`)* |
+| Firewall Logs | Node firewall log *(if `Firewall.Enabled`)* |
+| SSL Certificates | Certificate validity, expiry, fingerprint |
+| Tasks | Recent task history *(if `Node.Tasks.Enabled`)* |
 
-### Disks Sheet
+### VM / CT Detail Sheet
 
-Global disk inventory across all VMs/CTs:
+Per-VM/CT sheet (linked from Vms/Containers list), with `← Back` to list:
 
 | Table | Contents |
 |-------|----------|
-| VM Disks | All VM/CT disks with storage, size, cache, backup flag, unused flag, mount point |
+| Agent OS Info | OS name, kernel, version *(QEMU agent, running VMs only)* |
+| Agent Network | Network interfaces from QEMU agent |
+| Agent Disks | Filesystems from QEMU agent |
+| Network | Interface config from VM config |
+| Disks | Disk list with storage, size, cache |
+| Firewall Logs | VM/CT firewall log *(if `Firewall.Enabled`)* |
+| Tasks | Recent task history *(if `Guest.Tasks.Enabled`)* |
+
+### Global Sheets
+
+**Network** — one table for node interfaces, one for VM/CT NICs (MAC, bridge, VLAN, IPs, model)
+
+**Disks** — Storage Configuration (cluster-level), Storages (per-node usage), VM Disks (all VM/CT disks)
+
+**Partitions** — guest disk partitions read via QEMU agent (node, VM ID, mount point, filesystem, size, used)
+
+**Snapshots** — all snapshots across all VMs/CTs with RAM flag, size *(if available)*, date
+
+**Firewall** — three tables: Rules, Aliases, IP Sets — each row has ScopeType (cluster/node/qemu/lxc), Scope, ScopeName *(if enabled)*
+
+**Syslog** — one unified table, each row parsed: Node, Date, Time, Host, Service, PID, Message *(if enabled)*
+
+**Cluster Log** — cluster event log with TimeDate, Node, User, Service, Severity, Message *(if enabled)*
+
+**Cluster Tasks** — all recent tasks across the cluster with Node, Type, User, Status, StartTime, Duration *(if enabled)*
+
+**RRD Nodes / RRD Storage / RRD Guests** — single table per sheet with resource identifier columns + time-series metrics *(if enabled)*
 
 ---
 
@@ -277,92 +244,78 @@ cv4pve-report create-settings
 ```jsonc
 {
   "Cluster": {
-    "IncludeOptions": true,        // cluster options and configuration
-    "IncludeSecurity": true,       // users, API tokens, TFA, groups, roles, ACL, domains
-    "IncludeFirewall": true,       // cluster-level firewall rules and options
-    "IncludeBackupJobs": true,     // scheduled backup job configuration
-    "IncludeReplication": true,    // replication job configuration
-    "IncludeStorages": true,       // cluster-level storage list
-    "IncludeMetricServers": true,  // metric server configuration
-    "IncludeSdn": true,            // SDN zones, vnets and controllers
-    "IncludeMapping": true,        // hardware mappings (directory, PCI, USB)
-    "IncludePools": true,          // resource pools with member list
-    "IncludeHa": true,             // HA resources, groups and status
-    "AuditLog": {
-      "Enabled": false,            // cluster audit log (syslog-style events)
-      "OnlyErrors": false,         // show only error/warning events (severity <= 3)
+    "Log": {
+      "Enabled": false,            // cluster event log
       "MaxCount": 0                // 0 = unlimited
-    }
+    },
+    "IncludeTasks": true           // cluster tasks sheet
   },
   "Node": {
     "Names": "@all",               // @all | pve1 | pve1,pve2 | pve*
     "RrdData": {
       "Enabled": true,
       "TimeFrame": "Day",          // Hour | Day | Week | Month | Year
-      "Consolidation": "Average"   // Average | Maximum
+      "Consolidation": "Average",  // Average | Maximum
+      "MaxParallelRequests": 3
     },
     "Tasks": {
       "Enabled": true,
-      "OnlyErrors": false,         // show only failed tasks
-      "MaxCount": 0,               // 0 = unlimited
-      "Source": "all"              // all | local | active
-    },
-    "Firewall": {
-      "Enabled": true,
-      "LogMaxCount": 0,            // 0 = unlimited
-      "LogSince": null,            // DateOnly e.g. "2024-01-01"
-      "LogUntil": null
-    },
-    "Syslog": {
-      "Enabled": false,
+      "OnlyErrors": false,           // show only failed tasks
       "MaxCount": 500,
-      "Service": "",               // filter by service e.g. pvedaemon
-      "Since": null,               // DateOnly e.g. "2024-01-01"
-      "Until": null
+      "Source": "all"                // all | local | active
     },
     "Disk": {
-      "Enabled": true,             // physical disk list with partitions
-      "IncludeSmartData": false,   // SMART attributes per disk (one API call per disk)
-      "IncludeZfs": true,          // ZFS pool list and vdev tree
-      "IncludeDirectory": true     // filesystem mount points
+      "IncludeDiskDetail": true,   // physical disks, ZFS, directory mount points
+      "IncludeSmartData": false    // SMART attributes per disk (one API call per disk — slow)
     },
-    "IncludeNetwork": true,        // network interface configuration
-    "IncludeServices": true,       // system service status
-    "IncludeSslCertificates": true,// SSL certificate validity and expiry
-    "IncludeAptRepositories": true,// configured APT repositories
-    "IncludeAptUpdates": true,     // available APT package updates
-    "IncludeAptVersions": false,   // installed APT package versions
-    "IncludeReplication": true     // per-node replication jobs
+    "IncludeApt": true,            // APT repositories, available updates, installed packages
+    "IncludeReplication": true,    // replication jobs global sheet
+    "Syslog": {
+      "Enabled": false,
+      "MaxEntries": 500,
+      "Since": null,               // DateOnly e.g. "2024-01-01"
+      "Until": null
+    }
   },
   "Guest": {
     "Ids": "@all",                 // see VM/CT Selection Patterns below
     "RrdData": {
-      "Enabled": true,
-      "TimeFrame": "Day",          // Hour | Day | Week | Month | Year
-      "Consolidation": "Average"   // Average | Maximum
+      "Enabled": false,            // disabled by default — can be large on big clusters
+      "TimeFrame": "Day",
+      "Consolidation": "Average",
+      "MaxParallelRequests": 5
     },
     "Tasks": {
       "Enabled": true,
-      "OnlyErrors": false,         // show only failed tasks
-      "MaxCount": 0                // 0 = unlimited
+      "OnlyErrors": false,           // show only failed tasks
+      "MaxCount": 500,
+      "Source": "all"                // all | local | active
     },
-    "Firewall": {
+    "Snapshots": {
       "Enabled": true,
-      "LogMaxCount": 0,            // 0 = unlimited
-      "LogSince": null,            // DateOnly e.g. "2024-01-01"
-      "LogUntil": null
+      "MaxParallelRequests": 5
     },
-    "IncludeBackups": true,        // backup files found in all storages
-    "IncludeSnapshots": true,      // snapshot list
-    "IncludeQemuAgent": true       // OS info, network interfaces, filesystems (only running QEMU VMs with agent enabled)
+    "IncludeQemuAgent": true       // OS info, network, filesystems (running VMs with agent only)
   },
   "Storage": {
-    "Names": "@all",               // @all | local | local*
+    "Content": {
+      "IncludeContent": true,      // storage content (ISO, templates, disk images)
+      "IncludeBackups": true,      // backup files
+      "MaxParallelRequests": 5
+    },
     "RrdData": {
       "Enabled": true,
-      "TimeFrame": "Day",          // Hour | Day | Week | Month | Year
-      "Consolidation": "Average"   // Average | Maximum
+      "TimeFrame": "Day",
+      "Consolidation": "Average",
+      "MaxParallelRequests": 5
     }
+  },
+  "Firewall": {
+    "Enabled": true,               // global firewall sheet (rules, aliases, IP sets) + firewall logs in detail sheets
+    "LogMaxCount": 0,              // 0 = unlimited
+    "LogSince": null,              // DateOnly e.g. "2024-01-01"
+    "LogUntil": null,
+    "MaxParallelRequests": 5
   }
 }
 ```
@@ -466,67 +419,47 @@ cv4pve-report create-settings --full
 
 ## Profiles
 
-<details>
-<summary><strong>Profiles comparison</strong></summary>
-
 | Profile | Use case | Speed |
 |---------|----------|-------|
 | **Fast** | Quick scan, large clusters, CI/CD | fastest |
 | **Standard** | Daily reporting, balanced detail | medium |
 | **Full** | Audit, compliance, capacity planning | slowest |
 
+<details>
+<summary><strong>Profiles comparison</strong></summary>
+
 | Setting | Fast | Standard | Full |
 |---------|:----:|:--------:|:----:|
 | **Cluster** | | | |
-| IncludeOptions | ✓ | ✓ | ✓ |
-| IncludeSecurity | ✓ | ✓ | ✓ |
-| IncludeFirewall | | ✓ | ✓ |
-| IncludeBackupJobs | ✓ | ✓ | ✓ |
-| IncludeReplication | ✓ | ✓ | ✓ |
-| IncludeStorages | ✓ | ✓ | ✓ |
-| IncludeMetricServers | | ✓ | ✓ |
-| IncludeSdn | | ✓ | ✓ |
-| IncludeMapping | | ✓ | ✓ |
-| IncludePools | ✓ | ✓ | ✓ |
-| IncludeHa | ✓ | ✓ | ✓ |
-| AuditLog.Enabled | | | ✓ |
-| AuditLog.MaxCount | | — | 1000 |
+| Log.Enabled | | | ✓ |
+| Log.MaxCount | | — | 1000 |
+| IncludeTasks | ✓ | ✓ | ✓ |
 | **Node** | | | |
-| IncludeNetwork | ✓ | ✓ | ✓ |
-| Disk.Enabled | ✓ | ✓ | ✓ |
+| Disk.IncludeDiskDetail | | ✓ | ✓ |
 | Disk.IncludeSmartData | | | ✓ |
-| Disk.IncludeZfs | | ✓ | ✓ |
-| Disk.IncludeDirectory | | ✓ | ✓ |
-| IncludeServices | | ✓ | ✓ |
+| IncludeApt | | ✓ | ✓ |
 | IncludeReplication | ✓ | ✓ | ✓ |
-| Firewall.Enabled | | ✓ | ✓ |
-| Firewall.LogMaxCount | | 0 | 1000 |
-| Firewall.LogSince | | — | last 7 days |
-| IncludeSslCertificates | | ✓ | ✓ |
-| IncludeAptRepositories | | ✓ | ✓ |
-| IncludeAptUpdates | | ✓ | ✓ |
-| IncludeAptVersions | | | ✓ |
 | Tasks.Enabled | | ✓ | ✓ |
-| Tasks.OnlyErrors | | false | false |
-| Tasks.MaxCount | | 0 | 0 |
-| Tasks.Source | | all | all |
 | Syslog.Enabled | | | ✓ |
-| Syslog.MaxCount | | — | 1000 |
-| Syslog.Since | | — | last 7 days |
-| RrdData | | ✓ | ✓ (Week) |
+| Syslog.MaxEntries | | — | 1000 |
+| Syslog.Since | | — | last 3 days |
+| RrdData.Enabled | | ✓ | ✓ |
+| RrdData.TimeFrame | | Day | Week |
 | **Guest** | | | |
-| Firewall.Enabled | | ✓ | ✓ |
-| Firewall.LogMaxCount | | 0 | 1000 |
-| Firewall.LogSince | | — | last 7 days |
-| IncludeSnapshots | | ✓ | ✓ |
-| IncludeBackups | | ✓ | ✓ |
+| Snapshots.Enabled | | ✓ | ✓ |
 | IncludeQemuAgent | | ✓ | ✓ |
 | Tasks.Enabled | | ✓ | ✓ |
-| Tasks.OnlyErrors | | false | false |
-| Tasks.MaxCount | | 0 | 0 |
-| RrdData | | ✓ | ✓ (Week) |
+| RrdData.Enabled | | | ✓ |
+| RrdData.TimeFrame | | — | Week |
 | **Storage** | | | |
-| RrdData | | ✓ | ✓ (Week) |
+| Content.IncludeContent | | ✓ | ✓ |
+| Content.IncludeBackups | | ✓ | ✓ |
+| RrdData.Enabled | | ✓ | ✓ |
+| RrdData.TimeFrame | | Day | Week |
+| **Firewall** | | | |
+| Enabled | | ✓ | ✓ |
+| LogMaxCount | | 0 | 1000 |
+| LogSince | | — | last 3 days |
 
 </details>
 

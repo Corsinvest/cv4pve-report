@@ -5,50 +5,22 @@
 
 using ClosedXML.Excel;
 using Corsinvest.ProxmoxVE.Api.Extension;
-using Corsinvest.ProxmoxVE.Api.Extension.Utils;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
-using Corsinvest.ProxmoxVE.Api.Shared.Models.Common;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Vm;
 using Corsinvest.ProxmoxVE.Api.Shared.Utils;
-using System.ComponentModel;
 
 namespace Corsinvest.ProxmoxVE.Report;
 
 public partial class ReportEngine
 {
-    private record VmNetworkRow(long VmId,
-                                string Name,
-                                string Node,
-                                string Type,
-                                string Status,
-                                string Hostname,
-                                string OsInfo,
-                                VmNetwork Network,
-                                bool IsInternal);
-
-    private record VmRuntimeData(ClusterResource Item,
-                                 VmConfig Config,
-                                 string Hostname,
-                                 string AgentVersion,
-                                 bool AgentRunning,
-                                 IEnumerable<VmNetworkRow> Networks,
-                                 VmQemuAgentOsInfo? AgentOsInfo);
-
     private async Task AddVmsDataAsync(XLWorkbook workbook)
     {
         var sw = CreateSheetWriter(workbook, "Vms");
-        var allResources = (await client.GetResourcesAsync(ClusterResourceType.All)).ToList();
-        allResources.CalculateHostUsage();
 
-        var vmIds = (await client.GetVmsAsync(settings.Guest.Ids))
-                        .Select(a => a.VmId)
-                        .ToHashSet();
-
-        var resources = allResources.Where(a => a.ResourceType == ClusterResourceType.Vm && vmIds.Contains(a.VmId))
-                                    .OrderBy(a => a.Node)
-                                    .ThenBy(a => a.Type)
-                                    .ThenBy(a => a.VmId)
-                                    .ToList();
+        var resources = GetResources(ClusterResourceType.Vm)
+                                  .Where(a => a.VmType == VmType.Qemu)
+                                  .OrderBy(a => a.Id)
+                                  .ToList();
 
         var items = new List<dynamic>();
         var pt = new ProgressTracker(_progress, resources.Count);
@@ -57,290 +29,275 @@ public partial class ReportEngine
         {
             pt.Next(item);
 
-            var config = item.IsUnknown
+            pt.Step("Config");
+            VmConfigQemu? config = item.IsUnknown
                             ? null
-                            : item.VmType == VmType.Qemu
-                                ? (VmConfig)await client.Nodes[item.Node].Qemu[item.VmId].Config.GetAsync()
-                                : await client.Nodes[item.Node].Lxc[item.VmId].Config.GetAsync();
-
-            var configQemu = config as VmConfigQemu;
-            var configLxc = config as VmConfigLxc;
+                            : await client.Nodes[item.Node].Qemu[item.VmId].Config.GetAsync();
 
             VmQemuAgentOsInfo? vmQemuAgentOsInfo = null;
-            var hostname = string.Empty;
+            var hostname = "";
             var osVersion = config?.OsTypeDecode;
             var agentRunning = false;
-            var agentVersion = string.Empty;
-            var agentIpByMac = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var agentVersion = "";
+            var vmNetworks = new List<VmNetworkRow>();
 
-            if (config != null)
+            if (!item.IsUnknown && item.IsRunning)
             {
-                switch (item.VmType)
+                if (config?.AgentEnabled != true)
                 {
-                    case VmType.Qemu:
-                        if (item.IsRunning)
+                    hostname = "Agent not enabled!";
+                }
+                else if (settings.Guest.IncludeQemuAgent)
+                {
+                    var vmQemu = client.Nodes[item.Node].Qemu[item.VmId];
+
+                    try
+                    {
+                        pt.Step("Agent Info");
+                        agentVersion = (await vmQemu.Agent.Info.GetAsync())?.Result?.Version ?? "";
+                        agentRunning = true;
+                        vmQemuAgentOsInfo = await vmQemu.Agent.GetOsinfo.GetAsync();
+                        osVersion = vmQemuAgentOsInfo.Result?.OsVersion;
+                        hostname = (await vmQemu.Agent.GetHostName.GetAsync())?.Result?.HostName;
+                        var vmQemuAgentNetworkGetInterfaces = await vmQemu.Agent.NetworkGetInterfaces.GetAsync();
+
+                        if (vmQemuAgentNetworkGetInterfaces != null)
                         {
-                            if (!configQemu!.AgentEnabled)
+                            foreach (var net in vmQemuAgentNetworkGetInterfaces.Result.Where(a => !string.IsNullOrEmpty(a.HardwareAddress)
+                                                                                                    && a.HardwareAddress != "00:00:00:00:00:00"))
                             {
-                                hostname = "Agent not enabled!";
-                            }
-                            else if (settings.Guest.IncludeQemuAgent)
-                            {
-                                var vmQemu = client.Nodes[item.Node].Qemu[item.VmId];
-
-                                agentRunning = (await vmQemu.Agent.Ping.Ping()).IsSuccessStatusCode;
-                                if (agentRunning)
-                                {
-                                    try
-                                    {
-                                        vmQemuAgentOsInfo = await vmQemu.Agent.GetOsinfo.GetAsync();
-                                        osVersion = vmQemuAgentOsInfo.Result?.OsVersion;
-                                        hostname = (await vmQemu.Agent.GetHostName.GetAsync())?.Result?.HostName;
-                                        var vmQemuAgentNetworkGetInterfaces = await vmQemu.Agent.NetworkGetInterfaces.GetAsync();
-                                        agentVersion = (await vmQemu.Agent.Info.GetAsync())?.Result?.Version ?? string.Empty;
-
-                                        agentIpByMac = (vmQemuAgentNetworkGetInterfaces?.Result ?? [])
-                                                        .Where(a => !string.IsNullOrEmpty(a.HardwareAddress)
-                                                                    && a.HardwareAddress != "00:00:00:00:00:00")
-                                                        .ToDictionary(
-                                                            a => a.HardwareAddress,
-                                                            a => a.IpAddresses.Select(i => $"{i.IpAddress}/{i.Prefix}").JoinAsString(", "),
-                                                            StringComparer.OrdinalIgnoreCase);
-
-                                        if (vmQemuAgentNetworkGetInterfaces != null)
-                                        {
-                                            foreach (var net in vmQemuAgentNetworkGetInterfaces.Result.Where(a => !string.IsNullOrEmpty(a.HardwareAddress)
-                                                                                                                    && a.HardwareAddress != "00:00:00:00:00:00"))
-                                            {
-                                                var configNet = config.Networks
-                                                                      .FirstOrDefault(c => string.Equals(c.MacAddress, net.HardwareAddress,
-                                                                                                         StringComparison.OrdinalIgnoreCase));
-                                                _vmNetworkRows.Add(new VmNetworkRow(item.VmId,
-                                                                                    item.Name,
-                                                                                    item.Node,
-                                                                                    item.Type,
-                                                                                    item.Status,
-                                                                                    hostname ?? string.Empty,
-                                                                                    vmQemuAgentOsInfo?.Result?.PrettyName ?? osVersion ?? string.Empty,
-                                                                                    new()
-                                                                                    {
-                                                                                        Name = net.Name,
-                                                                                        MacAddress = net.HardwareAddress?.ToUpperInvariant(),
-                                                                                        Bridge = configNet?.Bridge,
-                                                                                        Tag = configNet?.Tag,
-                                                                                        Model = configNet?.Model,
-                                                                                        Firewall = configNet?.Firewall ?? false,
-                                                                                        Gateway = configNet?.Gateway,
-                                                                                        Gateway6 = configNet?.Gateway6,
-                                                                                        Rate = configNet?.Rate,
-                                                                                        Mtu = configNet?.Mtu,
-                                                                                        IpAddress = net.IpAddresses.Where(a => a.IpAddressType == "ipv4")
-                                                                                                                   .Select(a => $"{a.IpAddress}/{a.Prefix}")
-                                                                                                                   .JoinAsString(Environment.NewLine),
-                                                                                        IpAddress6 = net.IpAddresses.Where(a => a.IpAddressType == "ipv6")
-                                                                                                                    .Select(a => $"{a.IpAddress}/{a.Prefix}")
-                                                                                                                    .JoinAsString(Environment.NewLine),
-                                                                                    },
-                                                                                    IsInternal: configNet == null));
-                                            }
-                                        }
-                                    }
-                                    catch
-                                    {
-                                        hostname = "Error Agent data!";
-                                    }
-                                }
-                                else
-                                {
-                                    hostname = "Agent not running!";
-                                }
+                                var configNet = config.Networks
+                                                      .FirstOrDefault(c => string.Equals(c.MacAddress, net.HardwareAddress,
+                                                                                         StringComparison.OrdinalIgnoreCase));
+                                var vmNet = new VmNetworkRow(item.VmId,
+                                                             item.Name,
+                                                             item.Node,
+                                                             item.Type,
+                                                             item.Status,
+                                                             hostname ?? "",
+                                                             new()
+                                                             {
+                                                                 Name = net.Name,
+                                                                 MacAddress = net.HardwareAddress?.ToUpperInvariant(),
+                                                                 Bridge = configNet?.Bridge,
+                                                                 Tag = configNet?.Tag,
+                                                                 Model = configNet?.Model,
+                                                                 Firewall = configNet?.Firewall ?? false,
+                                                                 Gateway = configNet?.Gateway,
+                                                                 Gateway6 = configNet?.Gateway6,
+                                                                 Rate = configNet?.Rate,
+                                                                 Mtu = configNet?.Mtu,
+                                                                 IpAddress = net.IpAddresses.Where(a => a.IpAddressType == "ipv4")
+                                                                                            .Select(a => $"{a.IpAddress}/{a.Prefix}")
+                                                                                            .JoinAsString(Environment.NewLine),
+                                                                 IpAddress6 = net.IpAddresses.Where(a => a.IpAddressType == "ipv6")
+                                                                                             .Select(a => $"{a.IpAddress}/{a.Prefix}")
+                                                                                             .JoinAsString(Environment.NewLine),
+                                                             },
+                                                             IsInternal: configNet == null);
+                                vmNetworks.Add(vmNet);
+                                AppendVmNetworkRows(workbook, vmNet);
                             }
                         }
-                        break;
-
-                    case VmType.Lxc:
-                        hostname = configLxc!.Hostname;
-                        break;
-
-                    default: throw new InvalidEnumArgumentException();
+                    }
+                    catch
+                    {
+                        hostname = "Agent not running!";
+                    }
                 }
             }
 
-            if (config != null && !agentRunning)
+            if (!item.IsUnknown && !agentRunning && config != null)
             {
                 foreach (var net in config.Networks)
                 {
-                    _vmNetworkRows.Add(new VmNetworkRow(item.VmId,
-                                                        item.Name,
-                                                        item.Node,
-                                                        item.Type,
-                                                        item.Status,
-                                                        hostname ?? string.Empty,
-                                                        vmQemuAgentOsInfo?.Result?.PrettyName ?? osVersion ?? string.Empty,
-                                                        net,
-                                                        IsInternal: false));
+                    var vmNet = new VmNetworkRow(item.VmId,
+                                                 item.Name,
+                                                 item.Node,
+                                                 item.Type,
+                                                 item.Status,
+                                                 hostname ?? "",
+                                                 net,
+                                                 IsInternal: false);
+                    vmNetworks.Add(vmNet);
+                    AppendVmNetworkRows(workbook, vmNet);
                 }
             }
 
-            var vmRuntime = new VmRuntimeData(item,
-                                              config!,
-                                              hostname ?? string.Empty,
-                                              agentVersion,
-                                              agentRunning,
-                                              _vmNetworkRows.Where(a => a.VmId == item.VmId).ToList(),
-                                              vmQemuAgentOsInfo);
+            var networks = vmNetworks.Where(a => !a.IsInternal);
 
             items.Add(new
             {
                 item.Node,
                 item.VmId,
                 item.Name,
-                item.Description,
-                item.Type,
                 item.Status,
+                item.Pool,
+                Tags = ToNewLine(item.Tags, ";"),
+                item.HaState,
+                item.Lock,
+                IsTemplateFlag = ToX(item.IsTemplate),
                 item.CpuSize,
-                item.CpuUsagePercentage,
-                item.HostCpuUsage,
+                CpuUsagePct = item.CpuUsagePercentage,
+                HostCpuUsagePct = item.HostCpuUsage,
                 MemorySizeGB = ToGB(item.MemorySize),
                 MemoryUsageGB = ToGB(item.MemoryUsage),
-                item.MemoryUsagePercentage,
-                HostMemoryUsagePercentage = item.HostMemoryUsage,
+                MemoryUsagePct = item.MemoryUsagePercentage,
+                HostMemoryUsagePct = item.HostMemoryUsage,
                 DiskSizeGB = ToGB(item.DiskSize),
                 DiskUsageGB = ToGB(item.DiskUsage),
-                item.DiskUsagePercentage,
+                DiskUsagePct = item.DiskUsagePercentage,
                 Uptime = FormatHelper.UptimeInfo(item.Uptime),
-                Hostname = vmRuntime.Hostname,
-
-                Networks = vmRuntime.Networks
-                            .Where(a => !a.IsInternal)
-                            .Select(a => $"{a.Network.MacAddress} {a.Network.Bridge}{(a.Network.Tag.HasValue ? $"/{a.Network.Tag}" : "")}")
-                            .JoinAsString(Environment.NewLine),
-
-                IpAddresses = vmRuntime.Networks
-                            .Where(a => !a.IsInternal)
-                            .Select(a => new[] { a.Network.IpAddress, a.Network.IpAddress6 }
-                                             .Where(s => !string.IsNullOrEmpty(s))
-                                             .JoinAsString(", "))
-                            .Where(s => !string.IsNullOrEmpty(s))
-                            .JoinAsString(Environment.NewLine),
-
-                ConfigOnBoot = config?.OnBoot,
-                ConfigArch = config?.Arch,
-                ConfigOsType = config?.OsType,
-                ConfigOsVersion = osVersion,
-                ConfigProtection = config?.Protection,
-                LxcCores = configLxc?.Cores,
-                LxcNameserver = configLxc?.Nameserver,
-                LxcSwap = configLxc?.Swap,
-                LxcUnprivileged = configLxc?.Unprivileged,
-                QemuAgentEnabled = configQemu?.AgentEnabled,
-                QemuAgentVersion = agentVersion,
-                QemuBios = configQemu?.Bios,
-                QemuBoot = configQemu?.Boot,
-                QemuMachine = configQemu?.Machine,
-                QemuCores = configQemu?.Cores,
-                QemuCpu = configQemu?.Cpu,
-                QemuKvm = configQemu?.Kvm,
-                QemuName = configQemu?.Name,
-                QemuScsiHw = configQemu?.ScsiHw,
-                QemuSockets = configQemu?.Sockets,
-                QemuVga = configQemu?.Vga
+                Hostname = hostname,
+                OsName = vmQemuAgentOsInfo?.Result?.Name,
+                OsVersion = vmQemuAgentOsInfo?.Result?.PrettyName ?? osVersion,
+                OsKernelRelease = vmQemuAgentOsInfo?.Result?.KernelRelease,
+                AgentEnabledFlag = ToX(config?.AgentEnabled),
+                AgentRunningFlag = ToX(agentRunning),
+                AgentVersion = agentVersion,
+                NetworksWrap = networks.Select(a => $"{a.Network.MacAddress} {a.Network.Bridge}{(a.Network.Tag.HasValue ? $"/{a.Network.Tag}" : "")}")
+                                       .JoinAsString(Environment.NewLine),
+                IpAddressesWrap = networks.Select(a => new[] { a.Network.IpAddress, a.Network.IpAddress6 }
+                                                        .Where(s => !string.IsNullOrEmpty(s))
+                                                        .JoinAsString(", "))
+                                          .Where(s => !string.IsNullOrEmpty(s))
+                                          .JoinAsString(Environment.NewLine),
+                OnBootFlag = ToX(config?.OnBoot),
+                ConfigProtectionFlag = ToX(config?.Protection),
+                DescriptionWrap = item.Description,
+                config?.Bios,
+                config?.Boot,
+                config?.Machine,
+                config?.Cores,
+                config?.Sockets,
+                config?.Cpu,
+                KvmFlag = ToX(config?.Kvm),
+                config?.ScsiHw,
+                config?.Vga,
+                NumaFlag = ToX(config?.Numa),
+                config?.Balloon,
+                config?.CpuLimit,
+                config?.CpuUnits,
+                config?.Hugepages,
+                config?.Hookscript,
+                config?.StartUp,
             });
 
-            if (!item.IsUnknown) { await AddVmDetailAsync(workbook, vmRuntime, pt); }
+            if (!item.IsUnknown && config != null)
+            {
+                if (agentRunning)
+                {
+                    try
+                    {
+                        pt.Step("Partitions");
+                        AppendPartitionRows(workbook,
+                                            item,
+                                            (await client.Nodes[item.Node]
+                                                         .Qemu[item.VmId]
+                                                         .Agent
+                                                         .GetFsinfo
+                                                         .GetAsync())?
+                                                         .Result ?? []);
+                    }
+                    catch { }
+                }
+
+                pt.Step("Disks");
+                AppendDiskRows(workbook, item, config.Disks);
+
+                await AddVmDetailAsync(workbook,
+                                       item,
+                                       config,
+                                       hostname ?? "",
+                                       agentVersion,
+                                       agentRunning,
+                                       vmQemuAgentOsInfo,
+                                       pt);
+            }
         }
 
-        sw.CreateTable("Vms", items, tbl =>
-        {
-            sw.ApplyNodeLinks(tbl);
-            sw.ApplyVmIdLinks(tbl);
-        });
-        sw.AdjustColumns();
+        sw.CreateTable(null,
+                       items,
+                       tbl =>
+                       {
+                           sw.ApplyNodeLinks(tbl);
+                           sw.ApplyVmIdLinks(tbl);
+                       });
 
+        sw.AdjustColumns();
     }
 
     private async Task AddVmDetailAsync(XLWorkbook workbook,
-                                        VmRuntimeData runtime,
+                                        ClusterResource item,
+                                        VmConfigQemu config,
+                                        string hostname,
+                                        string agentVersion,
+                                        bool agentRunning,
+                                        VmQemuAgentOsInfo? agentOsInfo,
                                         ProgressTracker pt)
     {
-
-        var sw = CreateSheetWriter(workbook, GetSheetName(ClusterResourceType.Vm, runtime.Item.VmId.ToString())!);
-
-        var vmQemu = runtime.Item.VmType == VmType.Qemu
-                        ? client.Nodes[runtime.Item.Node].Qemu[runtime.Item.VmId]
-                        : null;
-
-        var vmLxc = runtime.Item.VmType == VmType.Lxc
-                        ? client.Nodes[runtime.Item.Node].Lxc[runtime.Item.VmId]
-                        : null;
+        var sw = CreateSheetWriter(workbook, GetSheetName(ClusterResourceType.Vm, item.VmId.ToString())!);
+        sw.WriteBackLink("Vms", "list:vms");
 
         var configKv = new Dictionary<string, object?>
         {
-            ["On Boot"] = runtime.Config.OnBoot,
-            ["Arch"] = runtime.Config.Arch,
-            ["OS Type"] = runtime.Config.OsTypeDecode,
-            ["Protection"] = runtime.Config.Protection,
-            ["Template"] = runtime.Config.Template,
-            ["Lock"] = runtime.Config.Lock,
-            ["Tags"] = runtime.Config.Tags,
+            ["On Boot"] = config.OnBoot,
+            ["OS Type"] = config.OsTypeDecode,
+            ["Protection"] = config.Protection,
+            ["Template"] = config.Template,
+            ["Lock"] = config.Lock,
+            ["Tags"] = ToNewLine(config.Tags, ";"),
+            ["Bios"] = config.Bios,
+            ["Boot"] = config.Boot,
+            ["Machine"] = config.Machine,
+            ["CPU"] = config.Cpu,
+            ["Sockets"] = config.Sockets,
+            ["Cores"] = config.Cores,
+            ["vCPUs"] = config.Vcpus,
+            ["CPU Limit"] = config.CpuLimit,
+            ["CPU Units"] = config.CpuUnits,
+            ["Affinity"] = config.Affinity,
+            ["Hotplug"] = config.Hotplug,
+            ["Hugepages"] = config.Hugepages,
+            ["Memory (MB)"] = config.Memory,
+            ["Balloon"] = config.Balloon,
+            ["Shares"] = config.Shares,
+            ["KVM"] = config.Kvm,
+            ["NUMA"] = config.Numa,
+            ["Tablet"] = config.Tablet,
+            ["ScsiHw"] = config.ScsiHw,
+            ["Vga"] = config.Vga,
+            ["Agent"] = config.AgentEnabled,
+            ["Agent Running"] = agentRunning,
+            ["TPM State"] = config.Tpmstate0,
+            ["Watchdog"] = config.Watchdog,
+            ["Rng0"] = config.Rng0,
+            ["Start Up"] = config.StartUp,
+            ["Hookscript"] = config.Hookscript,
         };
 
-        if ((VmConfig?)runtime.Config is VmConfigQemu qemuConfig)
-        {
-            configKv["Bios"] = qemuConfig.Bios;
-            configKv["Boot"] = qemuConfig.Boot;
-            configKv["Machine"] = qemuConfig.Machine;
-            configKv["CPU"] = qemuConfig.Cpu;
-            configKv["Sockets"] = qemuConfig.Sockets;
-            configKv["Cores"] = qemuConfig.Cores;
-            configKv["Memory (MB)"] = qemuConfig.Memory;
-            configKv["Balloon"] = qemuConfig.Balloon;
-            configKv["KVM"] = qemuConfig.Kvm;
-            configKv["NUMA"] = qemuConfig.Numa;
-            configKv["ScsiHw"] = qemuConfig.ScsiHw;
-            configKv["Vga"] = qemuConfig.Vga;
-            configKv["Agent"] = qemuConfig.AgentEnabled;
-            configKv["Start Up"] = qemuConfig.StartUp;
-            configKv["Hookscript"] = qemuConfig.Hookscript;
-        }
-        else if ((VmConfig?)runtime.Config is VmConfigLxc lxcConfig)
-        {
-            configKv["Hostname"] = lxcConfig.Hostname;
-            configKv["Cores"] = lxcConfig.Cores;
-            configKv["Memory (MB)"] = lxcConfig.Memory;
-            configKv["Swap (MB)"] = lxcConfig.Swap;
-            configKv["Unprivileged"] = lxcConfig.Unprivileged;
-            configKv["Nameserver"] = lxcConfig.Nameserver;
-            configKv["Search Domain"] = lxcConfig.SearchDomain;
-            configKv["Features"] = lxcConfig.Features;
-            configKv["Timezone"] = lxcConfig.Timezone;
-            configKv["Startup"] = lxcConfig.Startup;
-            configKv["Hookscript"] = lxcConfig.Hookscript;
-        }
-
-        foreach (var (key, value) in runtime.Config.ExtensionData.OrderBy(a => a.Key))
+        foreach (var (key, value) in config.ExtensionData.OrderBy(a => a.Key))
         {
             configKv.TryAdd(key, value);
         }
 
         pt.Step("QemuAgent");
 
-        sw.WriteKeyValue($"{runtime.Item.VmId} - {runtime.Item.Name}",
+        sw.WriteKeyValue($"{item.VmId} - {item.Name}",
                          new()
                          {
-                             ["VM ID"] = runtime.Item.VmId,
-                             ["Name"] = runtime.Item.Name,
-                             ["Hostname"] = runtime.Hostname,
-                             ["Agent Version"] = runtime.AgentVersion,
-                             ["Type"] = runtime.Item.Type,
-                             ["Node"] = runtime.Item.Node,
-                             ["Status"] = runtime.Item.Status,
-                             ["CPU"] = runtime.Item.CpuSize,
-                             ["CPU Usage"] = runtime.Item.HostCpuUsage,
-                             ["Memory"] = $"{ToGB(runtime.Item.MemorySize):0.##} GB",
-                             ["Memory Host %"] = runtime.Item.HostMemoryUsage,
-                             ["Disk"] = $"{ToGB(runtime.Item.DiskSize):0.##} GB",
-                             ["Uptime"] = FormatHelper.UptimeInfo(runtime.Item.Uptime),
+                             ["VM ID"] = item.VmId,
+                             ["Name"] = item.Name,
+                             ["Hostname"] = hostname,
+                             ["Agent Version"] = agentVersion,
+                             ["Node"] = item.Node,
+                             ["Status"] = item.Status,
+                             ["CPU"] = item.CpuSize,
+                             ["CPU Usage %"] = item.HostCpuUsage,
+                             ["Memory GB"] = ToGB(item.MemorySize),
+                             ["Memory Host %"] = item.HostMemoryUsage,
+                             ["Disk GB"] = ToGB(item.DiskSize),
+                             ["Uptime"] = FormatHelper.UptimeInfo(item.Uptime),
                          });
 
         var mainRow = sw.Row;
@@ -350,243 +307,51 @@ public partial class ReportEngine
         sw.Row = Math.Max(sw.Row, mainRow);
         sw.Col = 1;
 
-        if (runtime.AgentRunning)
+        if (agentRunning && agentOsInfo?.Result != null)
         {
-            if (runtime.AgentOsInfo?.Result != null)
-            {
-                var osKv = new Dictionary<string, object?>
-                {
-                    ["Name"] = runtime.AgentOsInfo.Result.Name,
-                    ["Pretty Name"] = runtime.AgentOsInfo.Result.PrettyName,
-                    ["Version"] = runtime.AgentOsInfo.Result.Version,
-                    ["Version Id"] = runtime.AgentOsInfo.Result.VersionId,
-                    ["Id"] = runtime.AgentOsInfo.Result.Id,
-                    ["Kernel Release"] = runtime.AgentOsInfo.Result.KernelRelease,
-                    ["Kernel Version"] = runtime.AgentOsInfo.Result.KernelVersion,
-                    ["Machine"] = runtime.AgentOsInfo.Result.Machine,
-                    ["Variant"] = runtime.AgentOsInfo.Result.Variant,
-                    ["Variant Id"] = runtime.AgentOsInfo.Result.VariantId,
-                };
 
-                var mainRowOs = sw.Row;
-                sw.Row = 1;
-                sw.Col = 7;
-                sw.WriteKeyValue("Agent OS Info", osKv);
-                sw.Row = Math.Max(sw.Row, mainRowOs);
-                sw.Col = 1;
-            }
+            var mainRowOs = sw.Row;
+            sw.Row = 1;
+            sw.Col = 7;
+            sw.WriteKeyValue("Agent OS Info",
+                             new Dictionary<string, object?>
+                             {
+                                 ["Name"] = agentOsInfo.Result.Name,
+                                 ["Pretty Name"] = agentOsInfo.Result.PrettyName,
+                                 ["Version"] = agentOsInfo.Result.Version,
+                                 ["Version Id"] = agentOsInfo.Result.VersionId,
+                                 ["Id"] = agentOsInfo.Result.Id,
+                                 ["Kernel Release"] = agentOsInfo.Result.KernelRelease,
+                                 ["Kernel Version"] = agentOsInfo.Result.KernelVersion,
+                                 ["Machine"] = agentOsInfo.Result.Machine,
+                                 ["Variant"] = agentOsInfo.Result.Variant,
+                                 ["Variant Id"] = agentOsInfo.Result.VariantId,
+                             });
+            sw.Row = Math.Max(sw.Row, mainRowOs);
+            sw.Col = 1;
         }
 
-        var tableCount = 2  // Network + Disks
-                       + (runtime.AgentRunning ? 2 : 0)  // Agent Network + Agent Disks
-                       + (settings.Guest.RrdData.Enabled ? 1 : 0)
-                       + (settings.Guest.IncludeBackups ? 1 : 0)
-                       + (settings.Guest.IncludeSnapshots ? 1 : 0)
-                       + (settings.Guest.Firewall.Enabled ? 4 : 0)
-                       + (settings.Guest.Tasks.Enabled ? 1 : 0);
+        var tableCount = (settings.Firewall.Enabled ? 1 : 0)  // Firewall Logs
+                         + (settings.Guest.Tasks.Enabled ? 1 : 0);
 
         sw.ReserveIndexRows(tableCount);
 
-        if (runtime.AgentRunning)
+        if (settings.Firewall.Enabled)
         {
-            pt.Step("Qemu Agent Network");
-            sw.CreateTable("Agent Network",
-                           runtime.Networks.Select(a => new
-                           {
-                               a.Network.MacAddress,
-                               a.Network.IpAddress,
-                               a.Network.IpAddress6,
-                           }));
-
-            try
-            {
-                pt.Step("Qemu Agent Disks");
-                var agentFs = await vmQemu!.Agent.GetFsinfo.GetAsync();
-                sw.CreateTable("Agent Disks",
-                               (agentFs?.Result ?? []).Select(a => new
-                               {
-                                   a.Name,
-                                   a.MountPoint,
-                                   a.Type,
-                                   TotalGB = ToGB(a.TotalBytes),
-                                   UsedGB = ToGB(a.UsedBytes),
-                               }));
-            }
-            catch { }
-        }
-
-        pt.Step("Network");
-        sw.CreateTable("Network",
-                       runtime.Config.Networks.Select(a => new
-                       {
-                           a.Name,
-                           a.MacAddress,
-                           a.Bridge,
-                           a.Tag,
-                           a.Type,
-                           a.Model,
-                           a.Firewall,
-                           a.IpAddress,
-                           a.IpAddress6,
-                           a.Gateway,
-                           a.Gateway6,
-                           a.Rate,
-                           a.Mtu,
-                           a.Trunks,
-                           a.Disconnect,
-                           a.LinkDown,
-                       }));
-
-        pt.Step("Disks");
-        foreach (var disk in runtime.Config.Disks)
-        {
-            _vmDiskRows.Add(new VmDiskRow(runtime.Item.VmId,
-                                          runtime.Item.Name,
-                                          runtime.Item.Node,
-                                          runtime.Item.Type,
-                                          runtime.Item.Status,
-                                          disk));
-        }
-
-        sw.CreateTable("Disks",
-                       runtime.Config.Disks.Select(a => new
-                       {
-                           a.Id,
-                           a.Storage,
-                           a.FileName,
-                           a.Prealloc,
-                           a.Format,
-                           SizeGB = ToGB(a.SizeBytes),
-                           a.Backup,
-                           a.IsUnused,
-                           a.Cache,
-                           a.Device,
-                           a.MountPoint,
-                           a.MountSourcePath,
-                           a.Passthrough,
-                       }),
-                       tbl => sw.ApplyStorageLinks(tbl, runtime.Item.Node));
-
-        if (settings.Guest.RrdData.Enabled)
-        {
-            pt.Step("RRD");
-            var rrdTimeFrame = settings.Guest.RrdData.TimeFrame.GetValue();
-            var rrdConsolidation = settings.Guest.RrdData.Consolidation.GetValue();
-            var rrdData = vmQemu != null
-                            ? await vmQemu.Rrddata.GetAsync(rrdTimeFrame, rrdConsolidation)
-                            : await vmLxc!.Rrddata.GetAsync(rrdTimeFrame, rrdConsolidation);
-
-            sw.CreateTable("RRD Data",
-                           rrdData.Select(a => new
-                           {
-                               a.TimeDate,
-                               NetInMB = ToMB(a.NetIn),
-                               NetOutMB = ToMB(a.NetOut),
-                               a.CpuUsagePercentage,
-                               MemorySizeGB = ToGB(a.MemorySize),
-                               MemoryUsageGB = ToGB(a.MemoryUsage),
-                               a.MemoryUsagePercentage,
-                               PsiCpuSomePercentage = a.PressureCpuSome,
-                               PsiCpuFullPercentage = a.PressureCpuFull,
-                               PsiIoSomePercentage = a.PressureIoSome,
-                               PsiIoFullPercentage = a.PressureIoFull,
-                               PsiMemSomePercentage = a.PressureMemorySome,
-                               PsiMemFullPercentage = a.PressureMemoryFull,
-                           }));
-        }
-
-        if (settings.Guest.IncludeBackups)
-        {
-            pt.Step("Backups");
-            sw.CreateTable("Backup",
-                           (await client.Nodes[runtime.Item.Node].GetBackupsInAllStoragesAsync((int)runtime.Item.VmId))
-                            .Select(a => new
-                            {
-                                a.ContentDescription,
-                                a.CreationDate,
-                                a.Encrypted,
-                                a.FileName,
-                                a.Format,
-                                a.Notes,
-                                a.Protected,
-                                SizeGB = ToGB(a.Size),
-                                a.Storage,
-                                a.Verified
-                            }),
-                           tbl => sw.ApplyStorageLinks(tbl, runtime.Item.Node));
-        }
-
-        if (settings.Guest.IncludeSnapshots)
-        {
-            pt.Step("Snapshots");
-            sw.CreateTable("Snapshots",
-                           (await SnapshotHelper.GetSnapshotsAsync(client, runtime.Item.Node, runtime.Item.VmType, runtime.Item.VmId))
-                            .Select(a => new
-                            {
-                                a.Name,
-                                a.Description,
-                                a.Parent,
-                                a.VmStatus,
-                                a.Date,
-                            }));
-        }
-
-        if (settings.Guest.Firewall.Enabled)
-        {
-            pt.Step("Firewall");
-            var fw = settings.Guest.Firewall;
-            var fwLogLimit = fw.LogMaxCount > 0 ? fw.LogMaxCount : (int?)null;
-            var fwLogSince = fw.LogSince.HasValue
-                                ? (int)new DateTimeOffset(fw.LogSince.Value.ToDateTime(TimeOnly.MinValue)).ToUnixTimeSeconds()
-                                : (int?)null;
-
-            var fwLogUntil = fw.LogUntil.HasValue
-                                ? (int)new DateTimeOffset(fw.LogUntil.Value.ToDateTime(TimeOnly.MinValue)).ToUnixTimeSeconds()
-                                : (int?)null;
-
-            AddFirewallRules(sw,
-                             vmQemu != null
-                                ? await vmQemu.Firewall.Rules.GetAsync()
-                                : await vmLxc!.Firewall.Rules.GetAsync());
-
-            AddFirewallAlias(sw,
-                             vmQemu != null
-                                ? await vmQemu.Firewall.Aliases.GetAsync()
-                                : await vmLxc!.Firewall.Aliases.GetAsync());
-
-            AddFirewallIpSet(sw,
-                             vmQemu != null
-                                ? await vmQemu.Firewall.Ipset.GetAsync()
-                                : await vmLxc!.Firewall.Ipset.GetAsync());
+            pt.Step("Firewall Logs");
 
             AddLogs(sw,
                     "Firewall Logs",
-                    vmQemu != null
-                        ? await vmQemu.Firewall.Log.GetAsync(limit: fwLogLimit, since: fwLogSince, until: fwLogUntil)
-                        : await vmLxc!.Firewall.Log.GetAsync(limit: fwLogLimit, since: fwLogSince, until: fwLogUntil));
+                    await client.Nodes[item.Node]
+                                .Qemu[item.VmId]
+                                .Firewall
+                                .Log
+                                .GetAsync(limit: settings.Firewall.Limit,
+                                          since: settings.Firewall.SinceUnix,
+                                          until: settings.Firewall.UntilUnix));
         }
 
-        if (settings.Guest.Tasks.Enabled)
-        {
-            pt.Step("Tasks");
-            var taskSettings = settings.Guest.Tasks;
-            sw.CreateTable("Tasks",
-                           (await client.Nodes[runtime.Item.Node].Tasks.GetAsync(
-                               vmid: (int)runtime.Item.VmId,
-                               errors: taskSettings.OnlyErrors ? true : null,
-                               limit: taskSettings.MaxCount > 0 ? taskSettings.MaxCount : null
-                           )).Select(a => new
-                           {
-                               a.UniqueTaskId,
-                               a.Type,
-                               a.User,
-                               a.Status,
-                               a.StatusOk,
-                               StartTime = a.StartTimeDate,
-                               EndTime = a.EndTimeDate,
-                               a.Duration
-                           }));
-        }
+        await AddGuestTasksTableAsync(sw, pt, item.Node, item.VmId);
 
         sw.WriteIndex();
         sw.AdjustColumns();

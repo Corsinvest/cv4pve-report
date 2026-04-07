@@ -16,9 +16,20 @@ internal class ProgressTracker(IProgress<ReportProgress>? progress, int total)
     {
         _current++;
         _resource = resource;
-        progress?.Report(new ReportProgress { Resource = resource, Current = _current, Total = total });
+        progress?.Report(new ReportProgress
+        {
+            Resource = resource,
+            Current = _current,
+            Total = total
+        });
     }
 
     public void Step(string step)
-        => progress?.Report(new ReportProgress { Resource = _resource, Current = _current, Total = total, Step = step });
+        => progress?.Report(new ReportProgress
+        {
+            Resource = _resource,
+            Current = _current,
+            Total = total,
+            Step = step
+        });
 }

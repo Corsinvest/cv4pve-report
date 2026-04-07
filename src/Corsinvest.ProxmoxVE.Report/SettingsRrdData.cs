@@ -26,4 +26,9 @@ public class SettingsRrdData
     /// RRD consolidation function
     /// </summary>
     public RrdDataConsolidation Consolidation { get; set; } = RrdDataConsolidation.Average;
+
+    /// <summary>
+    /// Max parallel requests when fetching RRD data (1 = sequential)
+    /// </summary>
+    public int MaxParallelRequests { get; set; } = 5;
 }
