@@ -18,7 +18,11 @@ public class SettingsGuest
     /// <summary>
     /// Include RRD metrics data
     /// </summary>
-    public SettingsRrdData RrdData { get; set; } = new();
+    public SettingsRrdData RrdData { get; set; } = new()
+    {
+        Enabled = false,
+        MaxParallelRequests = 5
+    };
 
     /// <summary>
     /// Task history settings
@@ -26,19 +30,9 @@ public class SettingsGuest
     public SettingsTask Tasks { get; set; } = new();
 
     /// <summary>
-    /// Include backup files
-    /// </summary>
-    public bool IncludeBackups { get; set; } = true;
-
-    /// <summary>
     /// Include snapshots
     /// </summary>
-    public bool IncludeSnapshots { get; set; } = true;
-
-    /// <summary>
-    /// Firewall settings
-    /// </summary>
-    public SettingsFirewall Firewall { get; set; } = new();
+    public SettingsGuestSnapshots Snapshots { get; set; } = new();
 
     /// <summary>
     /// Include QEMU agent info (network interfaces and filesystem info) — only for running VMs with agent enabled

@@ -20,6 +20,13 @@ public class SettingsSyslog
     /// </summary>
     public int MaxEntries { get; set; } = 500;
 
+    internal int? Limit
+        => SinceUnix.HasValue
+            ? null
+            : MaxEntries > 0
+                ? MaxEntries
+                : 500;
+
     /// <summary>
     /// Display Syslog since this date
     /// </summary>

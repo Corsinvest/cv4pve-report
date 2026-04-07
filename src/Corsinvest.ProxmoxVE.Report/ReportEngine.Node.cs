@@ -4,10 +4,8 @@
  */
 
 using ClosedXML.Excel;
-using Corsinvest.ProxmoxVE.Api;
 using Corsinvest.ProxmoxVE.Api.Extension;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
-using Corsinvest.ProxmoxVE.Api.Shared.Models.Common;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Node;
 using Corsinvest.ProxmoxVE.Api.Shared.Utils;
 
@@ -20,8 +18,8 @@ public partial class ReportEngine
         var sw = CreateSheetWriter(workbook, "Nodes");
         var items = new List<dynamic>();
 
-        var filtered = _resources.Where(a => a.ResourceType == ClusterResourceType.Node && CheckNames(settings.Node.Names, a.Node))
-                                 .OrderBy(a => a.Node)
+        var filtered = GetResources(ClusterResourceType.Node)
+                                 .OrderBy(a => a.Id)
                                  .ToList();
 
         var pt = new ProgressTracker(_progress, filtered.Count);
@@ -30,46 +28,71 @@ public partial class ReportEngine
         {
             pt.Next(item);
 
+            pt.Step("Status");
             var status = item.IsUnknown
                             ? null
                             : await client.Nodes[item.Node].Status.GetAsync();
 
+            pt.Step("Version");
             var version = item.IsUnknown
                             ? null
                             : await client.Nodes[item.Node].Version.GetAsync();
 
+            pt.Step("Subscription");
             var subscription = item.IsUnknown
                                 ? null
                                 : await client.Nodes[item.Node].Subscription.GetAsync();
+
+            pt.Step("DNS");
+            var dns = item.IsUnknown
+                        ? null
+                        : await client.Nodes[item.Node].Dns.GetAsync();
+
+            pt.Step("Time");
+            var time = item.IsUnknown
+                        ? null
+                        : await client.Nodes[item.Node].Time.GetAsync();
 
             items.Add(new
             {
                 item.Node,
                 item.Status,
-                item.CpuSize,
-                MemorySizeGB = ToGB(item.MemorySize),
-                MemoryUsageGB = ToGB(item.MemoryUsage),
-                item.MemoryUsagePercentage,
-                DiskSizeGB = ToGB(item.DiskSize),
-                item.DiskUsagePercentage,
                 Uptime = FormatHelper.UptimeInfo(item.Uptime),
-                item.CgroupMode,
-                item.NodeLevel,
+                item.CpuSize,
                 CpuCpus = status?.CpuInfo.Cpus,
+                CpuSockets = status?.CpuInfo.Sockets,
+                CpuCores = status?.CpuInfo.Cores,
                 CpuModel = status?.CpuInfo.Model,
                 CpuMhz = status?.CpuInfo.Mhz,
-                CpuCores = status?.CpuInfo.Cores,
-                CpuSockets = status?.CpuInfo.Sockets,
+                CpuHvm = status?.CpuInfo.Hvm,
+                MemorySizeGB = ToGB(item.MemorySize),
+                MemoryUsageGB = ToGB(item.MemoryUsage),
+                MemoryUsagePct = item.MemoryUsagePercentage,
                 SwapTotalGB = ToGB(status?.Swap.Total ?? 0),
                 SwapUsedGB = ToGB(status?.Swap.Used ?? 0),
-                status?.PveVersion,
+                SwapUsagePct = status?.Swap.Total > 0 ? (double)(status.Swap.Used) / status.Swap.Total : (double?)null,
+                DiskSizeGB = ToGB(item.DiskSize),
+                DiskUsageGB = ToGB(item.DiskUsage),
+                DiskUsagePct = item.DiskUsagePercentage,
                 RootFsTotalGB = ToGB(status?.RootFs.Total ?? 0),
                 RootFsUsedGB = ToGB(status?.RootFs.Used ?? 0),
+                RootFsUsagePct = status?.RootFs.Total > 0 ? (double)status.RootFs.Used / status.RootFs.Total : (double?)null,
                 KernelVersion = status?.Kversion,
+                KernelRelease = status?.CurrentKernel?.Release,
+                BootMode = status?.BootInfo?.Mode,
+                SecurebootFlag = ToX(status?.BootInfo?.Secureboot),
+                item.CgroupMode,
+                status?.PveVersion,
+                VersionVersion = version?.Version,
+                VersionRelease = version?.Release,
+                Subscription = item.NodeLevel,
                 SubscriptionProductName = subscription?.ProductName,
                 SubscriptionRegDate = subscription?.RegDate,
-                VersionRelease = version?.Release,
-                VersionVersion = version?.Version,
+                time?.Timezone,
+                DnsSearch = dns?.Search,
+                dns?.Dns1,
+                dns?.Dns2,
+                dns?.Dns3,
             });
 
             if (!item.IsUnknown)
@@ -79,13 +102,16 @@ public partial class ReportEngine
                                          status!,
                                          version!,
                                          subscription!,
+                                         dns!,
+                                         time!,
                                          pt);
             }
         }
 
-        sw.CreateTable("Nodes",
+        sw.CreateTable(null,
                        items,
                        tbl => sw.ApplyColumnLinks(tbl, "Node", cell => $"node:{cell.Value}"));
+
         sw.AdjustColumns();
     }
 
@@ -94,10 +120,13 @@ public partial class ReportEngine
                                           NodeStatus status,
                                           NodeVersion version,
                                           NodeSubscription subscription,
+                                          NodeDns dns,
+                                          NodeTime time,
                                           ProgressTracker pt)
     {
         var node = item.Node;
         var sw = CreateSheetWriter(workbook, GetSheetName(ClusterResourceType.Node, node)!);
+        sw.WriteBackLink("Nodes", "list:nodes");
 
         sw.WriteKeyValue(node,
                          new()
@@ -107,30 +136,36 @@ public partial class ReportEngine
                              ["CPU Cores"] = status.CpuInfo.Cores,
                              ["CPU Model"] = status.CpuInfo.Model,
                              ["CPU MHz"] = status.CpuInfo.Mhz,
-                             ["Memory"] = $"{ToGB(status.Memory.Total):0.##} GB",
-                             ["Memory Used"] = $"{ToGB(status.Memory.Used):0.##} GB",
-                             ["Swap"] = $"{ToGB(status.Swap.Total):0.##} GB",
-                             ["Root FS"] = $"{ToGB(status.RootFs.Total):0.##} GB",
+                             ["Memory GB"] = ToGB(status.Memory.Total),
+                             ["Memory Used GB"] = ToGB(status.Memory.Used),
+                             ["Swap GB"] = ToGB(status.Swap.Total),
+                             ["Root FS GB"] = ToGB(status.RootFs.Total),
                              ["Kernel"] = status.Kversion,
+                             ["Kernel Release"] = status.CurrentKernel?.Release,
+                             ["Boot Mode"] = status.BootInfo?.Mode,
+                             ["Secure Boot"] = status.BootInfo?.Secureboot,
+                             ["CPU HVM"] = status.CpuInfo.Hvm,
+                             ["Uptime"] = FormatHelper.UptimeInfo(item.Uptime),
                              ["PVE Version"] = status.PveVersion,
                              ["Version"] = $"{version.Version}-{version.Release}",
                              ["Subscription"] = subscription.ProductName,
                              ["Subscription Expiry"] = subscription.RegDate,
+                             ["Timezone"] = time.Timezone,
+                             ["DNS Search"] = dns.Search,
+                             ["DNS 1"] = dns.Dns1,
+                             ["DNS 2"] = dns.Dns2,
+                             ["DNS 3"] = dns.Dns3,
                          });
 
         var tableCount = 1  // Services
                        + 1  // Network
-                       + (settings.Node.Disk.Enabled ? 1 : 0)
+                       + (settings.Node.Disk.IncludeDiskDetail ? 1 : 0)   // Disks
                        + (settings.Node.Disk.IncludeSmartData ? 1 : 0)
-                       + (settings.Node.Disk.IncludeZfs ? 2 : 0)
-                       + (settings.Node.Disk.IncludeDirectory ? 1 : 0)
-                       + (settings.Node.IncludeReplication ? 1 : 0)
-                       + (settings.Node.RrdData.Enabled ? 1 : 0)
-                       + (settings.Node.IncludeAptRepositories ? 1 : 0)
-                       + (settings.Node.IncludeAptUpdates ? 1 : 0)
-                       + (settings.Node.IncludeAptVersions ? 1 : 0)
-                       + (settings.Node.Firewall.Enabled ? 2 : 0)
-                       + (settings.Node.IncludeSslCertificates ? 1 : 0)
+                       + (settings.Node.Disk.IncludeDiskDetail ? 2 : 0)   // ZFS Pools + ZFS Pool Status
+                       + (settings.Node.Disk.IncludeDiskDetail ? 1 : 0)   // Directory
+                       + (settings.Node.IncludeApt ? 3 : 0)               // Repositories + Updates + Versions
+                       + (settings.Firewall.Enabled ? 1 : 0)  // Firewall Logs
+                       + 1  // SSL Certificates
                        + (settings.Node.Tasks.Enabled ? 1 : 0);
 
         sw.ReserveIndexRows(tableCount);
@@ -141,22 +176,22 @@ public partial class ReportEngine
                        .Select(a => new
                        {
                            a.Name,
-                           a.Description,
+                           a.Service,
                            a.State,
                            a.ActiveState,
                            a.UnitState,
-                           a.Service,
+                           DescriptionWrap = a.Description,
                        }));
 
         pt.Step("Network");
         var nodeNets = await client.Nodes[node].Network.GetAsync();
-        _nodeNetworks[node] = nodeNets;
+        AppendNodeNetworkRows(workbook, node, nodeNets);
         sw.CreateTable("Network",
                        nodeNets.Select(a => new
                        {
-                           a.Active,
-                           a.AutoStart,
-                           a.Exists,
+                           ActiveFlag = ToX(a.Active),
+                           AutoStartFlag = ToX(a.AutoStart),
+                           ExistsFlag = ToX(a.Exists),
                            a.Type,
                            a.Interface,
                            a.LinkType,
@@ -193,16 +228,16 @@ public partial class ReportEngine
                            a.VxlanId,
                            a.VxlanLocalTunnelIp,
                            a.VxlanPhysDev,
-                           a.Comments,
+                           CommentsWrap = a.Comments,
                            a.Comments6,
                        }),
                        tbl => sw.RegisterNetworkLinks(tbl, node));
 
-        if (settings.Node.Disk.Enabled || settings.Node.Disk.IncludeSmartData)
+        if (settings.Node.Disk.IncludeDiskDetail || settings.Node.Disk.IncludeSmartData)
         {
             var disksData = await client.Nodes[node].Disks.List.GetAsync(include_partitions: true);
 
-            if (settings.Node.Disk.Enabled)
+            if (settings.Node.Disk.IncludeDiskDetail)
             {
                 pt.Step("Disks");
                 sw.CreateTable("Disks",
@@ -221,7 +256,7 @@ public partial class ReportEngine
                                             a.Wearout,
                                             a.Rpm,
                                             SizeGB = ToGB(a.Size),
-                                            a.Mounted,
+                                            MountedFlag = ToX(a.Mounted),
                                             a.ByIdLink,
                                             a.OsdId,
                                         }));
@@ -229,7 +264,7 @@ public partial class ReportEngine
 
             if (settings.Node.Disk.IncludeSmartData)
             {
-                pt.Step("SMART Data");
+                pt.Step("S.M.A.R.T. Data");
                 var smartItems = new List<dynamic>();
                 foreach (var disk in disksData.Where(a => string.IsNullOrEmpty(a.Parent)))
                 {
@@ -254,12 +289,9 @@ public partial class ReportEngine
                         });
                     }
                 }
-                sw.CreateTable("SMART Data", smartItems);
+                sw.CreateTable("S.M.A.R.T. Data", smartItems);
             }
-        }
 
-        if (settings.Node.Disk.IncludeDirectory)
-        {
             pt.Step("Directory");
             sw.CreateTable("Directory",
                            (await client.Nodes[node].Disks.Directory.GetAsync())
@@ -271,10 +303,7 @@ public partial class ReportEngine
                                 a.Options,
                                 a.UnitFile
                             }));
-        }
 
-        if (settings.Node.Disk.IncludeZfs)
-        {
             pt.Step("ZFS Pools");
 
             var zfsPools = new List<dynamic>();
@@ -290,7 +319,7 @@ public partial class ReportEngine
                     SizeGB = ToGB(pool.Size),
                     FreeGB = ToGB(pool.Free),
                     AllocatedGB = ToGB(pool.Alloc),
-                    FragmentationPercentage = pool.Frag / 100.0,
+                    FragmentationPct = pool.Frag / 100.0,
                     Deduplication = pool.Dedup,
                     pool.Health,
                     poolData.Scan,
@@ -306,64 +335,7 @@ public partial class ReportEngine
             sw.CreateTable("ZFS Pool Status", zfsPoolsStatus);
         }
 
-        if (settings.Node.IncludeReplication)
-        {
-            pt.Step("Replication");
-            sw.CreateTable("Replication",
-                           (await client.Nodes[node].Replication.GetAsync())
-                            .Select(a => new
-                            {
-                                a.Id,
-                                a.Type,
-                                a.VmType,
-                                a.Guest,
-                                a.Source,
-                                a.Target,
-                                a.Schedule,
-                                a.JobNum,
-                                a.Disable,
-                                a.FailCount,
-                                a.Duration,
-                                a.Rate,
-                                LastSync = FromUnixTime(a.LastSync),
-                                NextSync = FromUnixTime(a.NextSync),
-                                LastTry = FromUnixTime(a.LastTry),
-                                a.Error,
-                                a.Comment,
-                            }),
-                           tbl => sw.ApplyReplicationLinks(tbl));
-        }
-
-        if (settings.Node.RrdData.Enabled)
-        {
-            pt.Step("RRD");
-            sw.CreateTable("RRD Data",
-                           (await client.Nodes[node].Rrddata.GetAsync(settings.Node.RrdData.TimeFrame.GetValue(),
-                                                                      settings.Node.RrdData.Consolidation.GetValue()))
-                                .Select(a => new
-                                {
-                                    a.TimeDate,
-                                    NetInMB = ToMB(a.NetIn),
-                                    NetOutMB = ToMB(a.NetOut),
-                                    a.CpuUsagePercentage,
-                                    a.IoWait,
-                                    a.Loadavg,
-                                    MemorySizeGB = ToGB(a.MemorySize),
-                                    MemoryUsageGB = ToGB(a.MemoryUsage),
-                                    a.MemoryUsagePercentage,
-                                    SwapSizeGB = ToGB(a.SwapSize),
-                                    SwapUsageGB = ToGB(a.SwapUsage),
-                                    RootSizeGB = ToGB(a.RootSize),
-                                    RootUsageGB = ToGB(a.RootUsage),
-                                    PsiCpuSomePercentage = a.PressureCpuSome,
-                                    PsiIoSomePercentage = a.PressureIoSome,
-                                    PsiIoFullPercentage = a.PressureIoFull,
-                                    PsiMemSomePercentage = a.PressureMemorySome,
-                                    PsiMemFullPercentage = a.PressureMemoryFull
-                                }));
-        }
-
-        if (settings.Node.IncludeAptRepositories)
+        if (settings.Node.IncludeApt)
         {
             pt.Step("Apt Repository");
             var aptRepositories = await client.Nodes[node].Apt.Repositories.GetAsync();
@@ -373,89 +345,73 @@ public partial class ReportEngine
                              {
                                  FilePath = file.Path,
                                  file.FileType,
-                                 repo.Enabled,
-                                 Types = repo.Types.JoinAsString(Environment.NewLine),
-                                 URIs = repo.URIs.JoinAsString(Environment.NewLine),
-                                 Suites = repo.Suites.JoinAsString(Environment.NewLine),
-                                 Components = repo.Components.JoinAsString(Environment.NewLine),
-                                 repo.Comment,
+                                 EnabledFlag = ToX(repo.Enabled),
+                                 TypesWrap = repo.Types.JoinAsString(Environment.NewLine),
+                                 URIsWrap = repo.URIs.JoinAsString(Environment.NewLine),
+                                 SuitesWrap = repo.Suites.JoinAsString(Environment.NewLine),
+                                 ComponentsWrap = repo.Components.JoinAsString(Environment.NewLine),
+                                 CommentWrap = repo.Comment,
                              }));
 
-        }
-
-        if (settings.Node.IncludeAptUpdates)
-        {
             pt.Step("Apt Updates");
             sw.CreateTable("Apt Update",
                            (await client.Nodes[node].Apt.Update.GetAsync())
                             .Select(a => new
                             {
+                                a.Package,
+                                a.Version,
+                                a.OldVersion,
                                 a.Arch,
                                 a.Origin,
                                 a.Section,
-                                a.Package,
                                 a.Priority,
-                                a.Version,
-                                a.OldVersion,
                                 a.Title,
                                 a.Description
                             }));
-        }
 
-        if (settings.Node.IncludeAptVersions)
-        {
             pt.Step("Apt Versions");
             sw.CreateTable("Package Version",
                            (await client.Nodes[node].Apt.Versions.GetAsync())
                             .Select(a => new
                             {
+                                a.Package,
+                                a.Version,
+                                a.OldVersion,
+                                a.CurrentState,
                                 a.Arch,
                                 a.Origin,
                                 a.Section,
-                                a.Package,
                                 a.Priority,
-                                a.Version,
-                                a.OldVersion,
                                 a.Title,
-                                a.CurrentState,
                                 a.Description
                             }));
         }
 
-        if (settings.Node.Firewall.Enabled)
+        if (settings.Firewall.Enabled)
         {
-            pt.Step("Firewall");
-            var fw = settings.Node.Firewall;
-
-            AddFirewallRules(sw, await client.Nodes[node].Firewall.Rules.GetAsync());
-
+            pt.Step("Firewall Logs");
             AddLogs(sw,
                     "Firewall Logs",
-                    await client.Nodes[node].Firewall.Log.GetAsync(limit: fw.LogMaxCount > 0
-                                                                            ? fw.LogMaxCount
-                                                                            : null,
-                                                                   since: fw.LogSinceUnix,
-                                                                   until: fw.LogUntilUnix));
+                    await client.Nodes[node].Firewall.Log.GetAsync(limit: settings.Firewall.Limit,
+                                                                   since: settings.Firewall.SinceUnix,
+                                                                   until: settings.Firewall.UntilUnix));
         }
 
-        if (settings.Node.IncludeSslCertificates)
-        {
-            pt.Step("SSL Certificates");
-            sw.CreateTable("SSL Certificates",
-                           (await client.Nodes[node].Certificates.Info.GetAsync()).Select(cert => new
-                           {
-                               cert.FileName,
-                               cert.Subject,
-                               cert.Issuer,
-                               cert.Fingerprint,
-                               cert.PublicKeyType,
-                               cert.PublicKeyBits,
-                               San = string.Join(", ", cert.San ?? []),
-                               NotBefore = FromUnixTime(cert.NotBefore),
-                               NotAfter = FromUnixTime(cert.NotAfter),
-                               DaysUntilExpiry = (FromUnixTime(cert.NotAfter)!.Value - DateTime.UtcNow).Days,
-                           }));
-        }
+        pt.Step("SSL Certificates");
+        sw.CreateTable("SSL Certificates",
+                       (await client.Nodes[node].Certificates.Info.GetAsync()).Select(cert => new
+                       {
+                           cert.FileName,
+                           cert.Subject,
+                           cert.Issuer,
+                           cert.Fingerprint,
+                           cert.PublicKeyType,
+                           cert.PublicKeyBits,
+                           San = string.Join(", ", cert.San ?? []),
+                           NotBefore = FromUnixTime(cert.NotBefore),
+                           NotAfter = FromUnixTime(cert.NotAfter),
+                           DaysUntilExpiry = (FromUnixTime(cert.NotAfter)!.Value - DateTime.UtcNow).Days,
+                       }));
 
         if (settings.Node.Tasks.Enabled)
         {
@@ -470,13 +426,13 @@ public partial class ReportEngine
                            {
                                a.UniqueTaskId,
                                a.Type,
+                               a.VmId,
                                a.User,
                                a.Status,
                                a.StatusOk,
                                StartTime = a.StartTimeDate,
                                EndTime = a.EndTimeDate,
                                a.Duration,
-                               a.VmId
                            }),
                            tbl => sw.ApplyVmIdLinks(tbl));
         }
@@ -485,10 +441,10 @@ public partial class ReportEngine
         sw.AdjustColumns();
     }
 
-    static List<dynamic> MakeZfsStatus(string poolName,
-                                     IEnumerable<NodeDiskZfsDetail.Child> children,
-                                     List<dynamic>? parentData,
-                                     int level)
+    private static List<dynamic> MakeZfsStatus(string poolName,
+                                               IEnumerable<NodeDiskZfsDetail.Child> children,
+                                               List<dynamic>? parentData,
+                                               int level)
     {
         parentData ??= [];
         foreach (var child in children)

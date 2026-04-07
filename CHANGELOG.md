@@ -2,6 +2,35 @@
 
 ---
 
+## [1.3.0] — 2026-04-07
+
+### What's new
+
+- **Syslog** — new global sheet with syslog from all nodes combined in one place
+- **Cluster Log** — cluster-wide event log (replaces "Audit Log")
+- **Cluster Tasks** — new sheet with all cluster-level tasks
+- **Firewall** — new global sheet with rules, aliases and IP sets across cluster, nodes, VMs and CTs
+- **Replication** — new global sheet with all replication jobs and status
+- **RRD Guests** — new global performance metrics sheet for VMs and CTs (disabled by default)
+- **Storage Content / Backups** — storage files and backups moved to dedicated global sheets
+- **Back links** — every node, VM and CT detail sheet now has a `← Back` link to its list
+- **More hyperlinks** — RRD, Replication, Firewall, Storage Content and Backups sheets now have clickable node, VM and storage links
+
+### Changes
+
+- RRD data removed from individual VM/CT detail sheets — now in the global RRD Guests sheet
+- Each section (Node, Storage, Guest) has its own parallel request limit for RRD data
+- Settings reorganized: storage content options grouped under `Storage.Content`
+- `Guest.RrdData` disabled by default — can produce very large sheets on big clusters
+
+### Fixes
+
+- Fixed a crash when generating the report with many sheets
+- Fixed wrong column headers in Storage Content / Backups sheets in certain configurations
+- Fixed empty rows in the Firewall sheet when a node or VM had no rules
+
+---
+
 ## [1.2.0] — 2026-04-03
 
 ### What's new

@@ -3,11 +3,10 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
-using System.Text.RegularExpressions;
 using ClosedXML.Excel;
-using Corsinvest.ProxmoxVE.Api;
 using Corsinvest.ProxmoxVE.Api.Extension;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
+using System.Text.RegularExpressions;
 
 namespace Corsinvest.ProxmoxVE.Report;
 
@@ -45,60 +44,38 @@ public partial class ReportEngine
                                  m.Groups[5].Value);
         }
 
-        return new SyslogRow(node, string.Empty, string.Empty, string.Empty, string.Empty, null, line);
+        return new SyslogRow(node, "", "", "", "", null, line);
     }
 
     private async Task AddSyslogDataAsync(XLWorkbook workbook)
     {
         if (!settings.Node.Syslog.Enabled) { return; }
 
-        var filtered = _resources.Where(a => a.ResourceType == ClusterResourceType.Node
-                                          && CheckNames(settings.Node.Names, a.Node)
-                                          && !a.IsUnknown)
-                                 .OrderBy(a => a.Node)
+        var filtered = GetResources(ClusterResourceType.Node)
+                                 .Where(a => !a.IsUnknown)
+                                 .OrderBy(a => a.Id)
                                  .ToList();
 
         if (filtered.Count == 0) { return; }
 
         var sw = CreateSheetWriter(workbook, "Syslog");
-        var ws = sw.Worksheet;
-
-        int? limit = settings.Node.Syslog.SinceUnix.HasValue 
-                        ? null 
-                        : (settings.Node.Syslog.MaxEntries > 0 
-                            ? settings.Node.Syslog.MaxEntries 
-                            : 500);
-
-Console.WriteLine($"Syslog: limit={limit}, since={settings.Node.Syslog.Since}, until={settings.Node.Syslog.Until}");
-
         IXLTable? table = null;
 
         foreach (var item in filtered)
         {
             ReportGlobal($"Syslog: {item.Node}");
 
-            var response = await client.Nodes[item.Node].Journal.GetAsync(lastentries: limit,
-                                                                          since: settings.Node.Syslog.SinceUnix,
-                                                                          until: settings.Node.Syslog.UntilUnix
-            );
+            sw.CreateOrAddTable(ref table,
+                                "Syslog",
+                                (await client.Nodes[item.Node]
+                                       .Journal
+                                       .GetAsync(lastentries: settings.Node.Syslog.Limit,
+                                                 since: settings.Node.Syslog.SinceUnix,
+                                                 until: settings.Node.Syslog.UntilUnix))
+                                    .Select(a => ParseSyslogLine(item.Node, a)).ToList());
 
-            var rows = response.Select(a => ParseSyslogLine(item.Node, a)).ToList();
-
-            if (settings.SkipEmptyTables && rows.Count == 0) { continue; }
-
-            if (table == null)
-            {
-                ws.Cell(1, 1).Value = "Syslog";
-                ws.Cell(1, 1).Style.Font.SetBold(true);
-                table = ws.Cell(2, 1).InsertTable(rows, true);
-                table.AutoFilter.IsEnabled = true;
-            }
-            else
-            {
-                table.AppendData(rows);
-            }
         }
 
-        ws.Columns().AdjustToContents();
+        sw.AdjustColumns();
     }
 }

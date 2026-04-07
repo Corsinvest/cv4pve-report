@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
+using Corsinvest.ProxmoxVE.Api.Shared.Models.Common;
+
 namespace Corsinvest.ProxmoxVE.Report;
 
 /// <summary>
@@ -31,48 +33,40 @@ public class Settings
     public SettingsStorage Storage { get; set; } = new();
 
     /// <summary>
-    /// Whether to skip empty collections (e.g. no snapshots) or include them as empty tables in the report.
+    /// Firewall settings (global rules, aliases, ipsets across cluster/nodes/VMs/CTs)
     /// </summary>
-    public bool SkipEmptyTables { get; set; } = true;
+    public SettingsFirewall Firewall { get; set; } = new();
 
     /// <summary>Fast profile — structure only, no heavy data.</summary>
     public static Settings Fast() => new()
     {
-        Cluster = new()
-        {
-            IncludeFirewall = false,
-            IncludeMetricServers = false,
-            IncludeSdn = false,
-            IncludeMapping = false,
-        },
         Node = new()
         {
-            Disk = new() { IncludeSmartData = false, IncludeZfs = false, IncludeDirectory = false },
-            Firewall = new() { Enabled = false },
-            IncludeSslCertificates = false,
-            IncludeAptRepositories = false,
-            IncludeAptUpdates = false,
-            IncludeAptVersions = false,
+            Disk = new()
+            {
+                IncludeDiskDetail = false,
+                IncludeSmartData = false
+            },
+            IncludeApt = false,
             Tasks = new() { Enabled = false },
             RrdData = new() { Enabled = false },
             Syslog = new() { Enabled = false },
         },
         Guest = new()
         {
-            Firewall = new() { Enabled = false },
-            IncludeSnapshots = false,
-            IncludeBackups = false,
+            Snapshots = new() { Enabled = false },
             IncludeQemuAgent = false,
             Tasks = new() { Enabled = false },
             RrdData = new() { Enabled = false },
         },
         Storage = new()
         {
+            Content = new() { IncludeContent = false, IncludeBackups = false },
             RrdData = new() { Enabled = false },
         },
     };
 
-    /// <summary>Standard profile — all except SMART, APT versions and tasks. Default.</summary>
+    /// <summary>Standard profile — all except SMART data. Default.</summary>
     public static Settings Standard() => new();
 
     /// <summary>Full profile — everything enabled, RRD on week timeframe.</summary>
@@ -83,29 +77,30 @@ public class Settings
         {
             Cluster = new()
             {
-                AuditLog = new() { Enabled = true, MaxCount = 1000 },
+                Log = new()
+                {
+                    Enabled = true,
+                    MaxCount = 1000
+                },
+            },
+            Firewall = new()
+            {
+                LogMaxCount = 1000,
+                LogSince = lastWeek
             },
             Node = new()
             {
                 Disk = new() { IncludeSmartData = true },
-                IncludeAptVersions = true,
-                RrdData = new() { TimeFrame = Api.Shared.Models.Common.RrdDataTimeFrame.Week },
-                Firewall = new() { LogMaxCount = 1000, LogSince = lastWeek },
-                Syslog = new()
-                {
-                    Enabled = true,
-                    MaxEntries = 1000,
-                    // Since = lastWeek
-                },
+                RrdData = new() { TimeFrame = RrdDataTimeFrame.Week },
+                Syslog = new() { Enabled = true, MaxEntries = 1000 },
             },
             Guest = new()
             {
-                RrdData = new() { TimeFrame = Api.Shared.Models.Common.RrdDataTimeFrame.Week },
-                Firewall = new() { LogMaxCount = 1000, LogSince = lastWeek },
+                RrdData = new() { Enabled = true, TimeFrame = RrdDataTimeFrame.Week },
             },
             Storage = new()
             {
-                RrdData = new() { TimeFrame = Api.Shared.Models.Common.RrdDataTimeFrame.Week },
+                RrdData = new() { TimeFrame = RrdDataTimeFrame.Week },
             },
         };
     }

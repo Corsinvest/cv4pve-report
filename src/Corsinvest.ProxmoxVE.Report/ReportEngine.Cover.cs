@@ -39,14 +39,12 @@ public partial class ReportEngine
 
         AddKV("Generated:", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
         AddKV("Application:", $"{info.ApplicationName} v{info.ApplicationVersion}");
-        row += 1;
+        row++;
 
         Add("Filters Applied");
 
-        AddKV("Empty Tables:", settings.SkipEmptyTables ? "Skip" : "Include");
         AddKV("Nodes:", settings.Node.Names);
         AddKV("VMs/Containers:", settings.Guest.Ids);
-        AddKV("Storages:", settings.Storage.Names);
 
         if (settings.Node.RrdData.Enabled)
         {
@@ -70,17 +68,77 @@ public partial class ReportEngine
 
         var sections = new List<(string, string)>
         {
-            ("Cluster",  "Cluster overview, users, roles, ACL, firewall, backup, replication"),
-            ("Storages", "Storage list with links to details"),
-            ("Nodes",    "Node list with links to details"),
-            ("Vms",      "VM/Container list with links to details"),
-            ("Network",  "Global network overview: node interfaces and VM/CT network inventory"),
-            ("Disks",    "Global disk inventory: storage configuration, node storages and VM/CT disks"),
+            // Topology
+            ("Cluster",    "Cluster overview, users, roles, ACL, firewall, backup jobs"),
+            ("Nodes",      "Node list with hardware, subscription, DNS, kernel details"),
+            ("Vms",        "Virtual machines (QEMU) with agent info, OS name/version/kernel, bios, cpu, memory and disk details"),
+            ("Containers", "LXC containers with hostname, swap, nameserver and privilege details"),
         };
+
+        sections.Add(("Disks", "Global disk inventory: VM/CT disk configuration"));
+
+        if (settings.Guest.IncludeQemuAgent)
+        {
+            sections.Add(("Partitions", "Guest filesystem partitions with used/total space from QEMU agent"));
+        }
+
+        if (settings.Guest.Snapshots.Enabled)
+        {
+            sections.Add(("Snapshots", "Global snapshot inventory across all VMs and containers"));
+        }
+
+        // Network / Storage
+        sections.Add(("Network", "Global network overview: node interfaces and VM/CT network inventory"));
+        sections.Add(("Storages", "Storage list with size, usage and type"));
+
+        if (settings.Storage.Content.IncludeContent)
+        {
+            sections.Add(("Storage Content", "Storage content inventory (ISO, templates, disk images — excludes backups)"));
+        }
+
+        if (settings.Storage.Content.IncludeBackups)
+        {
+            sections.Add(("Backups", "Backup inventory across all storages with protection, encryption and verification status"));
+        }
+
+        if (settings.Firewall.Enabled)
+        {
+            sections.Add(("Firewall", "Global firewall rules, aliases and IPSets across cluster, nodes, VMs and containers"));
+        }
+
+        if (settings.Node.IncludeReplication)
+        {
+            sections.Add(("Replication", "Global replication status across all nodes: last sync, next sync, errors and duration"));
+        }
+
+        if (settings.Node.RrdData.Enabled)
+        {
+            sections.Add(("RRD Nodes", "Historical performance data (CPU, memory, swap, disk, network) for all nodes"));
+        }
+
+        if (settings.Storage.RrdData.Enabled)
+        {
+            sections.Add(("RRD Storage", "Historical performance data (size, used, usage%) for all storages"));
+        }
+
+        if (settings.Guest.RrdData.Enabled)
+        {
+            sections.Add(("RRD Guests", "Historical performance data (CPU, memory, disk, network) for all VMs and containers"));
+        }
 
         if (settings.Node.Syslog.Enabled)
         {
             sections.Add(("Syslog", "Systemd journal per node parsed into date, time, host, service, pid and message"));
+        }
+
+        if (settings.Cluster.Log.Enabled)
+        {
+            sections.Add(("Cluster Log", "Cluster log with user, node, service and message"));
+        }
+
+        if (settings.Cluster.IncludeTasks)
+        {
+            sections.Add(("Cluster Tasks", "All recent tasks across the cluster with status, duration and node"));
         }
 
         foreach (var (sheetName, description) in sections)
@@ -88,7 +146,9 @@ public partial class ReportEngine
             ws.Cell(row, 1).Value = sheetName;
             ws.Cell(row, 1).Style.Font.SetUnderline(XLFontUnderlineValues.Single);
             ws.Cell(row, 1).Style.Font.SetFontColor(XLColor.Blue);
-            ws.Cell(row, 1).SetHyperlink(new XLHyperlink($"'{sheetName}'!A1"));
+
+            var actualSheet = workbook.Worksheets.FirstOrDefault(s => s.Name.StartsWith(sheetName[..Math.Min(sheetName.Length, MaxSheetNameLength)]))?.Name ?? sheetName;
+            ws.Cell(row, 1).SetHyperlink(new XLHyperlink($"'{actualSheet}'!A1"));
             ws.Cell(row, 2).Value = description;
             row++;
         }

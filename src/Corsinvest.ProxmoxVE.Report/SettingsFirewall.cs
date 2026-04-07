@@ -20,6 +20,11 @@ public class SettingsFirewall
     /// </summary>
     public int LogMaxCount { get; set; }
 
+    internal int? Limit
+        => LogMaxCount > 0
+            ? LogMaxCount
+            : null;
+
     /// <summary>
     /// Display firewall log since this date
     /// </summary>
@@ -30,13 +35,18 @@ public class SettingsFirewall
     /// </summary>
     public DateOnly? LogUntil { get; set; }
 
-    internal int? LogSinceUnix
+    internal int? SinceUnix
         => LogSince.HasValue
             ? (int)new DateTimeOffset(LogSince.Value.ToDateTime(TimeOnly.MinValue)).ToUnixTimeSeconds()
             : null;
 
-    internal int? LogUntilUnix
+    internal int? UntilUnix
         => LogUntil.HasValue
             ? (int)new DateTimeOffset(LogUntil.Value.ToDateTime(TimeOnly.MinValue)).ToUnixTimeSeconds()
             : null;
+
+    /// <summary>
+    /// Max parallel requests when fetching Firewall data (1 = sequential)
+    /// </summary>
+    public int MaxParallelRequests { get; set; } = 5;
 }

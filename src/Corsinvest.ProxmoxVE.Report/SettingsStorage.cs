@@ -11,12 +11,12 @@ namespace Corsinvest.ProxmoxVE.Report;
 public class SettingsStorage
 {
     /// <summary>
-    /// Storage names filter. Use @all or comma-separated names (wildcards supported).
+    /// Storage content and backup settings
     /// </summary>
-    public string Names { get; set; } = "@all";
+    public SettingsStorageContent Content { get; set; } = new();
 
     /// <summary>
     /// Include RRD metrics data
     /// </summary>
-    public SettingsRrdData RrdData { get; set; } = new();
+    public SettingsRrdData RrdData { get; set; } = new() { MaxParallelRequests = 5 };
 }

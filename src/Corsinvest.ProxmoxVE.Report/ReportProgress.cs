@@ -4,6 +4,7 @@
  */
 
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
+using Corsinvest.ProxmoxVE.Api.Shared.Models.Vm;
 
 namespace Corsinvest.ProxmoxVE.Report;
 
@@ -39,18 +40,20 @@ public class ReportProgress
         if (Resource == null)
         {
             return string.IsNullOrEmpty(Step)
-                ? ""
-                : $"[{Step}]";
+                    ? ""
+                    : $"[{Step}]";
         }
         else
         {
-            var type = Resource.ResourceType.ToString().ToLowerInvariant();
+            var type = Resource.ResourceType == ClusterResourceType.Vm
+                            ? (Resource.VmType == VmType.Qemu ? "vm" : "ct")
+                            : Resource.ResourceType.ToString().ToLowerInvariant();
 
             var name = Resource.ResourceType switch
             {
                 ClusterResourceType.Unknown => "Unknown",
                 ClusterResourceType.Node => Resource.Node,
-                ClusterResourceType.Vm => $"{Resource.VmId} {Resource.Name}",
+                ClusterResourceType.Vm => $"{(Resource.VmType == VmType.Qemu ? "VM" : "CT")} {Resource.VmId} {Resource.Name}",
                 ClusterResourceType.Storage => $"{Resource.Node}/{Resource.Storage}",
                 ClusterResourceType.Pool => Resource.Pool,
                 ClusterResourceType.Sdn => Resource.Sdn,
