@@ -261,9 +261,9 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
         PlaceVmPrefix("CT");
     }
 
-    private static string StorageNode(ClusterResource item) 
-        => item.Shared 
-            ? "(shared)" 
+    private static string StorageNode(ClusterResource item)
+        => item.Shared
+            ? "(shared)"
             : item.Node;
 
     private static double ToGB(double bytes) => Math.Round(bytes / 1024 / 1024 / 1024, 2);
