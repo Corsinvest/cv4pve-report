@@ -58,10 +58,7 @@ public partial class ReportEngine
                                     ? allContent.Where(a => !string.Equals(a.Content, "backup", StringComparison.OrdinalIgnoreCase))
                                                .Select(a => new
                                                {
-                                                   Node = item.Shared 
-                                                            ? "(shared)" 
-                                                            : item.Node,
-
+                                                   Node = StorageNode(item),
                                                    item.Storage,
                                                    a.Content,
                                                    a.FileName,
@@ -81,10 +78,7 @@ public partial class ReportEngine
                                     ? allContent.Where(a => string.Equals(a.Content, "backup", StringComparison.OrdinalIgnoreCase))
                                                .Select(a => new
                                                {
-                                                   Node = item.Shared 
-                                                            ? "(shared)" 
-                                                            : item.Node,
-                                                            
+                                                   Node = StorageNode(item),
                                                    item.Storage,
                                                    a.FileName,
                                                    a.Format,

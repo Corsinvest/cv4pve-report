@@ -36,12 +36,12 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
     private IEnumerable<ClusterResource> GetResources(ClusterResourceType type)
         => type switch
         {
-            ClusterResourceType.Node    => _resources.Where(a => a.ResourceType == ClusterResourceType.Node
-                                                              && CheckNames(settings.Node.Names, a.Node)),
-            ClusterResourceType.Vm      => _resources.Where(a => a.ResourceType == ClusterResourceType.Vm
-                                                              && _vmIds.Contains(a.VmId)),
+            ClusterResourceType.Node => _resources.Where(a => a.ResourceType == ClusterResourceType.Node
+                                                           && CheckNames(settings.Node.Names, a.Node)),
+            ClusterResourceType.Vm => _resources.Where(a => a.ResourceType == ClusterResourceType.Vm
+                                                          && _vmIds.Contains(a.VmId)),
             ClusterResourceType.Storage => _resources.Where(a => a.ResourceType == ClusterResourceType.Storage),
-            _                           => _resources.Where(a => a.ResourceType == type),
+            _ => _resources.Where(a => a.ResourceType == type),
         };
 
     private record VmNetworkRow(long VmId,
@@ -108,10 +108,6 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
 
                 case ClusterResourceType.Vm:
                     _sheetLinks[SheetLinkKey(ClusterResourceType.Vm, item.VmId.ToString())] = $"{(item.VmType == VmType.Qemu ? "VM" : "CT")} {item.VmId}";
-                    break;
-
-                case ClusterResourceType.Storage:
-                    _sheetLinks[SheetLinkKey(ClusterResourceType.Storage, item.Node, item.Storage)] = $"Storage {item.Node} - {item.Storage}";
                     break;
             }
         }
@@ -264,6 +260,11 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
         PlaceVmPrefix("VM");
         PlaceVmPrefix("CT");
     }
+
+    private static string StorageNode(ClusterResource item) 
+        => item.Shared 
+            ? "(shared)" 
+            : item.Node;
 
     private static double ToGB(double bytes) => Math.Round(bytes / 1024 / 1024 / 1024, 2);
     private static double ToMB(double bytes) => Math.Round(bytes / 1024 / 1024, 2);

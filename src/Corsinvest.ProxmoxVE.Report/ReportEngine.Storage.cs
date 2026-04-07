@@ -28,9 +28,7 @@ public partial class ReportEngine
         sw.CreateTable(null,
                        filtered.Select(a =>
                        {
-                           var node = a.Shared
-                                           ? "(shared)"
-                                           : a.Node;
+                           var node = StorageNode(a);
 
                            _sheetLinks[SheetLinkKey(ClusterResourceType.Storage, node, a.Storage)] = "Storages";
 

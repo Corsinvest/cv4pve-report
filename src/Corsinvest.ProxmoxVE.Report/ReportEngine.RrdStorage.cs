@@ -42,7 +42,7 @@ public partial class ReportEngine
                 var rows = (await client.Nodes[item.Node].Storage[item.Storage].Rrddata.GetAsync(rrdTimeFrame, rrdConsolidation))
                             .Select(a => new
                             {
-                                Node = item.Shared ? "(shared)" : item.Node,
+                                Node = StorageNode(item),
                                 item.Storage,
                                 a.TimeDate,
                                 SizeGB = ToGB(a.Size),
