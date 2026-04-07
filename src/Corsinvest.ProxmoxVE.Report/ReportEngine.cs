@@ -87,19 +87,6 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
     internal static string SheetLinkKey(ClusterResourceType type, params string[] values)
         => $"{type.ToString().ToLowerInvariant()}:{values.JoinAsString(":")}";
 
-    private static string BuildStorageSheetName(string node, string storage)
-    {
-        var full = $"Storage {node} - {storage}";
-        if (full.Length <= MaxSheetNameLength) { return full; }
-
-        var noPrefix = $"{node} - {storage}";
-        if (noPrefix.Length <= MaxSheetNameLength) { return noPrefix; }
-
-        if (storage.Length <= MaxSheetNameLength) { return storage; }
-
-        return storage[..MaxSheetNameLength];
-    }
-
     private async Task BuildSheetLinksAsync()
     {
         _resources = [.. (await client.GetResourcesAsync(ClusterResourceType.All))];
@@ -124,7 +111,7 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
                     break;
 
                 case ClusterResourceType.Storage:
-                    _sheetLinks[SheetLinkKey(ClusterResourceType.Storage, item.Node, item.Storage)] = BuildStorageSheetName(item.Node, item.Storage);
+                    _sheetLinks[SheetLinkKey(ClusterResourceType.Storage, item.Node, item.Storage)] = $"Storage {item.Node} - {item.Storage}";
                     break;
             }
         }
