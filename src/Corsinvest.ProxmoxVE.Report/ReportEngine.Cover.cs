@@ -73,8 +73,8 @@ public partial class ReportEngine
             sections.Add(("Cluster", "Cluster overview, users, roles, ACL, firewall, backup jobs"));
         }
 
-        sections.Add(("Nodes",      "Node list with hardware, subscription, DNS, kernel details"));
-        sections.Add(("Vms",        "Virtual machines (QEMU) with agent info, OS name/version/kernel, bios, cpu, memory and disk details"));
+        sections.Add(("Nodes", "Node list with hardware, subscription, DNS, kernel details"));
+        sections.Add(("Vms", "Virtual machines (QEMU) with agent info, OS name/version/kernel, bios, cpu, memory and disk details"));
         sections.Add(("Containers", "LXC containers with hostname, swap, nameserver and privilege details"));
 
         if (settings.Guest.IncludeDisksSheet)
