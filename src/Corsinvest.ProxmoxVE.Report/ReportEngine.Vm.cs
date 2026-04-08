@@ -205,24 +205,27 @@ public partial class ReportEngine
                 pt.Step("Disks");
                 AppendDiskRows(workbook, item, config.Disks);
 
-                await AddVmDetailAsync(workbook,
-                                       item,
-                                       config,
-                                       hostname ?? "",
-                                       agentVersion,
-                                       agentRunning,
-                                       vmQemuAgentOsInfo,
-                                       pt);
+                if (settings.Guest.Detail.Enabled)
+                {
+                    await AddVmDetailAsync(workbook,
+                                           item,
+                                           config,
+                                           hostname ?? "",
+                                           agentVersion,
+                                           agentRunning,
+                                           vmQemuAgentOsInfo,
+                                           pt);
+                }
             }
         }
 
         sw.CreateTable(null,
-                       items,
-                       tbl =>
-                       {
-                           sw.ApplyNodeLinks(tbl);
-                           sw.ApplyVmIdLinks(tbl);
-                       });
+                           items,
+                           tbl =>
+                           {
+                               sw.ApplyNodeLinks(tbl);
+                               sw.ApplyVmIdLinks(tbl);
+                           });
 
         sw.AdjustColumns();
     }
@@ -332,7 +335,7 @@ public partial class ReportEngine
         }
 
         var tableCount = (settings.Firewall.Enabled ? 1 : 0)  // Firewall Logs
-                         + (settings.Guest.Tasks.Enabled ? 1 : 0);
+                         + (settings.Guest.Detail.Tasks.Enabled ? 1 : 0);
 
         sw.ReserveIndexRows(tableCount);
 

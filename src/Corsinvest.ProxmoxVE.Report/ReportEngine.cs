@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
+using System.Text.RegularExpressions;
 using ClosedXML.Excel;
 using Corsinvest.ProxmoxVE.Api;
 using Corsinvest.ProxmoxVE.Api.Extension;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Vm;
-using System.Text.RegularExpressions;
 
 namespace Corsinvest.ProxmoxVE.Report;
 
@@ -33,6 +33,15 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
 
     private const int MaxSheetNameLength = 31;
 
+    private record VmNetworkRow(long VmId,
+                                string Name,
+                                string Node,
+                                string Type,
+                                string Status,
+                                string Hostname,
+                                VmNetwork Network,
+                                bool IsInternal);
+
     private IEnumerable<ClusterResource> GetResources(ClusterResourceType type)
         => type switch
         {
@@ -43,15 +52,6 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
             ClusterResourceType.Storage => _resources.Where(a => a.ResourceType == ClusterResourceType.Storage),
             _ => _resources.Where(a => a.ResourceType == type),
         };
-
-    private record VmNetworkRow(long VmId,
-                            string Name,
-                            string Node,
-                            string Type,
-                            string Status,
-                            string Hostname,
-                            VmNetwork Network,
-                            bool IsInternal);
 
     private string SafeSheetName(string candidate)
     {
@@ -270,6 +270,17 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
     private static double ToMB(double bytes) => Math.Round(bytes / 1024 / 1024, 2);
     private static string ToX(bool value) => value ? "X" : "";
     private static string ToX(bool? value) => value == true ? "X" : "";
+
+    private static bool? TrueOrNull(bool value)
+        => value
+            ? true
+            : null;
+
+    private static int? IntOrNull(int value)
+        => value > 0
+            ? value
+            : null;
+
     private static string ToNewLine(string? value, string character = ",")
         => value?.Replace(character, Environment.NewLine) ?? "";
 
@@ -319,18 +330,13 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
 
     private async Task AddGuestTasksTableAsync(SheetWriter sw, ProgressTracker pt, string node, long vmId)
     {
-        if (!settings.Guest.Tasks.Enabled) { return; }
+        if (!settings.Guest.Detail.Tasks.Enabled) { return; }
         pt.Step("Tasks");
-        var taskSettings = settings.Guest.Tasks;
         sw.CreateTable("Tasks",
                        (await client.Nodes[node].Tasks.GetAsync(vmid: (int)vmId,
-                                                                errors: taskSettings.OnlyErrors
-                                                                            ? true
-                                                                            : null,
-                                                                limit: taskSettings.MaxCount > 0
-                                                                            ? taskSettings.MaxCount
-                                                                            : null
-                       )).Select(a => new
+                                                                errors: TrueOrNull(settings.Guest.Detail.Tasks.OnlyErrors),
+                                                                limit: IntOrNull(settings.Guest.Detail.Tasks.MaxCount)))
+                       .Select(a => new
                        {
                            a.UniqueTaskId,
                            a.Type,

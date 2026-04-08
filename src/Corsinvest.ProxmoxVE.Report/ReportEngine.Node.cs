@@ -95,7 +95,7 @@ public partial class ReportEngine
                 dns?.Dns3,
             });
 
-            if (!item.IsUnknown)
+            if (!item.IsUnknown && settings.Node.Detail.Enabled)
             {
                 await AddNodeDetailAsync(workbook,
                                          item,
@@ -159,14 +159,14 @@ public partial class ReportEngine
 
         var tableCount = 1  // Services
                        + 1  // Network
-                       + (settings.Node.Disk.IncludeDiskDetail ? 1 : 0)   // Disks
-                       + (settings.Node.Disk.IncludeSmartData ? 1 : 0)
-                       + (settings.Node.Disk.IncludeDiskDetail ? 2 : 0)   // ZFS Pools + ZFS Pool Status
-                       + (settings.Node.Disk.IncludeDiskDetail ? 1 : 0)   // Directory
-                       + (settings.Node.IncludeApt ? 3 : 0)               // Repositories + Updates + Versions
+                       + (settings.Node.Detail.Disk.IncludeDiskDetail ? 1 : 0)   // Disks
+                       + (settings.Node.Detail.Disk.IncludeSmartData ? 1 : 0)
+                       + (settings.Node.Detail.Disk.IncludeDiskDetail ? 2 : 0)   // ZFS Pools + ZFS Pool Status
+                       + (settings.Node.Detail.Disk.IncludeDiskDetail ? 1 : 0)   // Directory
+                       + (settings.Node.Detail.IncludeApt ? 3 : 0)               // Repositories + Updates + Versions
                        + (settings.Firewall.Enabled ? 1 : 0)  // Firewall Logs
                        + 1  // SSL Certificates
-                       + (settings.Node.Tasks.Enabled ? 1 : 0);
+                       + (settings.Node.Detail.Tasks.Enabled ? 1 : 0);
 
         sw.ReserveIndexRows(tableCount);
 
@@ -233,11 +233,11 @@ public partial class ReportEngine
                        }),
                        tbl => sw.RegisterNetworkLinks(tbl, node));
 
-        if (settings.Node.Disk.IncludeDiskDetail || settings.Node.Disk.IncludeSmartData)
+        if (settings.Node.Detail.Disk.IncludeDiskDetail || settings.Node.Detail.Disk.IncludeSmartData)
         {
             var disksData = await client.Nodes[node].Disks.List.GetAsync(include_partitions: true);
 
-            if (settings.Node.Disk.IncludeDiskDetail)
+            if (settings.Node.Detail.Disk.IncludeDiskDetail)
             {
                 pt.Step("Disks");
                 sw.CreateTable("Disks",
@@ -262,7 +262,7 @@ public partial class ReportEngine
                                         }));
             }
 
-            if (settings.Node.Disk.IncludeSmartData)
+            if (settings.Node.Detail.Disk.IncludeSmartData)
             {
                 pt.Step("S.M.A.R.T. Data");
                 var smartItems = new List<dynamic>();
@@ -335,7 +335,7 @@ public partial class ReportEngine
             sw.CreateTable("ZFS Pool Status", zfsPoolsStatus);
         }
 
-        if (settings.Node.IncludeApt)
+        if (settings.Node.Detail.IncludeApt)
         {
             pt.Step("Apt Repository");
             var aptRepositories = await client.Nodes[node].Apt.Repositories.GetAsync();
@@ -413,10 +413,10 @@ public partial class ReportEngine
                            DaysUntilExpiry = (FromUnixTime(cert.NotAfter)!.Value - DateTime.UtcNow).Days,
                        }));
 
-        if (settings.Node.Tasks.Enabled)
+        if (settings.Node.Detail.Tasks.Enabled)
         {
             pt.Step("Tasks");
-            var taskSettings = settings.Node.Tasks;
+            var taskSettings = settings.Node.Detail.Tasks;
             sw.CreateTable("Tasks",
                            (await client.Nodes[node].Tasks.GetAsync(
                                errors: taskSettings.OnlyErrors ? true : null,

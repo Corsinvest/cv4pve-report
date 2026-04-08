@@ -23,16 +23,6 @@ Report Tool for Proxmox VE (Made in Italy)
 
 ---
 
-## Quick Start
-
-```bash
-wget https://github.com/Corsinvest/cv4pve-report/releases/download/VERSION/cv4pve-report-linux-x64.zip
-unzip cv4pve-report-linux-x64.zip
-./cv4pve-report --host=YOUR_HOST --username=root@pam --password=YOUR_PASSWORD export
-```
-
----
-
 ## Where cv4pve-report fits
 
 RVTools is a pure inventory tool for VMware — it exports infrastructure data to Excel, nothing more. The cv4pve suite follows the Unix philosophy — each tool does one thing and does it well. Use them together for complete coverage.
@@ -78,6 +68,83 @@ RVTools is a pure inventory tool for VMware — it exports infrastructure data t
 
 ---
 
+## Quick Start
+
+```bash
+wget https://github.com/Corsinvest/cv4pve-report/releases/download/VERSION/cv4pve-report-linux-x64.zip
+unzip cv4pve-report-linux-x64.zip
+./cv4pve-report --host=YOUR_HOST --username=root@pam --password=YOUR_PASSWORD export
+```
+
+With API token (recommended):
+
+```bash
+./cv4pve-report --host=YOUR_HOST --api-token=user@realm!token=uuid export
+```
+
+---
+
+## Profiles
+
+| Profile | Use case | Speed |
+|---------|----------|-------|
+| **Fast** | Quick scan, large clusters, CI/CD | fastest |
+| **Standard** | Daily reporting, balanced detail | medium |
+| **Full** | Audit, compliance, capacity planning | slowest |
+
+```bash
+cv4pve-report --host=YOUR_HOST --api-token=user@realm!token=uuid export           # Standard (default)
+cv4pve-report --host=YOUR_HOST --api-token=user@realm!token=uuid export --fast    # Fast
+cv4pve-report --host=YOUR_HOST --api-token=user@realm!token=uuid export --full    # Full
+```
+
+<details>
+<summary><strong>Profiles comparison</strong></summary>
+
+| Setting | Fast | Standard | Full |
+|---------|:----:|:--------:|:----:|
+| **Cluster** | | | |
+| IncludeSheet | ✓ | ✓ | ✓ |
+| Log.Enabled | | | ✓ |
+| Log.MaxCount | | — | 1000 |
+| IncludeTasksSheet | ✓ | ✓ | ✓ |
+| **Node** | | | |
+| Detail.Enabled | | ✓ | ✓ |
+| Detail.Disk.IncludeDiskDetail | | ✓ | ✓ |
+| Detail.Disk.IncludeSmartData | | | ✓ |
+| Detail.IncludeApt | | ✓ | ✓ |
+| Detail.Tasks.Enabled | | ✓ | ✓ |
+| IncludeReplicationSheet | ✓ | ✓ | ✓ |
+| Syslog.Enabled | | | ✓ |
+| Syslog.MaxCount | | — | 1000 |
+| Syslog.Since | | — | last 3 days |
+| RrdData.Enabled | | ✓ | ✓ |
+| RrdData.TimeFrame | | Day | Week |
+| **Guest** | | | |
+| Detail.Enabled | | ✓ | ✓ |
+| Detail.Tasks.Enabled | | ✓ | ✓ |
+| IncludeSnapshotsSheet | | ✓ | ✓ |
+| IncludeDisksSheet | | ✓ | ✓ |
+| IncludePartitionsSheet | | ✓ | ✓ |
+| IncludeQemuAgent | | ✓ | ✓ |
+| RrdData.Enabled | | | ✓ |
+| RrdData.TimeFrame | | — | Week |
+| **Storage** | | | |
+| IncludeContentSheet | | ✓ | ✓ |
+| IncludeBackupsSheet | | ✓ | ✓ |
+| RrdData.Enabled | | ✓ | ✓ |
+| RrdData.TimeFrame | | Day | Week |
+| **Firewall** | | | |
+| Enabled | | ✓ | ✓ |
+| MaxCount | | 0 | 1000 |
+| Since | | — | last 3 days |
+
+> Fast profile skips all detail sheets, RRD data, firewall and storage content — designed for quick inventory on large clusters.
+
+</details>
+
+---
+
 ## Features
 
 - **Single `.xlsx` file** — global sheets plus a dedicated detail sheet per node, VM and container
@@ -86,7 +153,8 @@ RVTools is a pure inventory tool for VMware — it exports infrastructure data t
 - **Nodes** — services, network, disks, SMART, ZFS, APT, SSL certificates, replication, syslog, firewall logs, tasks
 - **VMs/CTs** — config, network, disks, snapshots, firewall logs, tasks, QEMU agent info
 - **Global sheets** — Firewall (rules/aliases/ipsets), RRD Nodes, RRD Storage, RRD Guests, Syslog, Cluster Log, Cluster Tasks, Replication, Network, Disks, Partitions, Snapshots, Storage Content, Backups
-- **Flexible filtering** — `@all`, pools, tags, nodes, ID ranges, wildcards, exclusions (same syntax as cv4pve-autosnap)
+- **Flexible filtering** — `@all`, pools, tags, nodes, ID ranges, wildcards, exclusions — [see VM/CT Selection Patterns](#vmct-selection-patterns)
+- **Fully customizable** — three built-in profiles (Fast/Standard/Full) or bring your own `settings.json` to control exactly which sheets are generated — [see Settings Reference](#settings-reference)
 - **API token** support, cross-platform (Windows, Linux, macOS), no root access required
 
 ---
@@ -107,7 +175,8 @@ All binaries on the [Releases page](https://github.com/Corsinvest/cv4pve-report/
 
 ---
 
-## Security & Permissions
+<details>
+<summary><strong>Security &amp; Permissions</strong></summary>
 
 ### Required Permissions
 
@@ -118,11 +187,8 @@ All binaries on the [Releases page](https://github.com/Corsinvest/cv4pve-report/
 | **Pool.Audit** | Access pool information | Resource pools |
 | **Sys.Audit** | Node system information, services, disks | Cluster nodes |
 
-### API Token
 
-```bash
-cv4pve-report --host=pve.local --api-token=report@pve!token=uuid export
-```
+</details>
 
 ---
 
@@ -157,6 +223,9 @@ cv4pve-report --host=pve.local --api-token=report@pve!token=uuid export
 | … | **CT `<id>`** | Per-CT detail sheets (at end) |
 
 
+<details>
+<summary><strong>Sheet details</strong></summary>
+
 ### Cluster Sheet
 
 | Table | Contents |
@@ -179,24 +248,24 @@ cv4pve-report --host=pve.local --api-token=report@pve!token=uuid export
 
 ### Node Detail Sheet
 
-Per-node sheet (linked from Nodes list), with `← Back` to Nodes:
+Per-node sheet (linked from Nodes list), with `← Back` to Nodes. Skipped entirely if `Node.Detail.Enabled = false`.
 
 | Table | Contents |
 |-------|----------|
 | Services | System service status |
 | Network | Interface configuration with IPv4/IPv6, bond, VLAN, OVS details |
-| Disks | Physical disk list *(if `Node.Disk.IncludeDiskDetail`)* |
-| SMART Data | SMART attributes per disk *(if `Node.Disk.IncludeSmartData`)* |
-| ZFS Pools / ZFS Pool Status | ZFS pool health, usage, vdev tree *(if `Node.Disk.IncludeDiskDetail`)* |
-| Directory | Filesystem mount points *(if `Node.Disk.IncludeDiskDetail`)* |
-| APT Repository / APT Update / Package Versions | APT info *(if `Node.IncludeApt`)* |
+| Disks | Physical disk list *(if `Node.Detail.Disk.IncludeDiskDetail`)* |
+| SMART Data | SMART attributes per disk *(if `Node.Detail.Disk.IncludeSmartData`)* |
+| ZFS Pools / ZFS Pool Status | ZFS pool health, usage, vdev tree *(if `Node.Detail.Disk.IncludeDiskDetail`)* |
+| Directory | Filesystem mount points *(if `Node.Detail.Disk.IncludeDiskDetail`)* |
+| APT Repository / APT Update / Package Versions | APT info *(if `Node.Detail.IncludeApt`)* |
 | Firewall Logs | Node firewall log *(if `Firewall.Enabled`)* |
 | SSL Certificates | Certificate validity, expiry, fingerprint |
-| Tasks | Recent task history *(if `Node.Tasks.Enabled`)* |
+| Tasks | Recent task history *(if `Node.Detail.Tasks.Enabled`)* |
 
 ### VM / CT Detail Sheet
 
-Per-VM/CT sheet (linked from Vms/Containers list), with `← Back` to list:
+Per-VM/CT sheet (linked from Vms/Containers list), with `← Back` to list. Skipped entirely if `Guest.Detail.Enabled = false`.
 
 | Table | Contents |
 |-------|----------|
@@ -206,7 +275,7 @@ Per-VM/CT sheet (linked from Vms/Containers list), with `← Back` to list:
 | Network | Interface config from VM config |
 | Disks | Disk list with storage, size, cache |
 | Firewall Logs | VM/CT firewall log *(if `Firewall.Enabled`)* |
-| Tasks | Recent task history *(if `Guest.Tasks.Enabled`)* |
+| Tasks | Recent task history *(if `Guest.Detail.Tasks.Enabled`)* |
 
 ### Global Sheets
 
@@ -228,94 +297,113 @@ Per-VM/CT sheet (linked from Vms/Containers list), with `← Back` to list:
 
 **RRD Nodes / RRD Storage / RRD Guests** — single table per sheet with resource identifier columns + time-series metrics *(if enabled)*
 
+</details>
+
 ---
 
 ## Settings Reference
 
-Generate the default settings file with:
+Customize the report by creating and editing a `settings.json` file:
 
 ```bash
-cv4pve-report create-settings
+# Step 1 — generate a settings file (pick your starting profile)
+cv4pve-report create-settings          # Standard (default)
+cv4pve-report create-settings --fast   # Fast
+cv4pve-report create-settings --full   # Full
+
+# Step 2 — edit settings.json to your needs
+
+# Step 3 — run with your custom settings
+cv4pve-report --host=YOUR_HOST --api-token=user@realm!token=uuid export --settings-file=settings.json
 ```
+
+> **Tip:** setting `Enabled = false` or `Include*Sheet = false` on any section skips that sheet entirely — useful on large clusters to reduce file size and generation time.
+>
+> Key flags:
+> - `Guest.Detail.Enabled = false` — skip all per-VM/CT detail sheets (one sheet per VM)
+> - `Node.Detail.Enabled = false` — skip all per-node detail sheets
+> - `Cluster.IncludeSheet = false` — skip the Cluster sheet
+> - `Guest.IncludeDisksSheet / IncludeSnapshotsSheet / IncludePartitionsSheet = false` — skip individual global sheets
+> - `Firewall.Enabled = false` — skip firewall sheet and firewall logs in all detail sheets
 
 <details>
 <summary><strong>Full settings.json with all defaults</strong></summary>
 
 ```jsonc
 {
+  "MaxParallelRequests": 5,        // global parallel API requests (1 = sequential)
   "Cluster": {
+    "IncludeSheet": true,          // cluster overview sheet (users, roles, ACL, backup jobs)
     "Log": {
-      "Enabled": false,            // cluster event log
+      "Enabled": false,            // cluster event log sheet
       "MaxCount": 0                // 0 = unlimited
     },
-    "IncludeTasks": true           // cluster tasks sheet
+    "IncludeTasksSheet": true      // cluster tasks sheet
   },
   "Node": {
     "Names": "@all",               // @all | pve1 | pve1,pve2 | pve*
+    "Detail": {
+      "Enabled": true,             // per-node detail sheets (set false to skip all, useful on large clusters)
+      "Disk": {
+        "IncludeDiskDetail": true, // physical disks, ZFS, directory mount points
+        "IncludeSmartData": false  // SMART attributes per disk (one API call per disk — slow)
+      },
+      "Tasks": {
+        "Enabled": true,
+        "OnlyErrors": false,       // show only failed tasks
+        "MaxCount": 0,             // 0 = unlimited
+        "Source": "all"            // all | local | active
+      },
+      "IncludeApt": true           // APT repositories, available updates, installed packages
+    },
     "RrdData": {
       "Enabled": true,
       "TimeFrame": "Day",          // Hour | Day | Week | Month | Year
-      "Consolidation": "Average",  // Average | Maximum
-      "MaxParallelRequests": 3
+      "Consolidation": "Average"   // Average | Maximum
     },
-    "Tasks": {
-      "Enabled": true,
-      "OnlyErrors": false,           // show only failed tasks
-      "MaxCount": 500,
-      "Source": "all"                // all | local | active
-    },
-    "Disk": {
-      "IncludeDiskDetail": true,   // physical disks, ZFS, directory mount points
-      "IncludeSmartData": false    // SMART attributes per disk (one API call per disk — slow)
-    },
-    "IncludeApt": true,            // APT repositories, available updates, installed packages
-    "IncludeReplication": true,    // replication jobs global sheet
+    "IncludeReplicationSheet": true, // replication jobs global sheet
     "Syslog": {
       "Enabled": false,
-      "MaxEntries": 500,
+      "MaxCount": 500,
       "Since": null,               // DateOnly e.g. "2024-01-01"
       "Until": null
     }
   },
   "Guest": {
     "Ids": "@all",                 // see VM/CT Selection Patterns below
+    "Detail": {
+      "Enabled": true,             // per-VM/CT detail sheets (set false to skip all, useful on large clusters)
+      "Tasks": {
+        "Enabled": true,
+        "OnlyErrors": false,
+        "MaxCount": 0,
+        "Source": "all"
+      }
+    },
     "RrdData": {
       "Enabled": false,            // disabled by default — can be large on big clusters
       "TimeFrame": "Day",
-      "Consolidation": "Average",
-      "MaxParallelRequests": 5
+      "Consolidation": "Average"
     },
-    "Tasks": {
-      "Enabled": true,
-      "OnlyErrors": false,           // show only failed tasks
-      "MaxCount": 500,
-      "Source": "all"                // all | local | active
-    },
-    "Snapshots": {
-      "Enabled": true,
-      "MaxParallelRequests": 5
-    },
+    "IncludeSnapshotsSheet": true, // global snapshots sheet
+    "IncludeDisksSheet": true,     // global disks sheet
+    "IncludePartitionsSheet": true, // guest disk partitions via QEMU agent
     "IncludeQemuAgent": true       // OS info, network, filesystems (running VMs with agent only)
   },
   "Storage": {
-    "Content": {
-      "IncludeContent": true,      // storage content (ISO, templates, disk images)
-      "IncludeBackups": true,      // backup files
-      "MaxParallelRequests": 5
-    },
+    "IncludeContentSheet": true,   // storage content (ISO, templates, disk images)
+    "IncludeBackupsSheet": true,   // backup files
     "RrdData": {
       "Enabled": true,
       "TimeFrame": "Day",
-      "Consolidation": "Average",
-      "MaxParallelRequests": 5
+      "Consolidation": "Average"
     }
   },
   "Firewall": {
-    "Enabled": true,               // global firewall sheet (rules, aliases, IP sets) + firewall logs in detail sheets
-    "LogMaxCount": 0,              // 0 = unlimited
-    "LogSince": null,              // DateOnly e.g. "2024-01-01"
-    "LogUntil": null,
-    "MaxParallelRequests": 5
+    "Enabled": true,               // global firewall sheet + firewall logs in detail sheets
+    "MaxCount": 0,                 // 0 = unlimited firewall log lines
+    "Since": null,                 // DateOnly e.g. "2024-01-01"
+    "Until": null
   }
 }
 ```
@@ -324,8 +412,7 @@ cv4pve-report create-settings
 
 ---
 
-<details>
-<summary><strong>VM/CT Selection Patterns</strong></summary>
+## VM/CT Selection Patterns
 
 The `Guest.Ids` setting supports the same powerful pattern matching as [cv4pve-autosnap](https://github.com/Corsinvest/cv4pve-autosnap):
 
@@ -355,113 +442,6 @@ The `Guest.Ids` setting supports the same powerful pattern matching as [cv4pve-a
 @all,-@tag-test               # all except VMs tagged "test"
 %web%                         # VMs whose name contains "web"
 ```
-
-</details>
-
-## Command Reference
-
-<details>
-<summary><strong>Full command reference</strong></summary>
-
-```bash
-cv4pve-report [global-options] [command]
-```
-
-#### Authentication
-| Parameter | Description | Example |
-|-----------|-------------|---------|
-| `--host` | Proxmox host(s) | `--host=pve.local:8006` |
-| `--username` | Username@realm | `--username=root@pam` |
-| `--password` | Password or file | `--password=secret` or `--password=file:/path` |
-| `--api-token` | API token | `--api-token=user@realm!token=uuid` |
-| `--validate-certificate` | Validate SSL certificate | `false` |
-
-#### Global Options
-| Parameter | Description |
-|-----------|-------------|
-| `--settings-file` | Custom settings JSON file |
-
-#### Commands
-
-**`export`** — Generate Excel report
-
-| Option | Description |
-|--------|-------------|
-| `--fast` | Fast profile (structure only, no heavy data) |
-| `--full` | Full profile (everything, RRD on week timeframe) |
-| `--output\|-o` | Output file path (default: `Report_YYYYMMDD_HHmmss.xlsx` in current directory) |
-
-Profile priority: `--settings-file` > `--fast` / `--full` > standard (default)
-
-```bash
-cv4pve-report --host=pve.local --api-token=report@pve!token=uuid export
-cv4pve-report --host=pve.local --api-token=report@pve!token=uuid export --fast
-cv4pve-report --host=pve.local --api-token=report@pve!token=uuid export --full --output=/reports/infra.xlsx
-cv4pve-report --host=pve.local --api-token=report@pve!token=uuid export --settings-file=my.json
-```
-
-**`create-settings`** — Create `settings.json` for the chosen profile
-
-| Option | Description |
-|--------|-------------|
-| `--fast` | Fast profile |
-| `--full` | Full profile |
-
-```bash
-cv4pve-report create-settings           # standard (default)
-cv4pve-report create-settings --fast
-cv4pve-report create-settings --full
-```
-
-</details>
-
----
-
-## Profiles
-
-| Profile | Use case | Speed |
-|---------|----------|-------|
-| **Fast** | Quick scan, large clusters, CI/CD | fastest |
-| **Standard** | Daily reporting, balanced detail | medium |
-| **Full** | Audit, compliance, capacity planning | slowest |
-
-<details>
-<summary><strong>Profiles comparison</strong></summary>
-
-| Setting | Fast | Standard | Full |
-|---------|:----:|:--------:|:----:|
-| **Cluster** | | | |
-| Log.Enabled | | | ✓ |
-| Log.MaxCount | | — | 1000 |
-| IncludeTasks | ✓ | ✓ | ✓ |
-| **Node** | | | |
-| Disk.IncludeDiskDetail | | ✓ | ✓ |
-| Disk.IncludeSmartData | | | ✓ |
-| IncludeApt | | ✓ | ✓ |
-| IncludeReplication | ✓ | ✓ | ✓ |
-| Tasks.Enabled | | ✓ | ✓ |
-| Syslog.Enabled | | | ✓ |
-| Syslog.MaxEntries | | — | 1000 |
-| Syslog.Since | | — | last 3 days |
-| RrdData.Enabled | | ✓ | ✓ |
-| RrdData.TimeFrame | | Day | Week |
-| **Guest** | | | |
-| Snapshots.Enabled | | ✓ | ✓ |
-| IncludeQemuAgent | | ✓ | ✓ |
-| Tasks.Enabled | | ✓ | ✓ |
-| RrdData.Enabled | | | ✓ |
-| RrdData.TimeFrame | | — | Week |
-| **Storage** | | | |
-| Content.IncludeContent | | ✓ | ✓ |
-| Content.IncludeBackups | | ✓ | ✓ |
-| RrdData.Enabled | | ✓ | ✓ |
-| RrdData.TimeFrame | | Day | Week |
-| **Firewall** | | | |
-| Enabled | | ✓ | ✓ |
-| LogMaxCount | | 0 | 1000 |
-| LogSince | | — | last 3 days |
-
-</details>
 
 ---
 

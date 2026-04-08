@@ -25,7 +25,7 @@ public partial class ReportEngine
 
         var rrdTimeFrame = settings.Node.RrdData.TimeFrame.GetValue();
         var rrdConsolidation = settings.Node.RrdData.Consolidation.GetValue();
-        var semaphore = new SemaphoreSlim(settings.Node.RrdData.MaxParallelRequests);
+        var semaphore = new SemaphoreSlim(settings.MaxParallelRequests);
 
         var tasks = nodes.Select(async item =>
         {

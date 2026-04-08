@@ -13,6 +13,7 @@ public partial class ReportEngine
 {
     private void AppendDiskRows(XLWorkbook workbook, ClusterResource vm, IEnumerable<VmDisk> disks)
     {
+        if (!settings.Guest.IncludeDisksSheet) { return; }
         var rows = disks.Select(a =>
         {
             var storageRes = _resources.FirstOrDefault(r => r.ResourceType == ClusterResourceType.Storage

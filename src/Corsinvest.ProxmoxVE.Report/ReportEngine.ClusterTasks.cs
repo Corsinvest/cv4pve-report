@@ -12,7 +12,7 @@ public partial class ReportEngine
 {
     private async Task AddClusterTasksDataAsync(XLWorkbook workbook)
     {
-        if (!settings.Cluster.IncludeTasks) { return; }
+        if (!settings.Cluster.IncludeTasksSheet) { return; }
 
         var tasks = await client.Cluster.Tasks.GetAsync();
 

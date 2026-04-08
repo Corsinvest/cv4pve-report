@@ -66,23 +66,28 @@ public partial class ReportEngine
 
         Add("Contents");
 
-        var sections = new List<(string, string)>
+        var sections = new List<(string, string)>();
+
+        if (settings.Cluster.IncludeSheet)
         {
-            // Topology
-            ("Cluster",    "Cluster overview, users, roles, ACL, firewall, backup jobs"),
-            ("Nodes",      "Node list with hardware, subscription, DNS, kernel details"),
-            ("Vms",        "Virtual machines (QEMU) with agent info, OS name/version/kernel, bios, cpu, memory and disk details"),
-            ("Containers", "LXC containers with hostname, swap, nameserver and privilege details"),
-        };
+            sections.Add(("Cluster", "Cluster overview, users, roles, ACL, firewall, backup jobs"));
+        }
 
-        sections.Add(("Disks", "Global disk inventory: VM/CT disk configuration"));
+        sections.Add(("Nodes",      "Node list with hardware, subscription, DNS, kernel details"));
+        sections.Add(("Vms",        "Virtual machines (QEMU) with agent info, OS name/version/kernel, bios, cpu, memory and disk details"));
+        sections.Add(("Containers", "LXC containers with hostname, swap, nameserver and privilege details"));
 
-        if (settings.Guest.IncludeQemuAgent)
+        if (settings.Guest.IncludeDisksSheet)
+        {
+            sections.Add(("Disks", "Global disk inventory: VM/CT disk configuration"));
+        }
+
+        if (settings.Guest.IncludePartitionsSheet && settings.Guest.IncludeQemuAgent)
         {
             sections.Add(("Partitions", "Guest filesystem partitions with used/total space from QEMU agent"));
         }
 
-        if (settings.Guest.Snapshots.Enabled)
+        if (settings.Guest.IncludeSnapshotsSheet)
         {
             sections.Add(("Snapshots", "Global snapshot inventory across all VMs and containers"));
         }
@@ -91,12 +96,12 @@ public partial class ReportEngine
         sections.Add(("Network", "Global network overview: node interfaces and VM/CT network inventory"));
         sections.Add(("Storages", "Storage list with size, usage and type"));
 
-        if (settings.Storage.Content.IncludeContent)
+        if (settings.Storage.IncludeContentSheet)
         {
             sections.Add(("Storage Content", "Storage content inventory (ISO, templates, disk images — excludes backups)"));
         }
 
-        if (settings.Storage.Content.IncludeBackups)
+        if (settings.Storage.IncludeBackupsSheet)
         {
             sections.Add(("Backups", "Backup inventory across all storages with protection, encryption and verification status"));
         }
@@ -106,7 +111,7 @@ public partial class ReportEngine
             sections.Add(("Firewall", "Global firewall rules, aliases and IPSets across cluster, nodes, VMs and containers"));
         }
 
-        if (settings.Node.IncludeReplication)
+        if (settings.Node.IncludeReplicationSheet)
         {
             sections.Add(("Replication", "Global replication status across all nodes: last sync, next sync, errors and duration"));
         }
@@ -136,7 +141,7 @@ public partial class ReportEngine
             sections.Add(("Cluster Log", "Cluster log with user, node, service and message"));
         }
 
-        if (settings.Cluster.IncludeTasks)
+        if (settings.Cluster.IncludeTasksSheet)
         {
             sections.Add(("Cluster Tasks", "All recent tasks across the cluster with status, duration and node"));
         }

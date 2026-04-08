@@ -2,6 +2,28 @@
 
 ---
 
+## [1.4.0] — 2026-04-08
+
+### What's new
+
+- **Custom settings** — generate a `settings.json` with `create-settings`, edit it, and pass it with `--settings-file` to fully control which sheets are generated
+- **Cluster sheet can be disabled** — new `Cluster.IncludeSheet` flag to skip the Cluster sheet entirely
+- **Per-node detail sheets can be disabled** — `Node.Detail.Enabled = false` skips all per-node detail sheets, useful on large clusters
+- **Per-VM/CT detail sheets can be disabled** — `Guest.Detail.Enabled = false` skips all per-VM/CT detail sheets, the most impactful option for clusters with hundreds of VMs
+- **Individual global sheets can be toggled** — `Guest.IncludeDisksSheet`, `Guest.IncludeSnapshotsSheet`, `Guest.IncludePartitionsSheet` to skip specific sheets
+
+### Changes
+
+- Settings restructured: node detail options moved under `Node.Detail` (disk, tasks, APT)
+- Settings restructured: guest detail options moved under `Guest.Detail` (tasks)
+- `MaxParallelRequests` unified to a single global setting (previously split per-section)
+- `IncludeReplication` renamed to `IncludeReplicationSheet`, `IncludeTasks` renamed to `IncludeTasksSheet` for consistency
+- Firewall settings simplified: `LogMaxCount` → `MaxCount`, `LogSince` → `Since`, `LogUntil` → `Until`
+- **Fast profile** now disables detail sheets and firewall — significantly faster on large clusters
+- README reorganized: profiles and customization are now front and center
+
+---
+
 ## [1.3.0] — 2026-04-07
 
 ### What's new

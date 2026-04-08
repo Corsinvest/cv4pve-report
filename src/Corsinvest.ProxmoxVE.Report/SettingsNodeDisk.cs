@@ -8,7 +8,7 @@ namespace Corsinvest.ProxmoxVE.Report;
 /// <summary>
 /// Disk-related settings for node detail sheet
 /// </summary>
-public class SettingsDisk
+public class SettingsNodeDisk
 {
     /// <summary>
     /// Include disk detail: physical disk list, ZFS pools and directory mount points

@@ -26,7 +26,7 @@ public partial class ReportEngine
 
         var rrdTimeFrame = settings.Guest.RrdData.TimeFrame.GetValue();
         var rrdConsolidation = settings.Guest.RrdData.Consolidation.GetValue();
-        var semaphore = new SemaphoreSlim(settings.Guest.RrdData.MaxParallelRequests);
+        var semaphore = new SemaphoreSlim(settings.MaxParallelRequests);
 
         var tasks = guests.Select(async item =>
         {

@@ -18,13 +18,13 @@ public class SettingsSyslog
     /// <summary>
     /// Maximum number of entries to return (0 = unlimited)
     /// </summary>
-    public int MaxEntries { get; set; } = 500;
+    public int MaxCount { get; set; } = 500;
 
     internal int? Limit
         => SinceUnix.HasValue
             ? null
-            : MaxEntries > 0
-                ? MaxEntries
+            : MaxCount > 0
+                ? MaxCount
                 : 500;
 
     /// <summary>

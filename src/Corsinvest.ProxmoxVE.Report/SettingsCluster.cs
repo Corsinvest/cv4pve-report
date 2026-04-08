@@ -11,6 +11,11 @@ namespace Corsinvest.ProxmoxVE.Report;
 public class SettingsCluster
 {
     /// <summary>
+    /// Include cluster overview sheet (users, roles, ACL, backup jobs)
+    /// </summary>
+    public bool IncludeSheet { get; set; } = true;
+
+    /// <summary>
     /// Cluster log settings
     /// </summary>
     public SettingsClusterLog Log { get; set; } = new();
@@ -18,5 +23,5 @@ public class SettingsCluster
     /// <summary>
     /// Include cluster tasks sheet
     /// </summary>
-    public bool IncludeTasks { get; set; } = true;
+    public bool IncludeTasksSheet { get; set; } = true;
 }

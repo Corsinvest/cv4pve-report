@@ -22,7 +22,7 @@ public partial class ReportEngine
     {
         if (!settings.Firewall.Enabled) { return; }
 
-        var semaphore = new SemaphoreSlim(settings.Firewall.MaxParallelRequests);
+        var semaphore = new SemaphoreSlim(settings.MaxParallelRequests);
 
         // Cluster firewall
         ReportGlobal("Firewall: Cluster");
