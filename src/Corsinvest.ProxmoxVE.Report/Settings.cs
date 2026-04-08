@@ -37,33 +37,36 @@ public class Settings
     /// </summary>
     public SettingsFirewall Firewall { get; set; } = new();
 
+    /// <summary>
+    /// Max parallel requests when fetching (1 = sequential)
+    /// </summary>
+    public int MaxParallelRequests { get; set; } = 5;
+
     /// <summary>Fast profile — structure only, no heavy data.</summary>
     public static Settings Fast() => new()
     {
         Node = new()
         {
-            Disk = new()
-            {
-                IncludeDiskDetail = false,
-                IncludeSmartData = false
-            },
-            IncludeApt = false,
-            Tasks = new() { Enabled = false },
+            Detail = new() { Enabled = false },
             RrdData = new() { Enabled = false },
             Syslog = new() { Enabled = false },
         },
         Guest = new()
         {
-            Snapshots = new() { Enabled = false },
+            IncludeSnapshotsSheet = false,
+            IncludeDisksSheet = false,
+            IncludePartitionsSheet = false,
             IncludeQemuAgent = false,
-            Tasks = new() { Enabled = false },
+            Detail = new() { Enabled = false },
             RrdData = new() { Enabled = false },
         },
         Storage = new()
         {
-            Content = new() { IncludeContent = false, IncludeBackups = false },
+            IncludeContentSheet = false,
+            IncludeBackupsSheet = false,
             RrdData = new() { Enabled = false },
         },
+        Firewall = new() { Enabled = false },
     };
 
     /// <summary>Standard profile — all except SMART data. Default.</summary>
@@ -85,18 +88,29 @@ public class Settings
             },
             Firewall = new()
             {
-                LogMaxCount = 1000,
-                LogSince = lastWeek
+                MaxCount = 1000,
+                Since = lastWeek
             },
             Node = new()
             {
-                Disk = new() { IncludeSmartData = true },
+                Detail = new()
+                {
+                    Disk = new() { IncludeSmartData = true },
+                },
                 RrdData = new() { TimeFrame = RrdDataTimeFrame.Week },
-                Syslog = new() { Enabled = true, MaxEntries = 1000 },
+                Syslog = new()
+                {
+                    Enabled = true,
+                    MaxCount = 1000
+                },
             },
             Guest = new()
             {
-                RrdData = new() { Enabled = true, TimeFrame = RrdDataTimeFrame.Week },
+                RrdData = new()
+                {
+                    Enabled = true,
+                    TimeFrame = RrdDataTimeFrame.Week
+                },
             },
             Storage = new()
             {

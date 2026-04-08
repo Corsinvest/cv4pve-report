@@ -104,7 +104,10 @@ public partial class ReportEngine
                 pt.Step("Disks");
                 AppendDiskRows(workbook, item, config.Disks);
 
-                await AddContainerDetailAsync(workbook, item, config, pt);
+                if (settings.Guest.Detail.Enabled)
+                {
+                    await AddContainerDetailAsync(workbook, item, config, pt);
+                }
             }
         }
 
@@ -175,7 +178,7 @@ public partial class ReportEngine
         sw.Col = 1;
 
         var tableCount = (settings.Firewall.Enabled ? 1 : 0)  // Firewall Logs
-                       + (settings.Guest.Tasks.Enabled ? 1 : 0);
+                       + (settings.Guest.Detail.Tasks.Enabled ? 1 : 0);
 
         sw.ReserveIndexRows(tableCount);
 

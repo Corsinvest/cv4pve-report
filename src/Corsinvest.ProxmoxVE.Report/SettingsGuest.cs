@@ -21,18 +21,27 @@ public class SettingsGuest
     public SettingsRrdData RrdData { get; set; } = new()
     {
         Enabled = false,
-        MaxParallelRequests = 5
     };
 
     /// <summary>
-    /// Task history settings
+    /// Per-VM/CT detail sheet settings
     /// </summary>
-    public SettingsTask Tasks { get; set; } = new();
+    public SettingsGuestDetail Detail { get; set; } = new();
 
     /// <summary>
-    /// Include snapshots
+    /// Include snapshots global sheet
     /// </summary>
-    public SettingsGuestSnapshots Snapshots { get; set; } = new();
+    public bool IncludeSnapshotsSheet { get; set; } = true;
+
+    /// <summary>
+    /// Include disks global sheet
+    /// </summary>
+    public bool IncludeDisksSheet { get; set; } = true;
+
+    /// <summary>
+    /// Include partitions global sheet (requires IncludeQemuAgent)
+    /// </summary>
+    public bool IncludePartitionsSheet { get; set; } = true;
 
     /// <summary>
     /// Include QEMU agent info (network interfaces and filesystem info) — only for running VMs with agent enabled

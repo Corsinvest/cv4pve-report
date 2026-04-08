@@ -13,7 +13,7 @@ public partial class ReportEngine
 {
     private async Task AddStorageContentDataAsync(XLWorkbook workbook)
     {
-        if (!settings.Storage.Content.IncludeContent && !settings.Storage.Content.IncludeBackups) { return; }
+        if (!settings.Storage.IncludeContentSheet && !settings.Storage.IncludeBackupsSheet) { return; }
 
         var all = GetResources(ClusterResourceType.Storage)
                             .OrderBy(a => a.Id)
@@ -41,7 +41,7 @@ public partial class ReportEngine
                 ? _resources.FirstOrDefault(r => r.VmId == vmId)?.Name ?? ""
                 : "";
 
-        var semaphore = new SemaphoreSlim(settings.Storage.Content.MaxParallelRequests);
+        var semaphore = new SemaphoreSlim(settings.MaxParallelRequests);
 
         var tasks = filtered.Select(async item =>
         {
@@ -54,7 +54,7 @@ public partial class ReportEngine
 
                 var storageSize = item.DiskSize;
 
-                var contentRows = settings.Storage.Content.IncludeContent
+                var contentRows = settings.Storage.IncludeContentSheet
                                     ? allContent.Where(a => !string.Equals(a.Content, "backup", StringComparison.OrdinalIgnoreCase))
                                                .Select(a => new
                                                {
@@ -74,7 +74,7 @@ public partial class ReportEngine
                                                .ToList()
                                     : [];
 
-                var backupRows = settings.Storage.Content.IncludeBackups
+                var backupRows = settings.Storage.IncludeBackupsSheet
                                     ? allContent.Where(a => string.Equals(a.Content, "backup", StringComparison.OrdinalIgnoreCase))
                                                .Select(a => new
                                                {

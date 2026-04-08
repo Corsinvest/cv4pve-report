@@ -13,7 +13,7 @@ public partial class ReportEngine
 {
     private async Task AddSnapshotsDataAsync(XLWorkbook workbook)
     {
-        if (!settings.Guest.Snapshots.Enabled) { return; }
+        if (!settings.Guest.IncludeSnapshotsSheet) { return; }
 
         var resources = GetResources(ClusterResourceType.Vm)
                                 .Where(a => !a.IsUnknown)
@@ -24,7 +24,7 @@ public partial class ReportEngine
 
         var sw = CreateSheetWriter(workbook, "Snapshots");
         IXLTable? table = null;
-        var semaphore = new SemaphoreSlim(settings.Guest.Snapshots.MaxParallelRequests);
+        var semaphore = new SemaphoreSlim(settings.MaxParallelRequests);
 
         var tasks = resources.Select(async item =>
         {

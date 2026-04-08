@@ -15,6 +15,8 @@ public partial class ReportEngine
                                      ClusterResource vm,
                                      IEnumerable<VmQemuAgentGetFsInfo.ResultInt> partitions)
     {
+        if (!settings.Guest.IncludePartitionsSheet) { return; }
+
         _partitionSw ??= CreateSheetWriter(workbook, "Partitions");
         _partitionSw.CreateOrAddTable(ref _partitionTable,
                                       null,

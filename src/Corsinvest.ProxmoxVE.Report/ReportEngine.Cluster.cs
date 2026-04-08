@@ -13,6 +13,8 @@ public partial class ReportEngine
 {
     private async Task AddClusterDataAsync(XLWorkbook workbook)
     {
+        if (!settings.Cluster.IncludeSheet) { return; }
+
         var sw = CreateSheetWriter(workbook, "Cluster");
 
         var pveVersion = await client.Version.GetAsync();

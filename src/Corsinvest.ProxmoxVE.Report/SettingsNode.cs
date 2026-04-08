@@ -16,29 +16,19 @@ public class SettingsNode
     public string Names { get; set; } = "@all";
 
     /// <summary>
+    /// Per-node detail sheet settings
+    /// </summary>
+    public SettingsNodeDetail Detail { get; set; } = new();
+
+    /// <summary>
     /// Include RRD metrics data
     /// </summary>
-    public SettingsRrdData RrdData { get; set; } = new() { MaxParallelRequests = 3 };
-
-    /// <summary>
-    /// Task history settings
-    /// </summary>
-    public SettingsTask Tasks { get; set; } = new();
-
-    /// <summary>
-    /// Disk settings
-    /// </summary>
-    public SettingsDisk Disk { get; set; } = new();
-
-    /// <summary>
-    /// Include APT repositories, available updates and installed package versions
-    /// </summary>
-    public bool IncludeApt { get; set; } = true;
+    public SettingsRrdData RrdData { get; set; } = new();
 
     /// <summary>
     /// Include replication jobs global sheet
     /// </summary>
-    public bool IncludeReplication { get; set; } = true;
+    public bool IncludeReplicationSheet { get; set; } = true;
 
     /// <summary>
     /// Syslog settings

@@ -11,12 +11,17 @@ namespace Corsinvest.ProxmoxVE.Report;
 public class SettingsStorage
 {
     /// <summary>
-    /// Storage content and backup settings
+    /// Include storage content (ISO, templates, disk images) sheet
     /// </summary>
-    public SettingsStorageContent Content { get; set; } = new();
+    public bool IncludeContentSheet { get; set; } = true;
+
+    /// <summary>
+    /// Include backup files sheet
+    /// </summary>
+    public bool IncludeBackupsSheet { get; set; } = true;
 
     /// <summary>
     /// Include RRD metrics data
     /// </summary>
-    public SettingsRrdData RrdData { get; set; } = new() { MaxParallelRequests = 5 };
+    public SettingsRrdData RrdData { get; set; } = new();
 }

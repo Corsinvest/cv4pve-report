@@ -6,17 +6,17 @@
 namespace Corsinvest.ProxmoxVE.Report;
 
 /// <summary>
-/// Snapshots settings
+/// Per-VM/CT detail sheet settings
 /// </summary>
-public class SettingsGuestSnapshots
+public class SettingsGuestDetail
 {
     /// <summary>
-    /// Enable snapshots
+    /// Enable detail sheets
     /// </summary>
     public bool Enabled { get; set; } = true;
 
     /// <summary>
-    /// Max parallel requests when fetching snapshots (1 = sequential)
+    /// Task history settings
     /// </summary>
-    public int MaxParallelRequests { get; set; } = 5;
+    public SettingsTask Tasks { get; set; } = new();
 }
