@@ -1,7 +1,0 @@
-Package: cv4pve-report
-Version: SKIP
-Architecture: SKIP
-Maintainer: Corsinvest Srl <corsinvest@corsinvest.it>
-Homepage: https://github.com/Corsinvest/cv4pve-report
-Description: Report tool for Proxmox VE
- Exports full infrastructure inventory to Excel — the RVTools for Proxmox VE.
