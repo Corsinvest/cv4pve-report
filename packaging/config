@@ -1,0 +1,8 @@
+type=cli
+description=Report tool for Proxmox VE — exports full infrastructure inventory to Excel
+long-description=Exports full infrastructure inventory to Excel — the RVTools for Proxmox VE.
+license=GPL-3.0-only
+winget-id=Corsinvest.cv4pve.report
+pkg-identifier=it.corsinvest.cv4pve-report
+nuget-project-path=src/Corsinvest.ProxmoxVE.Report/Corsinvest.ProxmoxVE.Report.csproj
+homebrew-formula-class=Cv4pveReport
