@@ -349,9 +349,9 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
                        }));
     }
 
-    private static void AddLogs(SheetWriter sw, string title, IEnumerable<string> logs)
+    private static void AddLogs(SheetWriter sw, string title, IEnumerable<string>? logs)
     {
-        var list = logs.ToList();
+        var list = (logs ?? []).ToList();
 
         // Proxmox API returns "no content" string when there are no logs, 
         // so we need to check for that and return an empty list instead

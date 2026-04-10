@@ -186,6 +186,7 @@ All binaries on the [Releases page](https://github.com/Corsinvest/cv4pve-report/
 | **Datastore.Audit** | Read storage content and metrics | Storage systems |
 | **Pool.Audit** | Access pool information | Resource pools |
 | **Sys.Audit** | Node system information, services, disks | Cluster nodes |
+| **Sys.Modify** | APT repositories, available updates and installed package versions | Cluster nodes |
 
 
 </details>
