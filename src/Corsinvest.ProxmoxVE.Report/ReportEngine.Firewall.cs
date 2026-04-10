@@ -18,11 +18,11 @@ public partial class ReportEngine
     private IXLTable? _firewallAliasTable;
     private IXLTable? _firewallIpSetTable;
 
-    private async Task AddFirewallDataAsync(XLWorkbook workbook)
+    private async Task<int> AddFirewallDataAsync(XLWorkbook workbook)
     {
-        if (!settings.Firewall.Enabled) { return; }
+        if (!settings.Firewall.Enabled) { return 0; }
 
-        var semaphore = new SemaphoreSlim(settings.MaxParallelRequests);
+        var semaphore = CreateSemaphore();
 
         // Cluster firewall
         ReportGlobal("Firewall: Cluster");
@@ -105,6 +105,8 @@ public partial class ReportEngine
 
         _firewallSw?.WriteIndex();
         _firewallSw?.AdjustColumns();
+
+        return clusterRules.Count() + nodes.Count + guests.Count;
     }
 
     private void AppendFirewallRules(XLWorkbook workbook,

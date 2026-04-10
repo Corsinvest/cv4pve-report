@@ -13,7 +13,47 @@ namespace Corsinvest.ProxmoxVE.Report;
 
 public partial class ReportEngine
 {
-    private async Task AddContainersDataAsync(XLWorkbook workbook)
+    private class CtFetchData
+    {
+        public required ClusterResource Item { get; init; }
+        public VmConfigLxc? Config { get; init; }
+        public List<VmNetworkRow> Networks { get; init; } = [];
+    }
+
+    private async Task<CtFetchData> FetchCtDataAsync(ClusterResource item, ProgressTracker pt)
+    {
+        pt.Next(item);
+
+        pt.Step("Config");
+        var config = item.IsUnknown
+                        ? null
+                        : await client.Nodes[item.Node].Lxc[item.VmId].Config.GetAsync();
+
+        var networks = new List<VmNetworkRow>();
+        if (config != null)
+        {
+            foreach (var net in config.Networks)
+            {
+                networks.Add(new(item.VmId,
+                                 item.Name,
+                                 item.Node,
+                                 item.Type,
+                                 item.Status,
+                                 config.Hostname ?? "",
+                                 net,
+                                 IsInternal: false));
+            }
+        }
+
+        return new()
+        {
+            Item = item,
+            Config = config,
+            Networks = networks
+        };
+    }
+
+    private async Task<int> AddContainersDataAsync(XLWorkbook workbook)
     {
         var sw = CreateSheetWriter(workbook, "Containers");
 
@@ -25,34 +65,21 @@ public partial class ReportEngine
         var items = new List<dynamic>();
         var pt = new ProgressTracker(_progress, resources.Count);
 
-        foreach (var item in resources)
+        var semaphore = CreateSemaphore();
+        var tasks = resources.Select(async item =>
         {
-            pt.Next(item);
+            await semaphore.WaitAsync();
+            try { return await FetchCtDataAsync(item, pt); }
+            finally { semaphore.Release(); }
+        });
+        var results = (await Task.WhenAll(tasks)).OrderBy(d => d.Item.Id).ToList();
 
-            pt.Step("Config");
-            VmConfigLxc? config = item.IsUnknown
-                            ? null
-                            : await client.Nodes[item.Node].Lxc[item.VmId].Config.GetAsync();
+        foreach (var d in results)
+        {
+            var item = d.Item;
+            var networks = d.Networks.Where(a => !a.IsInternal);
 
-            var ctNetworks = new List<VmNetworkRow>();
-            if (config != null)
-            {
-                foreach (var net in config.Networks)
-                {
-                    var vmNet = new VmNetworkRow(item.VmId,
-                                                 item.Name,
-                                                 item.Node,
-                                                 item.Type,
-                                                 item.Status,
-                                                 config.Hostname ?? "",
-                                                 net,
-                                                 IsInternal: false);
-                    ctNetworks.Add(vmNet);
-                    AppendVmNetworkRows(workbook, vmNet);
-                }
-            }
-
-            var networks = ctNetworks.Where(a => !a.IsInternal);
+            _pendingNetworkRows.AddRange(d.Networks);
 
             items.Add(new
             {
@@ -76,8 +103,8 @@ public partial class ReportEngine
                 DiskUsageGB = ToGB(item.DiskUsage),
                 DiskUsagePct = item.DiskUsagePercentage,
                 Uptime = FormatHelper.UptimeInfo(item.Uptime),
-                config?.Hostname,
-                OsVersion = config?.OsTypeDecode,
+                d.Config?.Hostname,
+                OsVersion = d.Config?.OsTypeDecode,
                 NetworksWrap = networks.Select(a => $"{a.Network.MacAddress} {a.Network.Bridge}{(a.Network.Tag.HasValue ? $"/{a.Network.Tag}" : "")}")
                                        .JoinAsString(Environment.NewLine),
                 IpAddressesWrap = networks.Select(a => new[] { a.Network.IpAddress, a.Network.IpAddress6 }
@@ -85,28 +112,27 @@ public partial class ReportEngine
                                                         .JoinAsString(", "))
                                           .Where(s => !string.IsNullOrEmpty(s))
                                           .JoinAsString(Environment.NewLine),
-                OnBootFlag = ToX(config?.OnBoot),
-                ConfigProtectionFlag = ToX(config?.Protection),
+                OnBootFlag = ToX(d.Config?.OnBoot),
+                ConfigProtectionFlag = ToX(d.Config?.Protection),
                 DescriptionWrap = item.Description,
-                config?.Cores,
-                config?.Swap,
-                UnprivilegedFlag = ToX(config?.Unprivileged),
-                config?.Nameserver,
-                config?.SearchDomain,
-                config?.Features,
-                config?.Timezone,
-                config?.Startup,
-                config?.Hookscript,
+                d.Config?.Cores,
+                d.Config?.Swap,
+                UnprivilegedFlag = ToX(d.Config?.Unprivileged),
+                d.Config?.Nameserver,
+                d.Config?.SearchDomain,
+                d.Config?.Features,
+                d.Config?.Timezone,
+                d.Config?.Startup,
+                d.Config?.Hookscript,
             });
 
-            if (config != null)
+            if (d.Config != null)
             {
-                pt.Step("Disks");
-                AppendDiskRows(workbook, item, config.Disks);
+                AppendDiskRows(item, d.Config.Disks);
 
                 if (settings.Guest.Detail.Enabled)
                 {
-                    await AddContainerDetailAsync(workbook, item, config, pt);
+                    await AddContainerDetailAsync(workbook, d, pt);
                 }
             }
         }
@@ -118,14 +144,14 @@ public partial class ReportEngine
         });
 
         sw.AdjustColumns();
+
+        return resources.Count;
     }
 
-    private async Task AddContainerDetailAsync(XLWorkbook workbook,
-                                               ClusterResource item,
-                                               VmConfigLxc config,
-                                               ProgressTracker pt)
+    private async Task AddContainerDetailAsync(XLWorkbook workbook, CtFetchData d, ProgressTracker pt)
     {
-        var sw = CreateSheetWriter(workbook, GetSheetName(ClusterResourceType.Vm, item.VmId.ToString())!);
+        var config = d.Config!;
+        var sw = CreateSheetWriter(workbook, GetSheetName(ClusterResourceType.Vm, d.Item.VmId.ToString())!);
         sw.WriteBackLink("Containers", "list:containers");
 
         var configKv = new Dictionary<string, object?>
@@ -154,20 +180,20 @@ public partial class ReportEngine
             configKv.TryAdd(key, value);
         }
 
-        sw.WriteKeyValue($"{item.VmId} - {item.Name}",
+        sw.WriteKeyValue($"{d.Item.VmId} - {d.Item.Name}",
                          new()
                          {
-                             ["VM ID"] = item.VmId,
-                             ["Name"] = item.Name,
+                             ["VM ID"] = d.Item.VmId,
+                             ["Name"] = d.Item.Name,
                              ["Hostname"] = config.Hostname,
-                             ["Node"] = item.Node,
-                             ["Status"] = item.Status,
-                             ["CPU"] = item.CpuSize,
-                             ["CPU Usage"] = item.HostCpuUsage,
-                             ["Memory GB"] = ToGB(item.MemorySize),
-                             ["Memory Host %"] = item.HostMemoryUsage,
-                             ["Disk GB"] = ToGB(item.DiskSize),
-                             ["Uptime"] = FormatHelper.UptimeInfo(item.Uptime),
+                             ["Node"] = d.Item.Node,
+                             ["Status"] = d.Item.Status,
+                             ["CPU"] = d.Item.CpuSize,
+                             ["CPU Usage"] = d.Item.HostCpuUsage,
+                             ["Memory GB"] = ToGB(d.Item.MemorySize),
+                             ["Memory Host %"] = d.Item.HostMemoryUsage,
+                             ["Disk GB"] = ToGB(d.Item.DiskSize),
+                             ["Uptime"] = FormatHelper.UptimeInfo(d.Item.Uptime),
                          });
 
         var mainRow = sw.Row;
@@ -187,8 +213,8 @@ public partial class ReportEngine
             pt.Step("Firewall Logs");
             AddLogs(sw,
                     "Firewall Logs",
-                    await client.Nodes[item.Node]
-                                .Lxc[item.VmId]
+                    await client.Nodes[d.Item.Node]
+                                .Lxc[d.Item.VmId]
                                 .Firewall
                                 .Log
                                 .GetAsync(limit: settings.Firewall.Limit,
@@ -196,7 +222,7 @@ public partial class ReportEngine
                                           until: settings.Firewall.UntilUnix));
         }
 
-        await AddGuestTasksTableAsync(sw, pt, item.Node, item.VmId);
+        await AddGuestTasksTableAsync(sw, pt, d.Item.Node, d.Item.VmId);
 
         sw.WriteIndex();
         sw.AdjustColumns();

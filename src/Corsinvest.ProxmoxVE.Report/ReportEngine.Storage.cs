@@ -10,7 +10,7 @@ namespace Corsinvest.ProxmoxVE.Report;
 
 public partial class ReportEngine
 {
-    private async Task AddStoragesDataAsync(XLWorkbook workbook)
+    private async Task<int> AddStoragesDataAsync(XLWorkbook workbook)
     {
         var sw = CreateSheetWriter(workbook, "Storages");
 
@@ -52,5 +52,7 @@ public partial class ReportEngine
                       });
 
         sw.AdjustColumns();
+
+        return filtered.Count;
     }
 }

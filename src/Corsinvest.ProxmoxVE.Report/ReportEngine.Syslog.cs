@@ -47,16 +47,16 @@ public partial class ReportEngine
         return new SyslogRow(node, "", "", "", "", null, line);
     }
 
-    private async Task AddSyslogDataAsync(XLWorkbook workbook)
+    private async Task<int> AddSyslogDataAsync(XLWorkbook workbook)
     {
-        if (!settings.Node.Syslog.Enabled) { return; }
+        if (!settings.Node.Syslog.Enabled) { return 0; }
 
         var filtered = GetResources(ClusterResourceType.Node)
                                  .Where(a => !a.IsUnknown)
                                  .OrderBy(a => a.Id)
                                  .ToList();
 
-        if (filtered.Count == 0) { return; }
+        if (filtered.Count == 0) { return 0; }
 
         var sw = CreateSheetWriter(workbook, "Syslog");
         IXLTable? table = null;
@@ -77,5 +77,7 @@ public partial class ReportEngine
         }
 
         sw.AdjustColumns();
+
+        return filtered.Count;
     }
 }

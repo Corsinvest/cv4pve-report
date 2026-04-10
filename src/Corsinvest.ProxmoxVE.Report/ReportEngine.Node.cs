@@ -13,7 +13,46 @@ namespace Corsinvest.ProxmoxVE.Report;
 
 public partial class ReportEngine
 {
-    private async Task AddNodesDataAsync(XLWorkbook workbook)
+    private class NodeFetchData
+    {
+        public required ClusterResource Item { get; init; }
+        public NodeStatus? Status { get; init; }
+        public NodeVersion? Version { get; init; }
+        public NodeSubscription? Subscription { get; init; }
+        public NodeDns? Dns { get; init; }
+        public NodeTime? Time { get; init; }
+        public IEnumerable<NodeNetwork> Networks { get; init; } = [];
+    }
+
+    private async Task<NodeFetchData> FetchNodeDataAsync(ClusterResource item, ProgressTracker pt)
+    {
+        pt.Next(item);
+
+        if (item.IsUnknown) { return new NodeFetchData { Item = item }; }
+
+        pt.Step("Status/Version/Subscription/DNS/Time/Network");
+        var node = client.Nodes[item.Node];
+        var statusTask = node.Status.GetAsync();
+        var versionTask = node.Version.GetAsync();
+        var subscriptionTask = node.Subscription.GetAsync();
+        var dnsTask = node.Dns.GetAsync();
+        var timeTask = node.Time.GetAsync();
+        var networksTask = node.Network.GetAsync();
+        await Task.WhenAll(statusTask, versionTask, subscriptionTask, dnsTask, timeTask, networksTask);
+
+        return new()
+        {
+            Item = item,
+            Status = statusTask.Result,
+            Version = versionTask.Result,
+            Subscription = subscriptionTask.Result,
+            Dns = dnsTask.Result,
+            Time = timeTask.Result,
+            Networks = networksTask.Result,
+        };
+    }
+
+    private async Task<int> AddNodesDataAsync(XLWorkbook workbook)
     {
         var sw = CreateSheetWriter(workbook, "Nodes");
         var items = new List<dynamic>();
@@ -24,87 +63,75 @@ public partial class ReportEngine
 
         var pt = new ProgressTracker(_progress, filtered.Count);
 
-        foreach (var item in filtered)
+        var semaphore = CreateSemaphore();
+        var tasks = filtered.Select(async item =>
         {
-            pt.Next(item);
+            await semaphore.WaitAsync();
+            try { return await FetchNodeDataAsync(item, pt); }
+            finally { semaphore.Release(); }
+        });
 
-            pt.Step("Status");
-            var status = item.IsUnknown
-                            ? null
-                            : await client.Nodes[item.Node].Status.GetAsync();
+        var results = (await Task.WhenAll(tasks)).OrderBy(a => a.Item.Id).ToList();
 
-            pt.Step("Version");
-            var version = item.IsUnknown
-                            ? null
-                            : await client.Nodes[item.Node].Version.GetAsync();
+        foreach (var d in results)
+        {
+            //var item = ;
 
-            pt.Step("Subscription");
-            var subscription = item.IsUnknown
-                                ? null
-                                : await client.Nodes[item.Node].Subscription.GetAsync();
-
-            pt.Step("DNS");
-            var dns = item.IsUnknown
-                        ? null
-                        : await client.Nodes[item.Node].Dns.GetAsync();
-
-            pt.Step("Time");
-            var time = item.IsUnknown
-                        ? null
-                        : await client.Nodes[item.Node].Time.GetAsync();
+            _pendingNodeNetworkRows.AddRange(d.Networks.Select(a => (d.Item.Node, a)));
 
             items.Add(new
             {
-                item.Node,
-                item.Status,
-                Uptime = FormatHelper.UptimeInfo(item.Uptime),
-                item.CpuSize,
-                CpuCpus = status?.CpuInfo.Cpus,
-                CpuSockets = status?.CpuInfo.Sockets,
-                CpuCores = status?.CpuInfo.Cores,
-                CpuModel = status?.CpuInfo.Model,
-                CpuMhz = status?.CpuInfo.Mhz,
-                CpuHvm = status?.CpuInfo.Hvm,
-                MemorySizeGB = ToGB(item.MemorySize),
-                MemoryUsageGB = ToGB(item.MemoryUsage),
-                MemoryUsagePct = item.MemoryUsagePercentage,
-                SwapTotalGB = ToGB(status?.Swap.Total ?? 0),
-                SwapUsedGB = ToGB(status?.Swap.Used ?? 0),
-                SwapUsagePct = status?.Swap.Total > 0 ? (double)(status.Swap.Used) / status.Swap.Total : (double?)null,
-                DiskSizeGB = ToGB(item.DiskSize),
-                DiskUsageGB = ToGB(item.DiskUsage),
-                DiskUsagePct = item.DiskUsagePercentage,
-                RootFsTotalGB = ToGB(status?.RootFs.Total ?? 0),
-                RootFsUsedGB = ToGB(status?.RootFs.Used ?? 0),
-                RootFsUsagePct = status?.RootFs.Total > 0 ? (double)status.RootFs.Used / status.RootFs.Total : (double?)null,
-                KernelVersion = status?.Kversion,
-                KernelRelease = status?.CurrentKernel?.Release,
-                BootMode = status?.BootInfo?.Mode,
-                SecurebootFlag = ToX(status?.BootInfo?.Secureboot),
-                item.CgroupMode,
-                status?.PveVersion,
-                VersionVersion = version?.Version,
-                VersionRelease = version?.Release,
-                Subscription = item.NodeLevel,
-                SubscriptionProductName = subscription?.ProductName,
-                SubscriptionRegDate = subscription?.RegDate,
-                time?.Timezone,
-                DnsSearch = dns?.Search,
-                dns?.Dns1,
-                dns?.Dns2,
-                dns?.Dns3,
+                d.Item.Node,
+                d.Item.Status,
+                Uptime = FormatHelper.UptimeInfo(d.Item.Uptime),
+                d.Item.CpuSize,
+                CpuCpus = d.Status?.CpuInfo.Cpus,
+                CpuSockets = d.Status?.CpuInfo.Sockets,
+                CpuCores = d.Status?.CpuInfo.Cores,
+                CpuModel = d.Status?.CpuInfo.Model,
+                CpuMhz = d.Status?.CpuInfo.Mhz,
+                CpuHvm = d.Status?.CpuInfo.Hvm,
+                MemorySizeGB = ToGB(d.Item.MemorySize),
+                MemoryUsageGB = ToGB(d.Item.MemoryUsage),
+                MemoryUsagePct = d.Item.MemoryUsagePercentage,
+                SwapTotalGB = ToGB(d.Status?.Swap.Total ?? 0),
+                SwapUsedGB = ToGB(d.Status?.Swap.Used ?? 0),
+
+                SwapUsagePct = d.Status?.Swap.Total > 0
+                                ? (double)(d.Status.Swap.Used) / d.Status.Swap.Total
+                                : (double?)null,
+
+                DiskSizeGB = ToGB(d.Item.DiskSize),
+                DiskUsageGB = ToGB(d.Item.DiskUsage),
+                DiskUsagePct = d.Item.DiskUsagePercentage,
+                RootFsTotalGB = ToGB(d.Status?.RootFs.Total ?? 0),
+                RootFsUsedGB = ToGB(d.Status?.RootFs.Used ?? 0),
+
+                RootFsUsagePct = d.Status?.RootFs.Total > 0
+                                    ? (double)d.Status.RootFs.Used / d.Status.RootFs.Total
+                                    : (double?)null,
+
+                KernelVersion = d.Status?.Kversion,
+                KernelRelease = d.Status?.CurrentKernel?.Release,
+                BootMode = d.Status?.BootInfo?.Mode,
+                SecurebootFlag = ToX(d.Status?.BootInfo?.Secureboot),
+                d.Item.CgroupMode,
+                d.Status?.PveVersion,
+                VersionVersion = d.Version?.Version,
+                VersionRelease = d.Version?.Release,
+                Subscription = d.Item.NodeLevel,
+                SubscriptionProductName = d.Subscription?.ProductName,
+                SubscriptionRegDate = d.Subscription?.RegDate,
+                Time = d.Time?.Timezone,
+                DnsSearch = d.Dns?.Search,
+                d.Dns?.Dns1,
+                d.Dns?.Dns2,
+                d.Dns?.Dns3,
             });
 
-            if (!item.IsUnknown && settings.Node.Detail.Enabled)
+            if (!d.Item.IsUnknown && settings.Node.Detail.Enabled)
             {
-                await AddNodeDetailAsync(workbook,
-                                         item,
-                                         status!,
-                                         version!,
-                                         subscription!,
-                                         dns!,
-                                         time!,
-                                         pt);
+                await AddNodeDetailAsync(workbook, d, pt);
             }
         }
 
@@ -113,48 +140,43 @@ public partial class ReportEngine
                        tbl => sw.ApplyColumnLinks(tbl, "Node", cell => $"node:{cell.Value}"));
 
         sw.AdjustColumns();
+
+        return filtered.Count;
     }
 
-    private async Task AddNodeDetailAsync(XLWorkbook workbook,
-                                          ClusterResource item,
-                                          NodeStatus status,
-                                          NodeVersion version,
-                                          NodeSubscription subscription,
-                                          NodeDns dns,
-                                          NodeTime time,
-                                          ProgressTracker pt)
+    private async Task AddNodeDetailAsync(XLWorkbook workbook, NodeFetchData data, ProgressTracker pt)
     {
-        var node = item.Node;
+        var node = data.Item.Node;
         var sw = CreateSheetWriter(workbook, GetSheetName(ClusterResourceType.Node, node)!);
         sw.WriteBackLink("Nodes", "list:nodes");
 
         sw.WriteKeyValue(node,
                          new()
                          {
-                             ["Status"] = item.Status,
-                             ["CPU Sockets"] = status.CpuInfo.Sockets,
-                             ["CPU Cores"] = status.CpuInfo.Cores,
-                             ["CPU Model"] = status.CpuInfo.Model,
-                             ["CPU MHz"] = status.CpuInfo.Mhz,
-                             ["Memory GB"] = ToGB(status.Memory.Total),
-                             ["Memory Used GB"] = ToGB(status.Memory.Used),
-                             ["Swap GB"] = ToGB(status.Swap.Total),
-                             ["Root FS GB"] = ToGB(status.RootFs.Total),
-                             ["Kernel"] = status.Kversion,
-                             ["Kernel Release"] = status.CurrentKernel?.Release,
-                             ["Boot Mode"] = status.BootInfo?.Mode,
-                             ["Secure Boot"] = status.BootInfo?.Secureboot,
-                             ["CPU HVM"] = status.CpuInfo.Hvm,
-                             ["Uptime"] = FormatHelper.UptimeInfo(item.Uptime),
-                             ["PVE Version"] = status.PveVersion,
-                             ["Version"] = $"{version.Version}-{version.Release}",
-                             ["Subscription"] = subscription.ProductName,
-                             ["Subscription Expiry"] = subscription.RegDate,
-                             ["Timezone"] = time.Timezone,
-                             ["DNS Search"] = dns.Search,
-                             ["DNS 1"] = dns.Dns1,
-                             ["DNS 2"] = dns.Dns2,
-                             ["DNS 3"] = dns.Dns3,
+                             ["Status"] = data.Item.Status,
+                             ["CPU Sockets"] = data.Status!.CpuInfo.Sockets,
+                             ["CPU Cores"] = data.Status!.CpuInfo.Cores,
+                             ["CPU Model"] = data.Status!.CpuInfo.Model,
+                             ["CPU MHz"] = data.Status!.CpuInfo.Mhz,
+                             ["Memory GB"] = ToGB(data.Status!.Memory.Total),
+                             ["Memory Used GB"] = ToGB(data.Status!.Memory.Used),
+                             ["Swap GB"] = ToGB(data.Status!.Swap.Total),
+                             ["Root FS GB"] = ToGB(data.Status!.RootFs.Total),
+                             ["Kernel"] = data.Status!.Kversion,
+                             ["Kernel Release"] = data.Status!.CurrentKernel?.Release,
+                             ["Boot Mode"] = data.Status!.BootInfo?.Mode,
+                             ["Secure Boot"] = data.Status!.BootInfo?.Secureboot,
+                             ["CPU HVM"] = data.Status!.CpuInfo.Hvm,
+                             ["Uptime"] = FormatHelper.UptimeInfo(data.Item.Uptime),
+                             ["PVE Version"] = data.Status!.PveVersion,
+                             ["Version"] = $"{data.Version!.Version}-{data.Version!.Release}",
+                             ["Subscription"] = data.Subscription!.ProductName,
+                             ["Subscription Expiry"] = data.Subscription!.RegDate,
+                             ["Timezone"] = data.Time!.Timezone,
+                             ["DNS Search"] = data.Dns!.Search,
+                             ["DNS 1"] = data.Dns!.Dns1,
+                             ["DNS 2"] = data.Dns!.Dns2,
+                             ["DNS 3"] = data.Dns!.Dns3,
                          });
 
         var tableCount = 1  // Services
@@ -170,10 +192,14 @@ public partial class ReportEngine
 
         sw.ReserveIndexRows(tableCount);
 
-        pt.Step("Services");
+        pt.Step("Services/SSL Certificates");
+        var servicesTask = client.Nodes[node].Services.GetAsync();
+        var certificatesTask = client.Nodes[node].Certificates.Info.GetAsync();
+
+        await Task.WhenAll(servicesTask, certificatesTask);
+
         sw.CreateTable("Services",
-                       (await client.Nodes[node].Services.GetAsync())
-                       .Select(a => new
+                       servicesTask.Result.Select(a => new
                        {
                            a.Name,
                            a.Service,
@@ -183,11 +209,8 @@ public partial class ReportEngine
                            DescriptionWrap = a.Description,
                        }));
 
-        pt.Step("Network");
-        var nodeNets = await client.Nodes[node].Network.GetAsync();
-        AppendNodeNetworkRows(workbook, node, nodeNets);
         sw.CreateTable("Network",
-                       nodeNets.Select(a => new
+                       data.Networks.Select(a => new
                        {
                            ActiveFlag = ToX(a.Active),
                            AutoStartFlag = ToX(a.AutoStart),
@@ -265,55 +288,63 @@ public partial class ReportEngine
             if (settings.Node.Detail.Disk.IncludeSmartData)
             {
                 pt.Step("S.M.A.R.T. Data");
-                var smartItems = new List<dynamic>();
-                foreach (var disk in disksData.Where(a => string.IsNullOrEmpty(a.Parent)))
+                var rootDisks = disksData.Where(a => string.IsNullOrEmpty(a.Parent)).ToList();
+                var sem = CreateSemaphore();
+                var smartResults = await Task.WhenAll(rootDisks.Select(async d =>
                 {
-                    var smart = await client.GetDiskSmart(node, disk.DevPath);
-                    foreach (var attr in smart.Attributes ?? [])
-                    {
-                        smartItems.Add(new
-                        {
-                            Disk = disk.DevPath,
-                            disk.Model,
-                            DiskType = disk.Type,
-                            DiskHealth = disk.Health,
-                            SmartHealth = smart.Health,
-                            attr.Id,
-                            attr.Name,
-                            attr.Value,
-                            attr.Worst,
-                            attr.Threshold,
-                            attr.Flags,
-                            attr.Raw,
-                            attr.Fail,
-                        });
-                    }
-                }
-                sw.CreateTable("S.M.A.R.T. Data", smartItems);
+                    await sem.WaitAsync();
+                    try { return await client.GetDiskSmart(node, d.DevPath); }
+                    finally { sem.Release(); }
+                }));
+
+                sw.CreateTable("S.M.A.R.T. Data",
+                               rootDisks.Zip(smartResults, (disk, smart) => (smart.Attributes ?? []).Select(attr => new
+                               {
+                                   Disk = disk.DevPath,
+                                   disk.Model,
+                                   DiskType = disk.Type,
+                                   DiskHealth = disk.Health,
+                                   SmartHealth = smart.Health,
+                                   attr.Id,
+                                   attr.Name,
+                                   attr.Value,
+                                   attr.Worst,
+                                   attr.Threshold,
+                                   attr.Flags,
+                                   attr.Raw,
+                                   attr.Fail,
+                               }))
+                               .SelectMany(x => x)
+                               .ToList());
             }
 
-            pt.Step("Directory");
-            sw.CreateTable("Directory",
-                           (await client.Nodes[node].Disks.Directory.GetAsync())
-                            .Select(a => new
-                            {
-                                a.Device,
-                                a.Path,
-                                a.Type,
-                                a.Options,
-                                a.UnitFile
-                            }));
-
-            pt.Step("ZFS Pools");
-
-            var zfsPools = new List<dynamic>();
-            var zfsPoolsStatus = new List<dynamic>();
-
-            foreach (var pool in await client.Nodes[node].Disks.Zfs.GetAsync())
+            if (settings.Node.Detail.Disk.IncludeDiskDetail)
             {
-                var poolData = await client.Nodes[node].Disks.Zfs[pool.Name].GetAsync();
+                pt.Step("Directory/ZFS Pools");
+                var directoryTask = client.Nodes[node].Disks.Directory.GetAsync();
+                var zfsPoolsListTask = client.Nodes[node].Disks.Zfs.GetAsync();
+                await Task.WhenAll(directoryTask, zfsPoolsListTask);
 
-                zfsPools.Add(new
+                sw.CreateTable("Directory",
+                               directoryTask.Result.Select(a => new
+                               {
+                                   a.Device,
+                                   a.Path,
+                                   a.Type,
+                                   a.Options,
+                                   a.UnitFile
+                               }));
+
+                var zfsPoolList = zfsPoolsListTask.Result.ToList();
+                var zfsSem = CreateSemaphore();
+                var zfsPoolDetails = await Task.WhenAll(zfsPoolList.Select(async p =>
+                {
+                    await zfsSem.WaitAsync();
+                    try { return await client.Nodes[node].Disks.Zfs[p.Name].GetAsync(); }
+                    finally { zfsSem.Release(); }
+                }));
+
+                sw.CreateTable("ZFS Pools", zfsPoolList.Zip(zfsPoolDetails, (pool, poolData) => new
                 {
                     pool.Name,
                     SizeGB = ToGB(pool.Size),
@@ -326,65 +357,65 @@ public partial class ReportEngine
                     poolData.Status,
                     poolData.Action,
                     poolData.Errors,
-                });
+                })
+                .ToList());
 
-                zfsPoolsStatus.AddRange(MakeZfsStatus(pool.Name, poolData.Children, null, 0));
+                sw.CreateTable("ZFS Pool Status",
+                               zfsPoolList.Zip(zfsPoolDetails, (pool, poolData) => MakeZfsStatus(pool.Name, poolData.Children, null, 0))
+                                          .SelectMany(x => x)
+                                          .ToList());
             }
-
-            sw.CreateTable("ZFS Pools", zfsPools);
-            sw.CreateTable("ZFS Pool Status", zfsPoolsStatus);
         }
 
         if (settings.Node.Detail.IncludeApt)
         {
-            pt.Step("Apt Repository");
-            var aptRepositories = await client.Nodes[node].Apt.Repositories.GetAsync();
+            pt.Step("Apt Repository/Updates/Versions");
+            var aptRepositoriesTask = client.Nodes[node].Apt.Repositories.GetAsync();
+            var aptUpdatesTask = client.Nodes[node].Apt.Update.GetAsync();
+            var aptVersionsTask = client.Nodes[node].Apt.Versions.GetAsync();
+            await Task.WhenAll(aptRepositoriesTask, aptUpdatesTask, aptVersionsTask);
+
             sw.CreateTable("Apt Repository",
-                           aptRepositories.Files.SelectMany(a => a.Repositories,
-                             (file, repo) => new
-                             {
-                                 FilePath = file.Path,
-                                 file.FileType,
-                                 EnabledFlag = ToX(repo.Enabled),
-                                 TypesWrap = repo.Types.JoinAsString(Environment.NewLine),
-                                 URIsWrap = repo.URIs.JoinAsString(Environment.NewLine),
-                                 SuitesWrap = repo.Suites.JoinAsString(Environment.NewLine),
-                                 ComponentsWrap = repo.Components.JoinAsString(Environment.NewLine),
-                                 CommentWrap = repo.Comment,
-                             }));
+                           aptRepositoriesTask.Result.Files.SelectMany(a => a.Repositories, (file, repo) => new
+                           {
+                               FilePath = file.Path,
+                               file.FileType,
+                               EnabledFlag = ToX(repo.Enabled),
+                               TypesWrap = repo.Types.JoinAsString(Environment.NewLine),
+                               URIsWrap = repo.URIs.JoinAsString(Environment.NewLine),
+                               SuitesWrap = repo.Suites.JoinAsString(Environment.NewLine),
+                               ComponentsWrap = repo.Components.JoinAsString(Environment.NewLine),
+                               CommentWrap = repo.Comment,
+                           }));
 
-            pt.Step("Apt Updates");
             sw.CreateTable("Apt Update",
-                           (await client.Nodes[node].Apt.Update.GetAsync())
-                            .Select(a => new
-                            {
-                                a.Package,
-                                a.Version,
-                                a.OldVersion,
-                                a.Arch,
-                                a.Origin,
-                                a.Section,
-                                a.Priority,
-                                a.Title,
-                                a.Description
-                            }));
+                           aptUpdatesTask.Result.Select(a => new
+                           {
+                               a.Package,
+                               a.Version,
+                               a.OldVersion,
+                               a.Arch,
+                               a.Origin,
+                               a.Section,
+                               a.Priority,
+                               a.Title,
+                               a.Description
+                           }));
 
-            pt.Step("Apt Versions");
             sw.CreateTable("Package Version",
-                           (await client.Nodes[node].Apt.Versions.GetAsync())
-                            .Select(a => new
-                            {
-                                a.Package,
-                                a.Version,
-                                a.OldVersion,
-                                a.CurrentState,
-                                a.Arch,
-                                a.Origin,
-                                a.Section,
-                                a.Priority,
-                                a.Title,
-                                a.Description
-                            }));
+                           aptVersionsTask.Result.Select(a => new
+                           {
+                               a.Package,
+                               a.Version,
+                               a.OldVersion,
+                               a.CurrentState,
+                               a.Arch,
+                               a.Origin,
+                               a.Section,
+                               a.Priority,
+                               a.Title,
+                               a.Description
+                           }));
         }
 
         if (settings.Firewall.Enabled && settings.Node.Detail.IncludeFirewallLog)
@@ -397,9 +428,8 @@ public partial class ReportEngine
                                                                    until: settings.Firewall.UntilUnix));
         }
 
-        pt.Step("SSL Certificates");
         sw.CreateTable("SSL Certificates",
-                       (await client.Nodes[node].Certificates.Info.GetAsync()).Select(cert => new
+                       certificatesTask.Result.Select(cert => new
                        {
                            cert.FileName,
                            cert.Subject,
@@ -460,7 +490,7 @@ public partial class ReportEngine
                 Message = child.Msg
             });
 
-            if (child.Children != null && child.Children.Any())
+            if (child.Children?.Any() is true)
             {
                 MakeZfsStatus(poolName, child.Children, parentData, level + 1);
             }

@@ -42,6 +42,11 @@ public class Settings
     /// </summary>
     public int MaxParallelRequests { get; set; } = 5;
 
+    /// <summary>
+    /// API timeout in seconds (0 = use default)
+    /// </summary>
+    public int ApiTimeout { get; set; } = 0;
+
     /// <summary>Fast profile — structure only, no heavy data.</summary>
     public static Settings Fast() => new()
     {
