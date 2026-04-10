@@ -19,4 +19,9 @@ public class SettingsGuestDetail
     /// Task history settings
     /// </summary>
     public SettingsTask Tasks { get; set; } = new();
+
+    /// <summary>
+    /// Include firewall log sheet
+    /// </summary>
+    public bool IncludeFirewallLog { get; set; } = true;
 }
