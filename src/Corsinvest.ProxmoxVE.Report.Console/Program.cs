@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
-using System.Text.Json;
 using Corsinvest.ProxmoxVE.Api.Console.Helpers;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Common;
 using Corsinvest.ProxmoxVE.Report;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 const string settingsFileName = "settings.json";
 
@@ -83,7 +83,7 @@ cmdExport.SetAction(async (action) =>
     Console.Out.WriteLine($"Report generated: {outputPath}");
 });
 
-return await app.ExecuteAppAsync(args, logger );
+return await app.ExecuteAppAsync(args, logger);
 
 static string PrintEnum(string title, Type typeEnum)
     => $"Values for {title}: {string.Join(", ", Enum.GetNames(typeEnum))}";
