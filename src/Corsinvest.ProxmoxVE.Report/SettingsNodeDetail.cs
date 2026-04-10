@@ -29,4 +29,9 @@ public class SettingsNodeDetail
     /// Include APT repositories, available updates and installed package versions
     /// </summary>
     public bool IncludeApt { get; set; } = true;
+
+    /// <summary>
+    /// Include firewall log sheet
+    /// </summary>
+    public bool IncludeFirewallLog { get; set; } = true;
 }

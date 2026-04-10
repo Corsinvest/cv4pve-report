@@ -334,12 +334,12 @@ public partial class ReportEngine
             sw.Col = 1;
         }
 
-        var tableCount = (settings.Firewall.Enabled ? 1 : 0)  // Firewall Logs
+        var tableCount = (settings.Firewall.Enabled && settings.Guest.Detail.IncludeFirewallLog ? 1 : 0)  // Firewall Logs
                          + (settings.Guest.Detail.Tasks.Enabled ? 1 : 0);
 
         sw.ReserveIndexRows(tableCount);
 
-        if (settings.Firewall.Enabled)
+        if (settings.Firewall.Enabled && settings.Guest.Detail.IncludeFirewallLog)
         {
             pt.Step("Firewall Logs");
 

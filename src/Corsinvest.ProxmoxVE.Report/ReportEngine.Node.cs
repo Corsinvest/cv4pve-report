@@ -164,7 +164,7 @@ public partial class ReportEngine
                        + (settings.Node.Detail.Disk.IncludeDiskDetail ? 2 : 0)   // ZFS Pools + ZFS Pool Status
                        + (settings.Node.Detail.Disk.IncludeDiskDetail ? 1 : 0)   // Directory
                        + (settings.Node.Detail.IncludeApt ? 3 : 0)               // Repositories + Updates + Versions
-                       + (settings.Firewall.Enabled ? 1 : 0)  // Firewall Logs
+                       + (settings.Firewall.Enabled && settings.Node.Detail.IncludeFirewallLog ? 1 : 0)  // Firewall Logs
                        + 1  // SSL Certificates
                        + (settings.Node.Detail.Tasks.Enabled ? 1 : 0);
 
@@ -387,7 +387,7 @@ public partial class ReportEngine
                             }));
         }
 
-        if (settings.Firewall.Enabled)
+        if (settings.Firewall.Enabled && settings.Node.Detail.IncludeFirewallLog)
         {
             pt.Step("Firewall Logs");
             AddLogs(sw,
