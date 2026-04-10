@@ -10,11 +10,11 @@ namespace Corsinvest.ProxmoxVE.Report;
 
 public partial class ReportEngine
 {
-    private async Task AddClusterTasksDataAsync(XLWorkbook workbook)
+    private async Task<int> AddClusterTasksDataAsync(XLWorkbook workbook)
     {
-        if (!settings.Cluster.IncludeTasksSheet) { return; }
+        if (!settings.Cluster.IncludeTasksSheet) { return 0; }
 
-        var tasks = await client.Cluster.Tasks.GetAsync();
+        var tasks = (await client.Cluster.Tasks.GetAsync()).ToList();
 
         var sw = CreateSheetWriter(workbook, "Cluster Tasks");
         sw.CreateTable(null,
@@ -33,5 +33,7 @@ public partial class ReportEngine
                        tbl => sw.ApplyNodeLinks(tbl));
 
         sw.AdjustColumns();
+
+        return tasks.Count;
     }
 }

@@ -84,6 +84,30 @@ With API token (recommended):
 
 ---
 
+## Response Files
+
+Arguments can be stored in a response file and referenced with `@filename`. This is useful to avoid repeating connection parameters on every run.
+
+```text
+# config.rsp
+--host
+192.168.1.1
+--api-token
+user@pam!report=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+```
+
+```bash
+cv4pve-report @config.rsp export
+cv4pve-report @config.rsp --settings-file=settings.json export
+cv4pve-report @config.rsp export --full
+```
+
+- One token per line (option name and value on separate lines)
+- Lines starting with `#` are comments
+- Response files can be nested: a line starting with `@` references another file
+
+---
+
 ## Profiles
 
 | Profile | Use case | Speed |
@@ -114,6 +138,7 @@ cv4pve-report --host=YOUR_HOST --api-token=user@realm!token=uuid export --full  
 | Detail.Disk.IncludeSmartData | | | ✓ |
 | Detail.IncludeApt | | ✓ | ✓ |
 | Detail.Tasks.Enabled | | ✓ | ✓ |
+| Detail.IncludeFirewallLog | | ✓ | ✓ |
 | IncludeReplicationSheet | ✓ | ✓ | ✓ |
 | Syslog.Enabled | | | ✓ |
 | Syslog.MaxCount | | — | 1000 |
@@ -123,6 +148,7 @@ cv4pve-report --host=YOUR_HOST --api-token=user@realm!token=uuid export --full  
 | **Guest** | | | |
 | Detail.Enabled | | ✓ | ✓ |
 | Detail.Tasks.Enabled | | ✓ | ✓ |
+| Detail.IncludeFirewallLog | | ✓ | ✓ |
 | IncludeSnapshotsSheet | | ✓ | ✓ |
 | IncludeDisksSheet | | ✓ | ✓ |
 | IncludePartitionsSheet | | ✓ | ✓ |
@@ -333,6 +359,7 @@ cv4pve-report --host=YOUR_HOST --api-token=user@realm!token=uuid export --settin
 ```jsonc
 {
   "MaxParallelRequests": 5,        // global parallel API requests (1 = sequential)
+  "ApiTimeout": 0,                 // HTTP timeout in seconds (0 = 100s)
   "Cluster": {
     "IncludeSheet": true,          // cluster overview sheet (users, roles, ACL, backup jobs)
     "Log": {
@@ -355,7 +382,8 @@ cv4pve-report --host=YOUR_HOST --api-token=user@realm!token=uuid export --settin
         "MaxCount": 0,             // 0 = unlimited
         "Source": "all"            // all | local | active
       },
-      "IncludeApt": true           // APT repositories, available updates, installed packages
+      "IncludeApt": true,          // APT repositories, available updates, installed packages
+      "IncludeFirewallLog": true   // firewall log in node detail sheet (requires Firewall.Enabled)
     },
     "RrdData": {
       "Enabled": true,
@@ -379,7 +407,8 @@ cv4pve-report --host=YOUR_HOST --api-token=user@realm!token=uuid export --settin
         "OnlyErrors": false,
         "MaxCount": 0,
         "Source": "all"
-      }
+      },
+      "IncludeFirewallLog": true   // firewall log in VM/CT detail sheet (requires Firewall.Enabled)
     },
     "RrdData": {
       "Enabled": false,            // disabled by default — can be large on big clusters
@@ -389,7 +418,8 @@ cv4pve-report --host=YOUR_HOST --api-token=user@realm!token=uuid export --settin
     "IncludeSnapshotsSheet": true, // global snapshots sheet
     "IncludeDisksSheet": true,     // global disks sheet
     "IncludePartitionsSheet": true, // guest disk partitions via QEMU agent
-    "IncludeQemuAgent": true       // OS info, network, filesystems (running VMs with agent only)
+    "IncludeQemuAgent": true,      // OS info, network, filesystems (running VMs with agent only)
+    "QemuAgentTimeout": 3          // seconds to wait for QEMU agent response before giving up
   },
   "Storage": {
     "IncludeContentSheet": true,   // storage content (ISO, templates, disk images)
@@ -410,6 +440,56 @@ cv4pve-report --host=YOUR_HOST --api-token=user@realm!token=uuid export --settin
 ```
 
 </details>
+
+---
+
+## Performance Tuning
+
+By default the report runs up to **5 parallel API requests** (`MaxParallelRequests = 5`). This works well for most clusters, but you can tune it to match your environment.
+
+### Speed up the report
+
+Increase `MaxParallelRequests` to fetch more data at the same time:
+
+```jsonc
+"MaxParallelRequests": 10
+```
+
+> **Don't go too high.** Each parallel request is a real HTTP call to Proxmox. Too many at once can slow down the API, increase memory usage on both sides, and make the report less stable. Values between 5 and 15 are a reasonable range.
+
+### Handle slow or high-latency clusters
+
+Parallelism means more simultaneous requests — if your cluster is slow or the network has high latency, some calls may time out. Increase `ApiTimeout` to give them more time:
+
+```jsonc
+"ApiTimeout": 300   // seconds (0 = 100s)
+```
+
+### Speed up QEMU agent calls
+
+Each running VM with the QEMU agent enabled requires an agent call to collect OS info, network interfaces and disk partitions. If the agent is slow to respond, the report waits up to `QemuAgentTimeout` seconds per VM before giving up:
+
+```jsonc
+"QemuAgentTimeout": 3   // default: 3 seconds
+```
+
+Lower this value if you have many VMs and the agent is unreliable. Set it to `1` for a quick scan, or raise it if agents are consistently slow.
+
+### Debug API calls
+
+Add `--debug` to see every API call with its duration in milliseconds — useful to identify which calls are slow:
+
+```bash
+cv4pve-report @config.rsp export --debug
+```
+
+### Summary
+
+| Setting | Effect | Default |
+|---------|--------|---------|
+| `MaxParallelRequests` ↑ | Faster, but more load on Proxmox and higher memory usage | 5 |
+| `ApiTimeout` ↑ | Avoids timeouts on slow/high-latency clusters | 100s |
+| `QemuAgentTimeout` ↓ | Less waiting per VM when agent is slow or absent | 3s |
 
 ---
 

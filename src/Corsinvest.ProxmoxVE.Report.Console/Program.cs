@@ -6,12 +6,19 @@
 using Corsinvest.ProxmoxVE.Api.Console.Helpers;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Common;
 using Corsinvest.ProxmoxVE.Report;
+using Microsoft.Extensions.Logging;
 using System.Text.Json;
 
 const string settingsFileName = "settings.json";
 
 var app = ConsoleHelper.CreateApp("cv4pve-report", "Report for Proxmox VE");
-var loggerFactory = ConsoleHelper.CreateLoggerFactory<Program>(app.GetLogLevelFromDebug());
+
+var logLevel = app.DebugIsActive()
+                ? LogLevel.Debug
+                : LogLevel.Warning;
+
+var loggerFactory = ConsoleHelper.CreateLoggerFactory<Program>(logLevel);  //(app.GetLogLevelFromDebug());
+var logger = loggerFactory.CreateLogger<Program>();
 
 var optSettingsFile = app.AddOption<string>("--settings-file", $"Settings file (default: {settingsFileName})")
                          .AddValidatorExistFile();
@@ -68,15 +75,15 @@ cmdExport.SetAction(async (action) =>
                          ? output
                          : Path.Combine(".", $"Report_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
 
-    using var stream = await engine.GenerateAsync(progress);
-    using var file = File.Create(outputPath);
+    await using var stream = await engine.GenerateAsync(progress);
+    await using var file = File.Create(outputPath);
     await stream.CopyToAsync(file);
 
     if (!Console.IsOutputRedirected) { Console.WriteLine(); }
     Console.Out.WriteLine($"Report generated: {outputPath}");
 });
 
-return await app.ExecuteAppAsync(args, loggerFactory.CreateLogger(nameof(Program)));
+return await app.ExecuteAppAsync(args, logger);
 
 static string PrintEnum(string title, Type typeEnum)
     => $"Values for {title}: {string.Join(", ", Enum.GetNames(typeEnum))}";

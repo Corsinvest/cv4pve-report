@@ -47,4 +47,9 @@ public class SettingsGuest
     /// Include QEMU agent info (network interfaces and filesystem info) — only for running VMs with agent enabled
     /// </summary>
     public bool IncludeQemuAgent { get; set; } = true;
+
+    /// <summary>
+    /// Timeout in seconds for QEMU agent calls. If the agent does not respond within this time, it is treated as not running.
+    /// </summary>
+    public int QemuAgentTimeout { get; set; } = 3;
 }

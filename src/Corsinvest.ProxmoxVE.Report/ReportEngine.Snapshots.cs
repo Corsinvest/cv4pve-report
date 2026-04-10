@@ -11,20 +11,20 @@ namespace Corsinvest.ProxmoxVE.Report;
 
 public partial class ReportEngine
 {
-    private async Task AddSnapshotsDataAsync(XLWorkbook workbook)
+    private async Task<int> AddSnapshotsDataAsync(XLWorkbook workbook)
     {
-        if (!settings.Guest.IncludeSnapshotsSheet) { return; }
+        if (!settings.Guest.IncludeSnapshotsSheet) { return 0; }
 
         var resources = GetResources(ClusterResourceType.Vm)
                                 .Where(a => !a.IsUnknown)
                                 .OrderBy(a => a.Id)
                                 .ToList();
 
-        if (resources.Count == 0) { return; }
+        if (resources.Count == 0) { return 0; }
 
         var sw = CreateSheetWriter(workbook, "Snapshots");
         IXLTable? table = null;
-        var semaphore = new SemaphoreSlim(settings.MaxParallelRequests);
+        var semaphore = CreateSemaphore();
 
         var tasks = resources.Select(async item =>
         {
@@ -85,5 +85,7 @@ public partial class ReportEngine
         }
 
         sw.AdjustColumns();
+
+        return results.Sum(r => r.rows.Count);
     }
 }

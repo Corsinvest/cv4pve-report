@@ -3,12 +3,13 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
-using System.Text.RegularExpressions;
 using ClosedXML.Excel;
 using Corsinvest.ProxmoxVE.Api;
 using Corsinvest.ProxmoxVE.Api.Extension;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
+using Corsinvest.ProxmoxVE.Api.Shared.Models.Node;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Vm;
+using System.Text.RegularExpressions;
 
 namespace Corsinvest.ProxmoxVE.Report;
 
@@ -20,14 +21,11 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
 
     private IProgress<ReportProgress>? _progress;
     private readonly Dictionary<string, string> _sheetLinks = [];
-    private SheetWriter? _networkSw;
-    private IXLTable? _networkNodeTable;
-    private IXLTable? _networkVmTable;
-    private SheetWriter? _diskSw;
-    private IXLTable? _diskTable;
-    private SheetWriter? _partitionSw;
-    private IXLTable? _partitionTable;
     private List<ClusterResource> _resources = [];
+    private readonly List<VmNetworkRow> _pendingNetworkRows = [];
+    private readonly List<(string Node, NodeNetwork Network)> _pendingNodeNetworkRows = [];
+    private readonly List<(ClusterResource Vm, IEnumerable<VmDisk> Disks)> _pendingDiskRows = [];
+    private readonly List<(ClusterResource Vm, IEnumerable<VmQemuAgentGetFsInfo.ResultInt> Partitions)> _pendingPartitionRows = [];
     private HashSet<long> _vmIds = [];
     private readonly Dictionary<string, int> _usedSheetNames = [];
 
@@ -117,6 +115,7 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
     public async Task<Stream> GenerateAsync(IProgress<ReportProgress>? progress = null)
     {
         _progress = progress;
+        if (settings.ApiTimeout > 0) { client.Timeout = TimeSpan.FromSeconds(settings.ApiTimeout); }
         var stream = new MemoryStream();
         await GenerateExcelAsync(stream);
         stream.Position = 0;
@@ -126,6 +125,8 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
     private void ReportGlobal(string step)
         => _progress?.Report(new ReportProgress { Step = step });
 
+    private record SectionStat(string Name, int Count, TimeSpan Duration);
+
     private async Task GenerateExcelAsync(Stream stream)
     {
         ReportGlobal("Init");
@@ -134,65 +135,39 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
         using var workbook = new XLWorkbook();
         ConfigureWorkbook(workbook);
 
-        ReportGlobal("Cluster");
-        await AddClusterDataAsync(workbook);
+        var sections = new Dictionary<string, Func<Task<int>>>
+        {
+            ["Cluster"] = () => AddClusterDataAsync(workbook),
+            ["Storages"] = () => AddStoragesDataAsync(workbook),
+            ["Nodes"] = () => AddNodesDataAsync(workbook),
+            ["Vms"] = () => AddVmsDataAsync(workbook),
+            ["Containers"] = () => AddContainersDataAsync(workbook),
+            ["Network"] = () => Task.FromResult(WriteNetworkData(workbook)),
+            ["Storage Content"] = () => AddStorageContentDataAsync(workbook),
+            ["Disks"] = () => Task.FromResult(WriteDiskData(workbook)),
+            ["Partitions"] = () => Task.FromResult(WritePartitionData(workbook)),
+            ["Snapshots"] = () => AddSnapshotsDataAsync(workbook),
+            ["Firewall"] = () => AddFirewallDataAsync(workbook),
+            ["Replication"] = () => AddReplicationDataAsync(workbook),
+            ["RRD Nodes"] = () => AddRrdNodeDataAsync(workbook),
+            ["RRD Storage"] = () => AddRrdStorageDataAsync(workbook),
+            ["RRD Guests"] = () => AddRrdGuestDataAsync(workbook),
+            ["Syslog"] = () => AddSyslogDataAsync(workbook),
+            ["Cluster Log"] = () => AddClusterLogDataAsync(workbook),
+            ["Cluster Tasks"] = () => AddClusterTasksDataAsync(workbook),
+        };
 
-        // Register storage sheet links before VM/CT/Node processing so disk links resolve correctly
-        ReportGlobal("Storages");
-        await AddStoragesDataAsync(workbook);
-
-        ReportGlobal("Nodes");
-        await AddNodesDataAsync(workbook);
-
-        ReportGlobal("Vms");
-        await AddVmsDataAsync(workbook);
-
-        ReportGlobal("Containers");
-        await AddContainersDataAsync(workbook);
-
-        ReportGlobal("Network");
-        _networkSw?.WriteIndex();
-        _networkSw?.AdjustColumns();
-
-        ReportGlobal("Storage Content");
-        await AddStorageContentDataAsync(workbook);
-
-        ReportGlobal("Disks");
-        _diskSw?.WriteIndex();
-        _diskSw?.AdjustColumns();
-
-        ReportGlobal("Partitions");
-        _partitionSw?.AdjustColumns();
-
-        ReportGlobal("Snapshots");
-        await AddSnapshotsDataAsync(workbook);
-
-        ReportGlobal("Firewall");
-        await AddFirewallDataAsync(workbook);
-
-        ReportGlobal("Replication");
-        await AddReplicationDataAsync(workbook);
-
-        ReportGlobal("RRD Nodes");
-        await AddRrdNodeDataAsync(workbook);
-
-        ReportGlobal("RRD Storage");
-        await AddRrdStorageDataAsync(workbook);
-
-        ReportGlobal("RRD Guests");
-        await AddRrdGuestDataAsync(workbook);
-
-        ReportGlobal("Syslog");
-        await AddSyslogDataAsync(workbook);
-
-        ReportGlobal("Cluster Log");
-        await AddClusterLogDataAsync(workbook);
-
-        ReportGlobal("Cluster Tasks");
-        await AddClusterTasksDataAsync(workbook);
+        var stats = new List<SectionStat>();
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        foreach (var (name, action) in sections)
+        {
+            ReportGlobal(name);
+            sw.Restart();
+            stats.Add(new(name, await action(), sw.Elapsed));
+        }
 
         ReportGlobal("Cover");
-        AddCoverPage(workbook);
+        AddCoverPage(workbook, stats);
 
         ReportGlobal("Reorder sheets");
         ReorderSheets(workbook);
@@ -207,14 +182,13 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
 
         void Place(IEnumerable<IXLWorksheet> sheets)
         {
-            foreach (var ws in sheets)
-            {
-                ws.Position = pos++;
-            }
+            foreach (var ws in sheets) { ws.Position = pos++; }
         }
 
         void PlaceByPrefix(string prefix) =>
-            Place(workbook.Worksheets.Where(w => w.Name == prefix || w.Name.StartsWith(prefix + " ") || w.Name.StartsWith(prefix + "_")));
+            Place(workbook.Worksheets.Where(a => a.Name == prefix
+                                                    || a.Name.StartsWith(prefix + " ")
+                                                    || a.Name.StartsWith(prefix + "_")));
 
         void PlaceVmPrefix(string prefix) =>
             Place(workbook.Worksheets
@@ -268,8 +242,18 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
 
     private static double ToGB(double bytes) => Math.Round(bytes / 1024 / 1024 / 1024, 2);
     private static double ToMB(double bytes) => Math.Round(bytes / 1024 / 1024, 2);
-    private static string ToX(bool value) => value ? "X" : "";
-    private static string ToX(bool? value) => value == true ? "X" : "";
+
+    private SemaphoreSlim CreateSemaphore() => new(settings.MaxParallelRequests);
+
+    private static string ToX(bool value)
+        => value
+            ? "X"
+            : "";
+
+    private static string ToX(bool? value)
+        => value is true
+            ? "X"
+            : "";
 
     private static bool? TrueOrNull(bool value)
         => value
@@ -331,11 +315,12 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
     private async Task AddGuestTasksTableAsync(SheetWriter sw, ProgressTracker pt, string node, long vmId)
     {
         if (!settings.Guest.Detail.Tasks.Enabled) { return; }
+
         pt.Step("Tasks");
         sw.CreateTable("Tasks",
-                       (await client.Nodes[node].Tasks.GetAsync(vmid: (int)vmId,
-                                                                errors: TrueOrNull(settings.Guest.Detail.Tasks.OnlyErrors),
-                                                                limit: IntOrNull(settings.Guest.Detail.Tasks.MaxCount)))
+                       (await client.Nodes[node].Tasks.GetAsync(errors: TrueOrNull(settings.Guest.Detail.Tasks.OnlyErrors),
+                                                                limit: IntOrNull(settings.Guest.Detail.Tasks.MaxCount),
+                                                                vmid: (int)vmId))
                        .Select(a => new
                        {
                            a.UniqueTaskId,

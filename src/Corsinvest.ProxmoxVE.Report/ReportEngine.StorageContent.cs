@@ -11,9 +11,9 @@ namespace Corsinvest.ProxmoxVE.Report;
 
 public partial class ReportEngine
 {
-    private async Task AddStorageContentDataAsync(XLWorkbook workbook)
+    private async Task<int> AddStorageContentDataAsync(XLWorkbook workbook)
     {
-        if (!settings.Storage.IncludeContentSheet && !settings.Storage.IncludeBackupsSheet) { return; }
+        if (!settings.Storage.IncludeContentSheet && !settings.Storage.IncludeBackupsSheet) { return 0; }
 
         var all = GetResources(ClusterResourceType.Storage)
                             .OrderBy(a => a.Id)
@@ -24,7 +24,7 @@ public partial class ReportEngine
                           .Where(a => !a.IsUnknown)
                           .ToList();
 
-        if (filtered.Count == 0) { return; }
+        if (filtered.Count == 0) { return 0; }
 
         double? StorageUsagePct(long size, ulong storageSize)
             => storageSize > 0
@@ -41,7 +41,7 @@ public partial class ReportEngine
                 ? _resources.FirstOrDefault(r => r.VmId == vmId)?.Name ?? ""
                 : "";
 
-        var semaphore = new SemaphoreSlim(settings.MaxParallelRequests);
+        var semaphore = CreateSemaphore();
 
         var tasks = filtered.Select(async item =>
         {
@@ -144,5 +144,7 @@ public partial class ReportEngine
 
         contentSw?.AdjustColumns();
         backupSw?.AdjustColumns();
+
+        return results.Sum(r => r.contentRows.Count + r.backupRows.Count);
     }
 }

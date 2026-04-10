@@ -10,13 +10,13 @@ namespace Corsinvest.ProxmoxVE.Report;
 
 public partial class ReportEngine
 {
-    private async Task AddClusterLogDataAsync(XLWorkbook workbook)
+    private async Task<int> AddClusterLogDataAsync(XLWorkbook workbook)
     {
-        if (!settings.Cluster.Log.Enabled) { return; }
+        if (!settings.Cluster.Log.Enabled) { return 0; }
 
-        var logs = await client.Cluster.Log.GetAsync(max: settings.Cluster.Log.MaxCount > 0
+        var logs = (await client.Cluster.Log.GetAsync(max: settings.Cluster.Log.MaxCount > 0
                                                             ? settings.Cluster.Log.MaxCount
-                                                            : null);
+                                                            : null)).ToList();
 
         var sw = CreateSheetWriter(workbook, "Cluster Log");
         sw.CreateTable(null,
@@ -32,5 +32,7 @@ public partial class ReportEngine
                        tbl => sw.ApplyNodeLinks(tbl));
 
         sw.AdjustColumns();
+
+        return logs.Count;
     }
 }

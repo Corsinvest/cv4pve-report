@@ -11,16 +11,16 @@ namespace Corsinvest.ProxmoxVE.Report;
 
 public partial class ReportEngine
 {
-    private async Task AddReplicationDataAsync(XLWorkbook workbook)
+    private async Task<int> AddReplicationDataAsync(XLWorkbook workbook)
     {
-        if (!settings.Node.IncludeReplicationSheet) { return; }
+        if (!settings.Node.IncludeReplicationSheet) { return 0; }
 
         var nodes = GetResources(ClusterResourceType.Node)
                               .Where(a => !a.IsUnknown)
                               .OrderBy(a => a.Id)
                               .ToList();
 
-        if (nodes.Count == 0) { return; }
+        if (nodes.Count == 0) { return 0; }
 
         SheetWriter? sw = null;
         IXLTable? table = null;
@@ -65,5 +65,7 @@ public partial class ReportEngine
         }
 
         sw?.AdjustColumns();
+
+        return nodes.Count;
     }
 }

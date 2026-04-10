@@ -2,6 +2,29 @@
 
 ---
 
+## [1.5.0] — 2026-04-10
+
+### What's new
+
+- **Response files** — host, username and password can be saved in a `config.rsp` file and passed as `@config.rsp`, so you don't have to repeat credentials on every run
+- **Generation stats in Summary** — the Summary sheet now shows how many rows each section produced and how long it took, plus a total duration at the bottom
+- **`ApiTimeout` setting** — new option to set the HTTP timeout in seconds for slow or high-latency clusters; leave at `0` to use the default (100 s)
+- **`QemuAgentTimeout` setting** — new option to control how long to wait for the QEMU guest agent before giving up; default is 3 seconds
+- **Firewall log now opt-in per section** — `Node.Detail.IncludeFirewallLog` and `Guest.Detail.IncludeFirewallLog` let you enable firewall logs independently for nodes and VMs/CTs
+
+### Fixes
+
+- Firewall log no longer crashes the report when the API returns no data
+- `Sys.Modify` permission added to the required permissions documentation (needed for APT repositories, updates and package versions)
+
+### Performance
+
+- **Nodes fetched in parallel** — all nodes are now queried at the same time (status, version, subscription, DNS, time, network), the same way VMs and containers already worked
+- **Node detail queries parallelized** — for each node: services and SSL certificates, APT repositories/updates/versions, and directory/ZFS pools are now fetched simultaneously instead of one after another
+- **Network data written once** — node network interface rows are collected during node processing and written to the Network sheet in a single pass, instead of incrementally
+
+---
+
 ## [1.4.0] — 2026-04-08
 
 ### What's new
