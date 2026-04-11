@@ -5,7 +5,6 @@
 
 using ClosedXML.Excel;
 using Corsinvest.ProxmoxVE.Api.Extension;
-using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Common;
 
 namespace Corsinvest.ProxmoxVE.Report;
@@ -16,16 +15,7 @@ public partial class ReportEngine
     {
         if (!settings.Storage.RrdData.Enabled) { return 0; }
 
-        var all = GetResources(ClusterResourceType.Storage)
-                            .OrderBy(a => a.Id)
-                            .ToList();
-
-        var filtered = all.GroupBy(a => a.Shared
-                                            ? $"shared:{a.Storage}"
-                                            : $"{a.Node}:{a.Storage}")
-                          .Select(g => g.First())
-                          .ToList();
-
+        var filtered = _uniqueStorages.OrderBy(a => a.Id).ToList();
         if (filtered.Count == 0) { return 0; }
 
         var rrdTimeFrame = settings.Storage.RrdData.TimeFrame.GetValue();
@@ -39,7 +29,8 @@ public partial class ReportEngine
             {
                 ReportGlobal($"RRD Storage: {item.Node} {item.Storage}");
 
-                var rows = (await client.Nodes[item.Node].Storage[item.Storage].Rrddata.GetAsync(rrdTimeFrame, rrdConsolidation))
+                return (item,
+                        rows: (await client.Nodes[item.Node].Storage[item.Storage].Rrddata.GetAsync(rrdTimeFrame, rrdConsolidation))
                             .Select(a => new
                             {
                                 Node = StorageNode(item),
@@ -48,9 +39,7 @@ public partial class ReportEngine
                                 SizeGB = ToGB(a.Size),
                                 UsedGB = ToGB(a.Used),
                                 UsagePct = a.Size > 0 ? (double)a.Used / a.Size : (double?)null,
-                            }).ToList();
-
-                return (item, rows);
+                            }).ToList());
             }
             finally
             {
@@ -61,20 +50,13 @@ public partial class ReportEngine
         var results = await Task.WhenAll(tasks);
 
         var sw = CreateSheetWriter(workbook, "RRD Storage");
-        IXLTable? table = null;
-
-        foreach (var (_, rows) in results.OrderBy(r => r.item.Id))
-        {
-            sw.CreateOrAddTable(ref table,
-                                null,
-                                rows,
-                                tbl =>
-                                {
-                                    sw.ApplyNodeLinks(tbl);
-                                    sw.ApplyStorageLinks(tbl);
-                                });
-        }
-
+        sw.CreateTable(null,
+                       results.OrderBy(r => r.item.Id).SelectMany(r => r.rows).ToList(),
+                       tbl =>
+                       {
+                           sw.ApplyNodeLinks(tbl);
+                           sw.ApplyStorageLinks(tbl);
+                       });
         sw.AdjustColumns();
 
         return results.Sum(r => r.rows.Count);

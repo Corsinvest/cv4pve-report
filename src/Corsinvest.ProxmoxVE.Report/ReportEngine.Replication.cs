@@ -22,50 +22,50 @@ public partial class ReportEngine
 
         if (nodes.Count == 0) { return 0; }
 
-        SheetWriter? sw = null;
-        IXLTable? table = null;
-
-        foreach (var item in nodes)
+        var sem = CreateSemaphore();
+        var results = await Task.WhenAll(nodes.Select(async item =>
         {
-            ReportGlobal($"Replication: {item.Node}");
-
-            var rows = (await client.Nodes[item.Node].Replication.GetAsync())
-                        .Select(a => new
-                        {
-                            item.Node,
-                            a.Id,
-                            a.Type,
-                            a.VmType,
-                            VmId = a.Guest,
-
-                            GuestName = long.TryParse(a.Guest, out var guestId)
-                                            ? _resources.FirstOrDefault(r => r.VmId == guestId)?.Name ?? ""
+            await sem.WaitAsync();
+            try
+            {
+                ReportGlobal($"Replication: {item.Node}");
+                return (item.Node,
+                        rows: (await client.Nodes[item.Node].Replication.GetAsync())
+                            .Select(a => new
+                            {
+                                item.Node,
+                                a.Id,
+                                a.Type,
+                                a.VmType,
+                                VmId = a.Guest,
+                                GuestName = long.TryParse(a.Guest, out var guestId)
+                                                && _resourcesByVmId.TryGetValue(guestId, out var guestRes)
+                                            ? guestRes.Name ?? ""
                                             : "",
+                                a.Source,
+                                a.Target,
+                                a.Schedule,
+                                a.Disable,
+                                a.FailCount,
+                                a.Error,
+                                a.Duration,
+                                a.Rate,
+                                LastSync = FromUnixTime(a.LastSync),
+                                NextSync = FromUnixTime(a.NextSync),
+                                LastTry = FromUnixTime(a.LastTry),
+                                a.JobNum,
+                                CommentWrap = a.Comment,
+                            }).ToList());
+            }
+            finally { sem.Release(); }
+        }));
 
-                            a.Source,
-                            a.Target,
-                            a.Schedule,
-                            a.Disable,
-                            a.FailCount,
-                            a.Error,
-                            a.Duration,
-                            a.Rate,
-                            LastSync = FromUnixTime(a.LastSync),
-                            NextSync = FromUnixTime(a.NextSync),
-                            LastTry = FromUnixTime(a.LastTry),
-                            a.JobNum,
-                            CommentWrap = a.Comment,
-                        }).ToList();
+        var sw = CreateSheetWriter(workbook, "Replication");
+        sw.CreateTable(null,
+                       results.OrderBy(r => r.Node).SelectMany(r => r.rows).ToList(),
+                       tbl => sw.ApplyReplicationLinks(tbl));
+        sw.AdjustColumns();
 
-            sw ??= CreateSheetWriter(workbook, "Replication");
-            sw.CreateOrAddTable(ref table,
-                                null,
-                                rows,
-                                tbl => sw.ApplyReplicationLinks(tbl));
-        }
-
-        sw?.AdjustColumns();
-
-        return nodes.Count;
+        return results.Sum(r => r.rows.Count);
     }
 }

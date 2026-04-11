@@ -14,8 +14,8 @@ internal class ProgressTracker(IProgress<ReportProgress>? progress, int total)
 
     public void Next(ClusterResource resource)
     {
-        _current++;
-        _resource = resource;
+        Interlocked.Increment(ref _current);
+        Volatile.Write(ref _resource, resource);
         progress?.Report(new ReportProgress
         {
             Resource = resource,

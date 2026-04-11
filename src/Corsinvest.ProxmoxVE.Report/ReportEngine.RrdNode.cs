@@ -33,32 +33,30 @@ public partial class ReportEngine
             try
             {
                 ReportGlobal($"RRD Nodes: {item.Node}");
-
-                var rows = (await client.Nodes[item.Node].Rrddata.GetAsync(rrdTimeFrame, rrdConsolidation))
-                            .Select(a => new
-                            {
-                                item.Node,
-                                a.TimeDate,
-                                CpuUsagePct = a.CpuUsagePercentage,
-                                a.IoWait,
-                                a.Loadavg,
-                                MemorySizeGB = ToGB(a.MemorySize),
-                                MemoryUsageGB = ToGB(a.MemoryUsage),
-                                MemoryUsagePct = a.MemoryUsagePercentage,
-                                SwapSizeGB = ToGB(a.SwapSize),
-                                SwapUsageGB = ToGB(a.SwapUsage),
-                                RootSizeGB = ToGB(a.RootSize),
-                                RootUsageGB = ToGB(a.RootUsage),
-                                NetInMB = ToMB(a.NetIn),
-                                NetOutMB = ToMB(a.NetOut),
-                                PsiCpuSomePct = a.PressureCpuSome,
-                                PsiIoSomePct = a.PressureIoSome,
-                                PsiIoFullPct = a.PressureIoFull,
-                                PsiMemSomePct = a.PressureMemorySome,
-                                PsiMemFullPct = a.PressureMemoryFull,
-                            }).ToList();
-
-                return (item, rows);
+                return (item,
+                        rows: (await client.Nodes[item.Node].Rrddata.GetAsync(rrdTimeFrame, rrdConsolidation))
+                                .Select(a => new
+                                {
+                                    item.Node,
+                                    a.TimeDate,
+                                    CpuUsagePct = a.CpuUsagePercentage,
+                                    a.IoWait,
+                                    a.Loadavg,
+                                    MemorySizeGB = ToGB(a.MemorySize),
+                                    MemoryUsageGB = ToGB(a.MemoryUsage),
+                                    MemoryUsagePct = a.MemoryUsagePercentage,
+                                    SwapSizeGB = ToGB(a.SwapSize),
+                                    SwapUsageGB = ToGB(a.SwapUsage),
+                                    RootSizeGB = ToGB(a.RootSize),
+                                    RootUsageGB = ToGB(a.RootUsage),
+                                    NetInMB = ToMB(a.NetIn),
+                                    NetOutMB = ToMB(a.NetOut),
+                                    PsiCpuSomePct = a.PressureCpuSome,
+                                    PsiIoSomePct = a.PressureIoSome,
+                                    PsiIoFullPct = a.PressureIoFull,
+                                    PsiMemSomePct = a.PressureMemorySome,
+                                    PsiMemFullPct = a.PressureMemoryFull,
+                                }).ToList());
             }
             finally
             {
@@ -69,13 +67,9 @@ public partial class ReportEngine
         var results = await Task.WhenAll(tasks);
 
         var sw = CreateSheetWriter(workbook, "RRD Nodes");
-        IXLTable? table = null;
-
-        foreach (var (_, rows) in results.OrderBy(r => r.item.Id))
-        {
-            sw.CreateOrAddTable(ref table, null, rows, tbl => sw.ApplyNodeLinks(tbl));
-        }
-
+        sw.CreateTable(null,
+                       results.OrderBy(r => r.item.Id).SelectMany(r => r.rows).ToList(),
+                       tbl => sw.ApplyNodeLinks(tbl));
         sw.AdjustColumns();
 
         return results.Sum(r => r.rows.Count);
