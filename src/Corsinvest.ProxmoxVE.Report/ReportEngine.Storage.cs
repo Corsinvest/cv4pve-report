@@ -14,16 +14,7 @@ public partial class ReportEngine
     {
         var sw = CreateSheetWriter(workbook, "Storages");
 
-        var all = GetResources(ClusterResourceType.Storage)
-                            .OrderBy(a => a.Id)
-                            .ToList();
-
-        // Deduplicate: shared storage appears once per cluster, non-shared once per node
-        var filtered = all.GroupBy(a => a.Shared ? $"shared:{a.Storage}" : $"{a.Node}:{a.Storage}")
-                          .Select(g => g.First())
-                          .ToList();
-
-        var pt = new ProgressTracker(_progress, filtered.Count);
+        var filtered = _uniqueStorages.OrderBy(a => a.Id).ToList();
 
         sw.CreateTable(null,
                        filtered.Select(a =>

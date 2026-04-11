@@ -66,7 +66,7 @@ public partial class ReportEngine
             ReportGlobal($"Syslog: {item.Node}");
 
             sw.CreateOrAddTable(ref table,
-                                "Syslog",
+                                null,
                                 (await client.Nodes[item.Node]
                                        .Journal
                                        .GetAsync(lastentries: settings.Node.Syslog.Limit,

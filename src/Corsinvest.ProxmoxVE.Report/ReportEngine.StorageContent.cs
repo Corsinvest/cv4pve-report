@@ -5,7 +5,6 @@
 
 using ClosedXML.Excel;
 using Corsinvest.ProxmoxVE.Api.Extension;
-using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 
 namespace Corsinvest.ProxmoxVE.Report;
 
@@ -15,15 +14,7 @@ public partial class ReportEngine
     {
         if (!settings.Storage.IncludeContentSheet && !settings.Storage.IncludeBackupsSheet) { return 0; }
 
-        var all = GetResources(ClusterResourceType.Storage)
-                            .OrderBy(a => a.Id)
-                            .ToList();
-
-        var filtered = all.GroupBy(a => a.Shared ? $"shared:{a.Storage}" : $"{a.Node}:{a.Storage}")
-                          .Select(a => a.First())
-                          .Where(a => !a.IsUnknown)
-                          .ToList();
-
+        var filtered = _uniqueStorages.Where(a => !a.IsUnknown).OrderBy(a => a.Id).ToList();
         if (filtered.Count == 0) { return 0; }
 
         double? StorageUsagePct(long size, ulong storageSize)
@@ -37,8 +28,8 @@ public partial class ReportEngine
                 : "";
 
         string GuestName(long vmId)
-            => vmId > 0
-                ? _resources.FirstOrDefault(r => r.VmId == vmId)?.Name ?? ""
+            => vmId > 0 && _resourcesByVmId.TryGetValue(vmId, out var res)
+                ? res.Name ?? ""
                 : "";
 
         var semaphore = CreateSemaphore();
@@ -105,45 +96,35 @@ public partial class ReportEngine
         });
 
         var results = await Task.WhenAll(tasks);
+        var ordered = results.OrderBy(r => r.item.Id).ToList();
 
-        SheetWriter? contentSw = null;
-        IXLTable? contentTable = null;
-        SheetWriter? backupSw = null;
-        IXLTable? backupTable = null;
-
-        foreach (var (_, contentRows, backupRows) in results.OrderBy(r => r.item.Id))
+        if (settings.Storage.IncludeContentSheet)
         {
-            if (contentRows.Count > 0)
-            {
-                contentSw ??= CreateSheetWriter(workbook, "Storage Content");
-                contentSw.CreateOrAddTable(ref contentTable,
-                                           null,
-                                           contentRows,
-                                           tbl =>
-                                           {
-                                               contentSw.ApplyNodeLinks(tbl);
-                                               contentSw.ApplyStorageLinks(tbl);
-                                               contentSw.ApplyVmIdLinks(tbl);
-                                           });
-            }
-
-            if (backupRows.Count > 0)
-            {
-                backupSw ??= CreateSheetWriter(workbook, "Backups");
-                backupSw.CreateOrAddTable(ref backupTable,
-                                          null,
-                                          backupRows,
-                                          tbl =>
-                                          {
-                                              backupSw.ApplyNodeLinks(tbl);
-                                              backupSw.ApplyStorageLinks(tbl);
-                                              backupSw.ApplyVmIdLinks(tbl);
-                                          });
-            }
+            var sw = CreateSheetWriter(workbook, "Storage Content");
+            sw.CreateTable(null,
+                           ordered.SelectMany(r => r.contentRows).ToList(),
+                           tbl =>
+                           {
+                               sw.ApplyNodeLinks(tbl);
+                               sw.ApplyStorageLinks(tbl);
+                               sw.ApplyVmIdLinks(tbl);
+                           });
+            sw.AdjustColumns();
         }
 
-        contentSw?.AdjustColumns();
-        backupSw?.AdjustColumns();
+        if (settings.Storage.IncludeBackupsSheet)
+        {
+            var sw = CreateSheetWriter(workbook, "Backups");
+            sw.CreateTable(null,
+                           ordered.SelectMany(r => r.backupRows).ToList(),
+                           tbl =>
+                           {
+                               sw.ApplyNodeLinks(tbl);
+                               sw.ApplyStorageLinks(tbl);
+                               sw.ApplyVmIdLinks(tbl);
+                           });
+            sw.AdjustColumns();
+        }
 
         return results.Sum(r => r.contentRows.Count + r.backupRows.Count);
     }

@@ -2,6 +2,24 @@
 
 ---
 
+## [1.6.0] — 2026-04-11
+
+### Fixes
+
+- **Disks sheet** — storage type and usage now show correctly for VMs with disks spread across multiple storages
+- **Nodes Networks sheet** — the Node column was always empty; it now shows the correct node for each network interface
+- **SSL certificate expiry** — days until expiry no longer crashes for certificates with no expiry date
+- **Replication sheet** — the Summary sheet now shows the correct number of replication jobs instead of the number of nodes
+- **Cluster sheet** — fixed a duplicate API call when loading the Two-Factor Authentication table
+
+### Performance
+
+- **Firewall** — rules, aliases and IP sets are now fetched in parallel for both cluster and each VM/CT, reducing report generation time on large clusters
+- **Replication** — replication status is now fetched from all nodes in parallel instead of one at a time
+- **Storage Content** — content and backup lists are now fetched and written in a single parallel pass
+
+---
+
 ## [1.5.0] — 2026-04-10
 
 ### What's new

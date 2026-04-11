@@ -155,7 +155,7 @@ public partial class ReportEngine
                        })));
 
         sw.CreateTable("Two-Factor Authentication",
-                       client.Access.Tfa.GetAsync().Result.Select(t => new
+                       tfaTask.Result.Select(t => new
                        {
                            User = t.UserId,
                            TfaTypes = string.Join(", ", t.Entries?.Select(e => e.Type).Distinct() ?? []),

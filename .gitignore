@@ -331,7 +331,6 @@ ASALocalRun/
 
 *.Parm
 
-.claude
-.vscode
+.vscode/
 
 TODO-INTERNAL.MD

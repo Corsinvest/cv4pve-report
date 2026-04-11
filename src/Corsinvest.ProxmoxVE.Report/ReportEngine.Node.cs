@@ -75,8 +75,6 @@ public partial class ReportEngine
 
         foreach (var d in results)
         {
-            //var item = ;
-
             _pendingNodeNetworkRows.AddRange(d.Networks.Select(a => (d.Item.Node, a)));
 
             items.Add(new
@@ -440,7 +438,9 @@ public partial class ReportEngine
                            San = string.Join(", ", cert.San ?? []),
                            NotBefore = FromUnixTime(cert.NotBefore),
                            NotAfter = FromUnixTime(cert.NotAfter),
-                           DaysUntilExpiry = (FromUnixTime(cert.NotAfter)!.Value - DateTime.UtcNow).Days,
+                           DaysUntilExpiry = FromUnixTime(cert.NotAfter) is { } expiry
+                                                ? (expiry - DateTime.UtcNow).Days
+                                                : (int?)null,
                        }));
 
         if (settings.Node.Detail.Tasks.Enabled)

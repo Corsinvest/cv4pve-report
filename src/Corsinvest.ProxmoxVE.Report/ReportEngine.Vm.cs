@@ -80,14 +80,16 @@ public partial class ReportEngine
                         fsInfo = fsInfoTask.Result?.Result ?? [];
 
                         var agentNetwork = networkTask.Result;
-                        if (agentNetwork != null)
+                        if (agentNetwork?.Result != null)
                         {
+                            var netDict = config.Networks.Where(n => !string.IsNullOrEmpty(n.MacAddress))
+                                                         .ToDictionary(n => n.MacAddress, StringComparer.OrdinalIgnoreCase);
+
                             foreach (var net in agentNetwork.Result.Where(a => !string.IsNullOrEmpty(a.HardwareAddress)
                                                                                 && a.HardwareAddress != "00:00:00:00:00:00"))
                             {
-                                var configNet = config.Networks
-                                                      .FirstOrDefault(c => string.Equals(c.MacAddress, net.HardwareAddress,
-                                                                                         StringComparison.OrdinalIgnoreCase));
+                                netDict.TryGetValue(net.HardwareAddress ?? "", out var configNet);
+
                                 networks.Add(new(item.VmId,
                                                  item.Name,
                                                  item.Node,
@@ -118,7 +120,7 @@ public partial class ReportEngine
                         }
                     }
                 }
-                catch
+                catch (Exception)
                 {
                     hostname = "Agent not running!";
                 }

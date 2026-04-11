@@ -9,6 +9,8 @@ using Corsinvest.ProxmoxVE.Api.Extension;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Node;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Vm;
+using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 
 namespace Corsinvest.ProxmoxVE.Report;
@@ -17,11 +19,13 @@ namespace Corsinvest.ProxmoxVE.Report;
 public partial class ReportEngine(PveClient client, Settings settings, ReportInfo info)
 {
     /// <summary>Optional provider to calculate snapshot size. Parameters: node, vmType, vmId, snapName. Returns size in bytes or null if unavailable.</summary>
-    public Func<string, VmType, long, string, Task<long?>>? SnapshotSizeProvider { get; set; }
+    public Func<string, VmType, long, string, Task<long>>? SnapshotSizeProvider { get; set; }
 
     private IProgress<ReportProgress>? _progress;
     private readonly Dictionary<string, string> _sheetLinks = [];
     private List<ClusterResource> _resources = [];
+    private Dictionary<long, ClusterResource> _resourcesByVmId = [];
+    private List<ClusterResource> _uniqueStorages = [];
     private readonly List<VmNetworkRow> _pendingNetworkRows = [];
     private readonly List<(string Node, NodeNetwork Network)> _pendingNodeNetworkRows = [];
     private readonly List<(ClusterResource Vm, IEnumerable<VmDisk> Disks)> _pendingDiskRows = [];
@@ -85,10 +89,21 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
     internal static string SheetLinkKey(ClusterResourceType type, params string[] values)
         => $"{type.ToString().ToLowerInvariant()}:{values.JoinAsString(":")}";
 
-    private async Task BuildSheetLinksAsync()
+    private async Task LoadResourcesAsync()
     {
         _resources = [.. (await client.GetResourcesAsync(ClusterResourceType.All))];
         _resources.CalculateHostUsage();
+
+        _resourcesByVmId = _resources.Where(r => r.VmId > 0)
+                                     .GroupBy(r => r.VmId)
+                                     .ToDictionary(g => g.Key, g => g.First());
+
+        _uniqueStorages = [.. _resources.Where(a => a.ResourceType == ClusterResourceType.Storage)
+                                        .GroupBy(a => a.Shared
+                                                        ? $"shared:{a.Storage}"
+                                                        : $"{a.Node}:{a.Storage}")
+                                        .Select(g => g.First())];
+
         _vmIds = [.. (await client.GetVmsAsync(settings.Guest.Ids)).Select(a => a.VmId)];
 
         _sheetLinks["storage:link"] = "Storages";
@@ -130,7 +145,7 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
     private async Task GenerateExcelAsync(Stream stream)
     {
         ReportGlobal("Init");
-        await BuildSheetLinksAsync();
+        await LoadResourcesAsync();
 
         using var workbook = new XLWorkbook();
         ConfigureWorkbook(workbook);
@@ -158,7 +173,7 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
         };
 
         var stats = new List<SectionStat>();
-        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var sw = Stopwatch.StartNew();
         foreach (var (name, action) in sections)
         {
             ReportGlobal(name);
@@ -273,7 +288,7 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
             ? null
             : DateTimeOffset.FromUnixTimeSeconds(seconds).DateTime;
 
-    private static readonly Dictionary<string, Regex> _checkNamesRegexCache = [];
+    private static readonly ConcurrentDictionary<string, Regex> _checkNamesRegexCache = new();
 
     private static bool CheckNames(string names, string name)
     {
@@ -288,12 +303,11 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
             else
             {
                 if (token == "*") { return true; }
-                if (!_checkNamesRegexCache.TryGetValue(token, out var regex))
+                var regex = _checkNamesRegexCache.GetOrAdd(token, t =>
                 {
-                    var pattern = "^" + Regex.Escape(token).Replace(@"\*", ".*") + "$";
-                    regex = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
-                    _checkNamesRegexCache[token] = regex;
-                }
+                    var pattern = "^" + Regex.Escape(t).Replace(@"\*", ".*") + "$";
+                    return new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
+                });
                 if (regex.IsMatch(name)) { return true; }
             }
         }

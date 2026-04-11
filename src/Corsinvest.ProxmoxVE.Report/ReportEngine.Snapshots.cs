@@ -23,7 +23,6 @@ public partial class ReportEngine
         if (resources.Count == 0) { return 0; }
 
         var sw = CreateSheetWriter(workbook, "Snapshots");
-        IXLTable? table = null;
         var semaphore = CreateSemaphore();
 
         var tasks = resources.Select(async item =>
@@ -33,33 +32,25 @@ public partial class ReportEngine
             {
                 ReportGlobal($"Snapshots: {item.Node} {item.VmId}");
 
-                var rawSnapshots = await SnapshotHelper.GetSnapshotsAsync(client,
-                                                                          item.Node,
-                                                                          item.VmType,
-                                                                          item.VmId);
                 var rows = new List<dynamic>();
-                foreach (var a in rawSnapshots)
+                foreach (var snapshot in await SnapshotHelper.GetSnapshotsAsync(client, item.Node, item.VmType, item.VmId))
                 {
-                    long? sizeBytes = SnapshotSizeProvider != null
-                                        ? await SnapshotSizeProvider(item.Node, item.VmType, item.VmId, a.Name)
-                                        : null;
-
                     rows.Add(new
                     {
                         item.Node,
                         item.VmId,
                         VmName = item.Name,
                         item.VmType,
-                        Snapshot = a.Name,
-                        a.Parent,
-                        a.Date,
-                        IncludeRamFlag = ToX(a.VmStatus),
+                        Snapshot = snapshot.Name,
+                        snapshot.Parent,
+                        snapshot.Date,
+                        IncludeRamFlag = ToX(snapshot.VmStatus),
 
-                        SizeGB = sizeBytes.HasValue
-                                    ? ToGB(sizeBytes.Value)
+                        SizeGB = SnapshotSizeProvider != null
+                                    ? ToGB(await SnapshotSizeProvider(item.Node, item.VmType, item.VmId, snapshot.Name))
                                     : (double?)null,
 
-                        DescriptionWrap = a.Description,
+                        DescriptionWrap = snapshot.Description,
                     });
                 }
                 return (item, rows);
@@ -72,18 +63,13 @@ public partial class ReportEngine
 
         var results = await Task.WhenAll(tasks);
 
-        foreach (var (_, rows) in results.OrderBy(r => r.item.Id))
-        {
-            sw.CreateOrAddTable(ref table,
-                                null,
-                                rows,
-                                tbl =>
-                                {
-                                    sw.ApplyNodeLinks(tbl);
-                                    sw.ApplyVmIdLinks(tbl);
-                                });
-        }
-
+        sw.CreateTable(null,
+                       results.OrderBy(r => r.item.Id).SelectMany(r => r.rows).ToList(),
+                       tbl =>
+                       {
+                           sw.ApplyNodeLinks(tbl);
+                           sw.ApplyVmIdLinks(tbl);
+                       });
         sw.AdjustColumns();
 
         return results.Sum(r => r.rows.Count);
