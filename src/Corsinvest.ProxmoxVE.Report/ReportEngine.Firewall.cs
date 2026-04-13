@@ -18,6 +18,8 @@ public partial class ReportEngine
         if (!settings.Firewall.Enabled) { return 0; }
 
         var sw = CreateSheetWriter(workbook, "Firewall");
+        sw.ReserveIndexRows(3);
+
         IXLTable? rulesTable = null;
         IXLTable? aliasTable = null;
         IXLTable? ipSetTable = null;
@@ -48,15 +50,7 @@ public partial class ReportEngine
             }).ToList();
 
             rulesCount += rows.Count;
-            if (rulesTable == null)
-            {
-                sw!.ReserveIndexRows(3);
-                rulesTable = sw.CreateTable("Firewall Rules", rows);
-            }
-            else
-            {
-                sw!.AppendData(rulesTable, rows);
-            }
+            sw.CreateOrAddTable(ref rulesTable, "Firewall Rules", rows);
         }
 
         void AppendAliases(string scopeType, string scope, string scopeName, IEnumerable<FirewallAlias> aliases)
@@ -85,8 +79,6 @@ public partial class ReportEngine
                                        CommentWrap = a.Comment,
                                    }).ToList());
 
-        var semaphore = CreateSemaphore();
-
         // Cluster firewall
         ReportGlobal("Firewall: Cluster");
         var clusterRulesTask = client.Cluster.Firewall.Rules.GetAsync();
@@ -99,32 +91,24 @@ public partial class ReportEngine
         AppendIpSets("cluster", "cluster", "", clusterIpSetsTask.Result);
 
         // Nodes firewall — parallel
-        var nodeTasks = GetResources(ClusterResourceType.Node)
-                              .Where(a => !a.IsUnknown)
-                              .Select(async item =>
-        {
-            await semaphore.WaitAsync();
-            try
+        var nodeFirewallResults = await RunParallelAsync(
+            GetResources(ClusterResourceType.Node).Where(a => !a.IsUnknown),
+            async item =>
             {
                 ReportGlobal($"Firewall: Node {item.Node}");
                 return (scope: item.Node,
                         rules: await client.Nodes[item.Node].Firewall.Rules.GetAsync());
-            }
-            finally { semaphore.Release(); }
-        });
+            });
 
-        foreach (var (scope, rules) in (await Task.WhenAll(nodeTasks)).OrderBy(r => r.scope))
+        foreach (var (scope, rules) in nodeFirewallResults.OrderBy(r => r.scope))
         {
             AppendRules("node", scope, "", rules);
         }
 
         // VMs and CTs firewall — parallel
-        var guestTasks = GetResources(ClusterResourceType.Vm)
-                               .Where(a => !a.IsUnknown)
-                               .Select(async item =>
-        {
-            await semaphore.WaitAsync();
-            try
+        var guestFirewallResults = await RunParallelAsync(
+            GetResources(ClusterResourceType.Vm).Where(a => !a.IsUnknown),
+            async item =>
             {
                 ReportGlobal($"Firewall: {item.VmType} {item.VmId}");
 
@@ -155,11 +139,9 @@ public partial class ReportEngine
                         rules: rulesTask.Result,
                         aliases: aliasesTask.Result,
                         ipSets: ipSetsTask.Result);
-            }
-            finally { semaphore.Release(); }
-        });
+            });
 
-        foreach (var (scopeType, scope, scopeName, rules, aliases, ipSets) in (await Task.WhenAll(guestTasks)).OrderBy(r => r.scope))
+        foreach (var (scopeType, scope, scopeName, rules, aliases, ipSets) in guestFirewallResults.OrderBy(r => r.scope))
         {
             AppendRules(scopeType, scope, scopeName, rules);
             AppendAliases(scopeType, scope, scopeName, aliases);

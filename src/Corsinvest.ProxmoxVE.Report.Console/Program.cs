@@ -11,7 +11,7 @@ using System.Text.Json;
 
 const string settingsFileName = "settings.json";
 
-var app = ConsoleHelper.CreateApp("cv4pve-report", "Report for Proxmox VE");
+var app = ConsoleHelper.CreateApp("Report for Proxmox VE");
 
 var logLevel = app.DebugIsActive()
                 ? LogLevel.Debug

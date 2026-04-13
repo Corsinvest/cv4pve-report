@@ -281,6 +281,7 @@ Per-node sheet (linked from Nodes list), with `← Back` to Nodes. Skipped entir
 |-------|----------|
 | Services | System service status |
 | Network | Interface configuration with IPv4/IPv6, bond, VLAN, OVS details |
+| /etc/hosts | Host name resolution entries |
 | Disks | Physical disk list *(if `Node.Detail.Disk.IncludeDiskDetail`)* |
 | SMART Data | SMART attributes per disk *(if `Node.Detail.Disk.IncludeSmartData`)* |
 | ZFS Pools / ZFS Pool Status | ZFS pool health, usage, vdev tree *(if `Node.Detail.Disk.IncludeDiskDetail`)* |

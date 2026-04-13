@@ -25,46 +25,35 @@ public partial class ReportEngine
 
         var rrdTimeFrame = settings.Node.RrdData.TimeFrame.GetValue();
         var rrdConsolidation = settings.Node.RrdData.Consolidation.GetValue();
-        var semaphore = CreateSemaphore();
 
-        var tasks = nodes.Select(async item =>
+        var results = await RunParallelAsync(nodes, async item =>
         {
-            await semaphore.WaitAsync();
-            try
-            {
-                ReportGlobal($"RRD Nodes: {item.Node}");
-                return (item,
-                        rows: (await client.Nodes[item.Node].Rrddata.GetAsync(rrdTimeFrame, rrdConsolidation))
-                                .Select(a => new
-                                {
-                                    item.Node,
-                                    a.TimeDate,
-                                    CpuUsagePct = a.CpuUsagePercentage,
-                                    a.IoWait,
-                                    a.Loadavg,
-                                    MemorySizeGB = ToGB(a.MemorySize),
-                                    MemoryUsageGB = ToGB(a.MemoryUsage),
-                                    MemoryUsagePct = a.MemoryUsagePercentage,
-                                    SwapSizeGB = ToGB(a.SwapSize),
-                                    SwapUsageGB = ToGB(a.SwapUsage),
-                                    RootSizeGB = ToGB(a.RootSize),
-                                    RootUsageGB = ToGB(a.RootUsage),
-                                    NetInMB = ToMB(a.NetIn),
-                                    NetOutMB = ToMB(a.NetOut),
-                                    PsiCpuSomePct = a.PressureCpuSome,
-                                    PsiIoSomePct = a.PressureIoSome,
-                                    PsiIoFullPct = a.PressureIoFull,
-                                    PsiMemSomePct = a.PressureMemorySome,
-                                    PsiMemFullPct = a.PressureMemoryFull,
-                                }).ToList());
-            }
-            finally
-            {
-                semaphore.Release();
-            }
+            ReportGlobal($"RRD Nodes: {item.Node}");
+            return (item,
+                    rows: (await client.Nodes[item.Node].Rrddata.GetAsync(rrdTimeFrame, rrdConsolidation))
+                            .Select(a => new
+                            {
+                                item.Node,
+                                a.TimeDate,
+                                CpuUsagePct = a.CpuUsagePercentage,
+                                a.IoWait,
+                                a.Loadavg,
+                                MemorySizeGB = ToGB(a.MemorySize),
+                                MemoryUsageGB = ToGB(a.MemoryUsage),
+                                MemoryUsagePct = a.MemoryUsagePercentage,
+                                SwapSizeGB = ToGB(a.SwapSize),
+                                SwapUsageGB = ToGB(a.SwapUsage),
+                                RootSizeGB = ToGB(a.RootSize),
+                                RootUsageGB = ToGB(a.RootUsage),
+                                NetInMB = ToMB(a.NetIn),
+                                NetOutMB = ToMB(a.NetOut),
+                                PsiCpuSomePct = a.PressureCpuSome,
+                                PsiIoSomePct = a.PressureIoSome,
+                                PsiIoFullPct = a.PressureIoFull,
+                                PsiMemSomePct = a.PressureMemorySome,
+                                PsiMemFullPct = a.PressureMemoryFull,
+                            }).ToList());
         });
-
-        var results = await Task.WhenAll(tasks);
 
         var sw = CreateSheetWriter(workbook, "RRD Nodes");
         sw.CreateTable(null,

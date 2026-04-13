@@ -23,7 +23,7 @@ public partial class ReportEngine
         public string AgentVersion { get; init; } = "";
         public VmQemuAgentOsInfo? AgentOsInfo { get; init; }
         public List<VmNetworkRow> Networks { get; init; } = [];
-        public IEnumerable<VmQemuAgentGetFsInfo.ResultInt> FsInfo { get; init; } = [];
+        public IEnumerable<VmQemuAgentGetFsInfo.ResultInfo> FsInfo { get; init; } = [];
     }
 
     private async Task<VmFetchData> FetchVmDataAsync(ClusterResource item, ProgressTracker pt)
@@ -41,7 +41,7 @@ public partial class ReportEngine
         var agentRunning = false;
         var agentVersion = "";
         var networks = new List<VmNetworkRow>();
-        IEnumerable<VmQemuAgentGetFsInfo.ResultInt> fsInfo = [];
+        IEnumerable<VmQemuAgentGetFsInfo.ResultInfo> fsInfo = [];
 
         if (!item.IsUnknown && item.IsRunning)
         {
@@ -168,14 +168,8 @@ public partial class ReportEngine
         var items = new List<dynamic>();
         var pt = new ProgressTracker(_progress, resources.Count);
 
-        var semaphore = CreateSemaphore();
-        var tasks = resources.Select(async item =>
-        {
-            await semaphore.WaitAsync();
-            try { return await FetchVmDataAsync(item, pt); }
-            finally { semaphore.Release(); }
-        });
-        var results = (await Task.WhenAll(tasks)).OrderBy(d => d.Item.Id).ToList();
+        var results = (await RunParallelAsync(resources, item => FetchVmDataAsync(item, pt)))
+                            .OrderBy(d => d.Item.Id).ToList();
 
         foreach (var d in results)
         {

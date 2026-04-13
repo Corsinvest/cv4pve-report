@@ -34,4 +34,5 @@ public class SettingsNodeDetail
     /// Include firewall log sheet
     /// </summary>
     public bool IncludeFirewallLog { get; set; } = true;
+
 }

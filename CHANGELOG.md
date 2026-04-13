@@ -2,6 +2,15 @@
 
 ---
 
+## [1.7.0] — 2026-04-13
+
+### What's new
+
+- **Host file in node detail** — the host name resolution table (`/etc/hosts`) is now included in each node's detail sheet, right after the network interfaces
+- **Offline nodes** — nodes that are offline are now skipped gracefully instead of producing errors in the report
+
+---
+
 ## [1.6.0] — 2026-04-11
 
 ### Fixes

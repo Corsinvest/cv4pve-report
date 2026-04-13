@@ -12,7 +12,7 @@ namespace Corsinvest.ProxmoxVE.Report;
 public partial class ReportEngine
 {
     private void AppendPartitionRows(ClusterResource vm,
-                                     IEnumerable<VmQemuAgentGetFsInfo.ResultInt> partitions)
+                                     IEnumerable<VmQemuAgentGetFsInfo.ResultInfo> partitions)
     {
         if (!settings.Guest.IncludePartitionsSheet) { return; }
         _pendingPartitionRows.Add((vm, partitions));

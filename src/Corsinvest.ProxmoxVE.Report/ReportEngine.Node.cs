@@ -4,6 +4,7 @@
  */
 
 using ClosedXML.Excel;
+using Corsinvest.ProxmoxVE.Api;
 using Corsinvest.ProxmoxVE.Api.Extension;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Node;
@@ -28,7 +29,7 @@ public partial class ReportEngine
     {
         pt.Next(item);
 
-        if (item.IsUnknown) { return new NodeFetchData { Item = item }; }
+        if (item.IsUnknown || !item.IsOnline) { return new NodeFetchData { Item = item }; }
 
         pt.Step("Status/Version/Subscription/DNS/Time/Network");
         var node = client.Nodes[item.Node];
@@ -63,15 +64,8 @@ public partial class ReportEngine
 
         var pt = new ProgressTracker(_progress, filtered.Count);
 
-        var semaphore = CreateSemaphore();
-        var tasks = filtered.Select(async item =>
-        {
-            await semaphore.WaitAsync();
-            try { return await FetchNodeDataAsync(item, pt); }
-            finally { semaphore.Release(); }
-        });
-
-        var results = (await Task.WhenAll(tasks)).OrderBy(a => a.Item.Id).ToList();
+        var results = (await RunParallelAsync(filtered, item => FetchNodeDataAsync(item, pt)))
+                            .OrderBy(a => a.Item.Id).ToList();
 
         foreach (var d in results)
         {
@@ -127,7 +121,7 @@ public partial class ReportEngine
                 d.Dns?.Dns3,
             });
 
-            if (!d.Item.IsUnknown && settings.Node.Detail.Enabled)
+            if (!d.Item.IsUnknown && d.Item.IsOnline && settings.Node.Detail.Enabled)
             {
                 await AddNodeDetailAsync(workbook, d, pt);
             }
@@ -186,15 +180,17 @@ public partial class ReportEngine
                        + (settings.Node.Detail.IncludeApt ? 3 : 0)               // Repositories + Updates + Versions
                        + (settings.Firewall.Enabled && settings.Node.Detail.IncludeFirewallLog ? 1 : 0)  // Firewall Logs
                        + 1  // SSL Certificates
-                       + (settings.Node.Detail.Tasks.Enabled ? 1 : 0);
+                       + (settings.Node.Detail.Tasks.Enabled ? 1 : 0)
+                       + 1;                                                        // /etc/hosts
 
         sw.ReserveIndexRows(tableCount);
 
-        pt.Step("Services/SSL Certificates");
+        pt.Step("Services/SSL Certificates/Hosts");
         var servicesTask = client.Nodes[node].Services.GetAsync();
         var certificatesTask = client.Nodes[node].Certificates.Info.GetAsync();
+        var hostsTask = client.Nodes[node].Hosts.GetEtcHosts();
 
-        await Task.WhenAll(servicesTask, certificatesTask);
+        await Task.WhenAll(servicesTask, certificatesTask, hostsTask);
 
         sw.CreateTable("Services",
                        servicesTask.Result.Select(a => new
@@ -254,6 +250,22 @@ public partial class ReportEngine
                        }),
                        tbl => sw.RegisterNetworkLinks(tbl, node));
 
+        sw.CreateTable("/etc/hosts",
+                       ((string)hostsTask.Result.ToData().data)
+                                .Split('\n')
+                                .Select(a => a.Trim())
+                                .Where(a => a.Length > 0 && !a.StartsWith('#'))
+                                .Select(a =>
+                                {
+                                    var parts = a.Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries);
+                                    return new
+                                    {
+                                        IP = parts[0],
+                                        HostnamesWrap = parts.Skip(1).JoinAsString(Environment.NewLine)
+                                    };
+                                })
+                                .ToList());
+
         if (settings.Node.Detail.Disk.IncludeDiskDetail || settings.Node.Detail.Disk.IncludeSmartData)
         {
             var disksData = await client.Nodes[node].Disks.List.GetAsync(include_partitions: true);
@@ -287,13 +299,7 @@ public partial class ReportEngine
             {
                 pt.Step("S.M.A.R.T. Data");
                 var rootDisks = disksData.Where(a => string.IsNullOrEmpty(a.Parent)).ToList();
-                var sem = CreateSemaphore();
-                var smartResults = await Task.WhenAll(rootDisks.Select(async d =>
-                {
-                    await sem.WaitAsync();
-                    try { return await client.GetDiskSmart(node, d.DevPath); }
-                    finally { sem.Release(); }
-                }));
+                var smartResults = await RunParallelAsync(rootDisks, d => client.GetDiskSmart(node, d.DevPath));
 
                 sw.CreateTable("S.M.A.R.T. Data",
                                rootDisks.Zip(smartResults, (disk, smart) => (smart.Attributes ?? []).Select(attr => new
@@ -334,13 +340,7 @@ public partial class ReportEngine
                                }));
 
                 var zfsPoolList = zfsPoolsListTask.Result.ToList();
-                var zfsSem = CreateSemaphore();
-                var zfsPoolDetails = await Task.WhenAll(zfsPoolList.Select(async p =>
-                {
-                    await zfsSem.WaitAsync();
-                    try { return await client.Nodes[node].Disks.Zfs[p.Name].GetAsync(); }
-                    finally { zfsSem.Release(); }
-                }));
+                var zfsPoolDetails = await RunParallelAsync(zfsPoolList, p => client.Nodes[node].Disks.Zfs[p.Name].GetAsync());
 
                 sw.CreateTable("ZFS Pools", zfsPoolList.Zip(zfsPoolDetails, (pool, poolData) => new
                 {
