@@ -65,14 +65,8 @@ public partial class ReportEngine
         var items = new List<dynamic>();
         var pt = new ProgressTracker(_progress, resources.Count);
 
-        var semaphore = CreateSemaphore();
-        var tasks = resources.Select(async item =>
-        {
-            await semaphore.WaitAsync();
-            try { return await FetchCtDataAsync(item, pt); }
-            finally { semaphore.Release(); }
-        });
-        var results = (await Task.WhenAll(tasks)).OrderBy(d => d.Item.Id).ToList();
+        var results = (await RunParallelAsync(resources, item => FetchCtDataAsync(item, pt)))
+                            .OrderBy(d => d.Item.Id).ToList();
 
         foreach (var d in results)
         {

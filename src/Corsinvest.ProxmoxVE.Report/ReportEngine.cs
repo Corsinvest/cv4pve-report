@@ -3,15 +3,15 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
+using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Text.RegularExpressions;
 using ClosedXML.Excel;
 using Corsinvest.ProxmoxVE.Api;
 using Corsinvest.ProxmoxVE.Api.Extension;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Node;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Vm;
-using System.Collections.Concurrent;
-using System.Diagnostics;
-using System.Text.RegularExpressions;
 
 namespace Corsinvest.ProxmoxVE.Report;
 
@@ -29,7 +29,7 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
     private readonly List<VmNetworkRow> _pendingNetworkRows = [];
     private readonly List<(string Node, NodeNetwork Network)> _pendingNodeNetworkRows = [];
     private readonly List<(ClusterResource Vm, IEnumerable<VmDisk> Disks)> _pendingDiskRows = [];
-    private readonly List<(ClusterResource Vm, IEnumerable<VmQemuAgentGetFsInfo.ResultInt> Partitions)> _pendingPartitionRows = [];
+    private readonly List<(ClusterResource Vm, IEnumerable<VmQemuAgentGetFsInfo.ResultInfo> Partitions)> _pendingPartitionRows = [];
     private HashSet<long> _vmIds = [];
     private readonly Dictionary<string, int> _usedSheetNames = [];
 
@@ -130,9 +130,17 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
     public async Task<Stream> GenerateAsync(IProgress<ReportProgress>? progress = null)
     {
         _progress = progress;
+        var originalTimeout = client.Timeout;
         if (settings.ApiTimeout > 0) { client.Timeout = TimeSpan.FromSeconds(settings.ApiTimeout); }
         var stream = new MemoryStream();
-        await GenerateExcelAsync(stream);
+        try
+        {
+            await GenerateExcelAsync(stream);
+        }
+        finally
+        {
+            client.Timeout = originalTimeout;
+        }
         stream.Position = 0;
         return stream;
     }
@@ -258,7 +266,16 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
     private static double ToGB(double bytes) => Math.Round(bytes / 1024 / 1024 / 1024, 2);
     private static double ToMB(double bytes) => Math.Round(bytes / 1024 / 1024, 2);
 
-    private SemaphoreSlim CreateSemaphore() => new(settings.MaxParallelRequests);
+    private async Task<TResult[]> RunParallelAsync<T, TResult>(IEnumerable<T> source, Func<T, Task<TResult>> func)
+    {
+        var semaphore = new SemaphoreSlim(settings.MaxParallelRequests);
+        return await Task.WhenAll(source.Select(async item =>
+        {
+            await semaphore.WaitAsync();
+            try { return await func(item); }
+            finally { semaphore.Release(); }
+        }));
+    }
 
     private static string ToX(bool value)
         => value

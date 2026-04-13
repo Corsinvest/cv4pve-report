@@ -22,47 +22,35 @@ public partial class ReportEngine
 
         if (resources.Count == 0) { return 0; }
 
-        var sw = CreateSheetWriter(workbook, "Snapshots");
-        var semaphore = CreateSemaphore();
-
-        var tasks = resources.Select(async item =>
+        var results = await RunParallelAsync(resources, async item =>
         {
-            await semaphore.WaitAsync();
-            try
-            {
-                ReportGlobal($"Snapshots: {item.Node} {item.VmId}");
+            ReportGlobal($"Snapshots: {item.Node} {item.VmId}");
 
-                var rows = new List<dynamic>();
-                foreach (var snapshot in await SnapshotHelper.GetSnapshotsAsync(client, item.Node, item.VmType, item.VmId))
+            var rows = new List<dynamic>();
+            foreach (var snapshot in await SnapshotHelper.GetSnapshotsAsync(client, item.Node, item.VmType, item.VmId))
+            {
+                rows.Add(new
                 {
-                    rows.Add(new
-                    {
-                        item.Node,
-                        item.VmId,
-                        VmName = item.Name,
-                        item.VmType,
-                        Snapshot = snapshot.Name,
-                        snapshot.Parent,
-                        snapshot.Date,
-                        IncludeRamFlag = ToX(snapshot.VmStatus),
+                    item.Node,
+                    item.VmId,
+                    VmName = item.Name,
+                    item.VmType,
+                    Snapshot = snapshot.Name,
+                    snapshot.Parent,
+                    snapshot.Date,
+                    IncludeRamFlag = ToX(snapshot.VmStatus),
 
-                        SizeGB = SnapshotSizeProvider != null
-                                    ? ToGB(await SnapshotSizeProvider(item.Node, item.VmType, item.VmId, snapshot.Name))
-                                    : (double?)null,
+                    SizeGB = SnapshotSizeProvider != null
+                                ? ToGB(await SnapshotSizeProvider(item.Node, item.VmType, item.VmId, snapshot.Name))
+                                : (double?)null,
 
-                        DescriptionWrap = snapshot.Description,
-                    });
-                }
-                return (item, rows);
+                    DescriptionWrap = snapshot.Description,
+                });
             }
-            finally
-            {
-                semaphore.Release();
-            }
+            return (item, rows);
         });
 
-        var results = await Task.WhenAll(tasks);
-
+        var sw = CreateSheetWriter(workbook, "Snapshots");
         sw.CreateTable(null,
                        results.OrderBy(r => r.item.Id).SelectMany(r => r.rows).ToList(),
                        tbl =>

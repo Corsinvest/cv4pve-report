@@ -22,43 +22,37 @@ public partial class ReportEngine
 
         if (nodes.Count == 0) { return 0; }
 
-        var sem = CreateSemaphore();
-        var results = await Task.WhenAll(nodes.Select(async item =>
+        var results = await RunParallelAsync(nodes, async item =>
         {
-            await sem.WaitAsync();
-            try
-            {
-                ReportGlobal($"Replication: {item.Node}");
-                return (item.Node,
-                        rows: (await client.Nodes[item.Node].Replication.GetAsync())
-                            .Select(a => new
-                            {
-                                item.Node,
-                                a.Id,
-                                a.Type,
-                                a.VmType,
-                                VmId = a.Guest,
-                                GuestName = long.TryParse(a.Guest, out var guestId)
-                                                && _resourcesByVmId.TryGetValue(guestId, out var guestRes)
-                                            ? guestRes.Name ?? ""
-                                            : "",
-                                a.Source,
-                                a.Target,
-                                a.Schedule,
-                                a.Disable,
-                                a.FailCount,
-                                a.Error,
-                                a.Duration,
-                                a.Rate,
-                                LastSync = FromUnixTime(a.LastSync),
-                                NextSync = FromUnixTime(a.NextSync),
-                                LastTry = FromUnixTime(a.LastTry),
-                                a.JobNum,
-                                CommentWrap = a.Comment,
-                            }).ToList());
-            }
-            finally { sem.Release(); }
-        }));
+            ReportGlobal($"Replication: {item.Node}");
+            return (item.Node,
+                    rows: (await client.Nodes[item.Node].Replication.GetAsync())
+                        .Select(a => new
+                        {
+                            item.Node,
+                            a.Id,
+                            a.Type,
+                            a.VmType,
+                            VmId = a.Guest,
+                            GuestName = long.TryParse(a.Guest, out var guestId)
+                                            && _resourcesByVmId.TryGetValue(guestId, out var guestRes)
+                                        ? guestRes.Name ?? ""
+                                        : "",
+                            a.Source,
+                            a.Target,
+                            a.Schedule,
+                            a.Disable,
+                            a.FailCount,
+                            a.Error,
+                            a.Duration,
+                            a.Rate,
+                            LastSync = FromUnixTime(a.LastSync),
+                            NextSync = FromUnixTime(a.NextSync),
+                            LastTry = FromUnixTime(a.LastTry),
+                            a.JobNum,
+                            CommentWrap = a.Comment,
+                        }).ToList());
+        });
 
         var sw = CreateSheetWriter(workbook, "Replication");
         sw.CreateTable(null,

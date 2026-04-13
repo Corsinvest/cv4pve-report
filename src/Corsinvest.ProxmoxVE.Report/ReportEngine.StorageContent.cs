@@ -32,70 +32,57 @@ public partial class ReportEngine
                 ? res.Name ?? ""
                 : "";
 
-        var semaphore = CreateSemaphore();
-
-        var tasks = filtered.Select(async item =>
+        var results = await RunParallelAsync(filtered, async item =>
         {
-            await semaphore.WaitAsync();
-            try
-            {
-                ReportGlobal($"Storage Content: {item.Node} {item.Storage}");
+            ReportGlobal($"Storage Content: {item.Node} {item.Storage}");
 
-                var allContent = await client.Nodes[item.Node].Storage[item.Storage].Content.GetAsync();
+            var allContent = await client.Nodes[item.Node].Storage[item.Storage].Content.GetAsync();
+            var storageSize = item.DiskSize;
 
-                var storageSize = item.DiskSize;
+            var contentRows = settings.Storage.IncludeContentSheet
+                                ? allContent.Where(a => !string.Equals(a.Content, "backup", StringComparison.OrdinalIgnoreCase))
+                                           .Select(a => new
+                                           {
+                                               Node = StorageNode(item),
+                                               item.Storage,
+                                               a.Content,
+                                               a.FileName,
+                                               a.Format,
+                                               SizeGB = ToGB(a.Size),
+                                               StorageUsagePct = StorageUsagePct(a.Size, storageSize),
+                                               VmId = FormatVmId(a.VmId),
+                                               GuestName = GuestName(a.VmId),
+                                               a.CreationDate,
+                                               NotesWrap = a.Notes,
+                                               a.Parent,
+                                           })
+                                           .ToList()
+                                : [];
 
-                var contentRows = settings.Storage.IncludeContentSheet
-                                    ? allContent.Where(a => !string.Equals(a.Content, "backup", StringComparison.OrdinalIgnoreCase))
-                                               .Select(a => new
-                                               {
-                                                   Node = StorageNode(item),
-                                                   item.Storage,
-                                                   a.Content,
-                                                   a.FileName,
-                                                   a.Format,
-                                                   SizeGB = ToGB(a.Size),
-                                                   StorageUsagePct = StorageUsagePct(a.Size, storageSize),
-                                                   VmId = FormatVmId(a.VmId),
-                                                   GuestName = GuestName(a.VmId),
-                                                   a.CreationDate,
-                                                   NotesWrap = a.Notes,
-                                                   a.Parent,
-                                               })
-                                               .ToList()
-                                    : [];
+            var backupRows = settings.Storage.IncludeBackupsSheet
+                                ? allContent.Where(a => string.Equals(a.Content, "backup", StringComparison.OrdinalIgnoreCase))
+                                           .Select(a => new
+                                           {
+                                               Node = StorageNode(item),
+                                               item.Storage,
+                                               a.FileName,
+                                               a.Format,
+                                               SizeGB = ToGB(a.Size),
+                                               StorageUsagePct = StorageUsagePct(a.Size, storageSize),
+                                               VmId = FormatVmId(a.VmId),
+                                               GuestName = GuestName(a.VmId),
+                                               a.CreationDate,
+                                               NotesWrap = a.Notes,
+                                               ProtectedFlag = ToX(a.Protected),
+                                               EncryptedFlag = ToX(a.Encrypted),
+                                               VerifiedFlag = ToX(a.Verified),
+                                               a.Parent,
+                                           })
+                                           .ToList()
+                                : [];
 
-                var backupRows = settings.Storage.IncludeBackupsSheet
-                                    ? allContent.Where(a => string.Equals(a.Content, "backup", StringComparison.OrdinalIgnoreCase))
-                                               .Select(a => new
-                                               {
-                                                   Node = StorageNode(item),
-                                                   item.Storage,
-                                                   a.FileName,
-                                                   a.Format,
-                                                   SizeGB = ToGB(a.Size),
-                                                   StorageUsagePct = StorageUsagePct(a.Size, storageSize),
-                                                   VmId = FormatVmId(a.VmId),
-                                                   GuestName = GuestName(a.VmId),
-                                                   a.CreationDate,
-                                                   NotesWrap = a.Notes,
-                                                   ProtectedFlag = ToX(a.Protected),
-                                                   EncryptedFlag = ToX(a.Encrypted),
-                                                   VerifiedFlag = ToX(a.Verified),
-                                                   a.Parent,
-                                               })
-                                               .ToList()
-                                    : [];
-
-                return (item, contentRows, backupRows);
-            }
-            finally
-            {
-                semaphore.Release();
-            }
+            return (item, contentRows, backupRows);
         });
-
-        var results = await Task.WhenAll(tasks);
         var ordered = results.OrderBy(r => r.item.Id).ToList();
 
         if (settings.Storage.IncludeContentSheet)

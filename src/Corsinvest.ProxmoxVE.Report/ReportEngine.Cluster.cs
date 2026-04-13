@@ -333,13 +333,9 @@ public partial class ReportEngine
                            a.Type,
                        }));
 
-        var subnetSem = CreateSemaphore();
-        var subnetResults = await Task.WhenAll(vnetsTask.Result.Select(async vnet =>
-        {
-            await subnetSem.WaitAsync();
-            try { return (vnet, subs: await client.Cluster.Sdn.Vnets[vnet.Vnet].Subnets.GetAsync()); }
-            finally { subnetSem.Release(); }
-        }));
+        var subnetResults = await RunParallelAsync(vnetsTask.Result,
+                                                   async vnet => (vnet,
+                                                                  subs: await client.Cluster.Sdn.Vnets[vnet.Vnet].Subnets.GetAsync()));
         sw.CreateTable("SDN Subnets",
                        subnetResults.SelectMany(r => r.subs.Select(subnet => new
                        {
@@ -378,13 +374,8 @@ public partial class ReportEngine
                        }));
 
         ReportGlobal("Cluster: Pools");
-        var poolSem = CreateSemaphore();
-        var poolResults = await Task.WhenAll(poolsTask.Result.Select(async pool =>
-        {
-            await poolSem.WaitAsync();
-            try { var detail = await client.Pools[pool.Id].GetAsync(); return (pool, detail.Members); }
-            finally { poolSem.Release(); }
-        }));
+        var poolResults = await RunParallelAsync(poolsTask.Result,
+                                                 async pool => { var detail = await client.Pools[pool.Id].GetAsync(); return (pool, detail.Members); });
         sw.CreateTable("Pools",
                        poolResults.SelectMany(r => r.Members.Select(member => new
                        {
