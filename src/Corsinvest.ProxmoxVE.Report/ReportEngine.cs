@@ -11,6 +11,7 @@ using Corsinvest.ProxmoxVE.Api;
 using Corsinvest.ProxmoxVE.Api.Extension;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Node;
+using Corsinvest.ProxmoxVE.Api.Shared.Models.Storage;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Vm;
 
 namespace Corsinvest.ProxmoxVE.Report;
@@ -21,6 +22,9 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
     /// <summary>Optional provider to calculate snapshot size. Parameters: node, vmType, vmId, snapName. Returns size in bytes or null if unavailable.</summary>
     public Func<string, VmType, long, string, Task<long>>? SnapshotSizeProvider { get; set; }
 
+    /// <summary>SVG of the network diagram produced by the last <see cref="GenerateAsync"/> call. Null if no report has been generated yet.</summary>
+    public string? NetworkDiagramSvg { get; private set; }
+
     private IProgress<ReportProgress>? _progress;
     private readonly Dictionary<string, string> _sheetLinks = [];
     private List<ClusterResource> _resources = [];
@@ -28,6 +32,7 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
     private List<ClusterResource> _uniqueStorages = [];
     private readonly List<VmNetworkRow> _pendingNetworkRows = [];
     private readonly List<(string Node, NodeNetwork Network)> _pendingNodeNetworkRows = [];
+    private IEnumerable<StorageItem> _storageConfigs = [];
     private readonly List<(ClusterResource Vm, IEnumerable<VmDisk> Disks)> _pendingDiskRows = [];
     private readonly List<(ClusterResource Vm, IEnumerable<VmQemuAgentGetFsInfo.ResultInfo> Partitions)> _pendingPartitionRows = [];
     private HashSet<long> _vmIds = [];
@@ -106,6 +111,8 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
 
         _vmIds = [.. (await client.GetVmsAsync(settings.Guest.Ids)).Select(a => a.VmId)];
 
+        _storageConfigs = await client.Storage.GetAsync();
+
         _sheetLinks["storage:link"] = "Storages";
         _sheetLinks["list:nodes"] = "Nodes";
         _sheetLinks["list:vms"] = "Vms";
@@ -120,7 +127,7 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
                     break;
 
                 case ClusterResourceType.Vm:
-                    _sheetLinks[SheetLinkKey(ClusterResourceType.Vm, item.VmId.ToString())] = $"{(item.VmType == VmType.Qemu ? "VM" : "CT")} {item.VmId}";
+                    _sheetLinks[SheetLinkKey(ClusterResourceType.Vm, item.VmId.ToString())] = $"{VmTypeLabel(item.VmType)} {item.VmId}";
                     break;
             }
         }
@@ -195,6 +202,9 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
         ReportGlobal("Reorder sheets");
         ReorderSheets(workbook);
 
+        ReportGlobal("Network Diagram");
+        BuildAndStoreNetworkDiagramSvg();
+
         ReportGlobal("Saving");
         workbook.SaveAs(stream);
     }
@@ -265,6 +275,13 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
 
     private static double ToGB(double bytes) => Math.Round(bytes / 1024 / 1024 / 1024, 2);
     private static double ToMB(double bytes) => Math.Round(bytes / 1024 / 1024, 2);
+
+    internal static string? LabeledValue(string label, string? value)
+        => string.IsNullOrWhiteSpace(value) ? null : $"{label}: {value}";
+
+    internal static string VmTypeLabel(VmType type) => type == VmType.Qemu ? "VM" : "CT";
+    internal static string VmTypeLabel(string? type)
+        => string.Equals(type, "qemu", StringComparison.OrdinalIgnoreCase) ? "VM" : "CT";
 
     private async Task<TResult[]> RunParallelAsync<T, TResult>(IEnumerable<T> source, Func<T, Task<TResult>> func)
     {

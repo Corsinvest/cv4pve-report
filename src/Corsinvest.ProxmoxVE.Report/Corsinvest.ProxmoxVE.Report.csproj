@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
@@ -21,12 +21,8 @@
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     </PropertyGroup>
     <ItemGroup>
-        <None Include="..\..\icon.png"
-              Pack="true"
-              PackagePath="" />
-        <None Include="..\..\README.md"
-              Pack="true"
-              PackagePath="" />
+        <None Include="..\..\icon.png" Pack="true" PackagePath="" />
+        <None Include="..\..\README.md" Pack="true" PackagePath="" />
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="Corsinvest.ProxmoxVE.Api.Extension" />

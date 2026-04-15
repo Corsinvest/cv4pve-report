@@ -46,14 +46,14 @@ public class ReportProgress
         else
         {
             var type = Resource.ResourceType == ClusterResourceType.Vm
-                            ? (Resource.VmType == VmType.Qemu ? "vm" : "ct")
+                            ? ReportEngine.VmTypeLabel(Resource.VmType).ToLowerInvariant()
                             : Resource.ResourceType.ToString().ToLowerInvariant();
 
             var name = Resource.ResourceType switch
             {
                 ClusterResourceType.Unknown => "Unknown",
                 ClusterResourceType.Node => Resource.Node,
-                ClusterResourceType.Vm => $"{(Resource.VmType == VmType.Qemu ? "VM" : "CT")} {Resource.VmId} {Resource.Name}",
+                ClusterResourceType.Vm => $"{ReportEngine.VmTypeLabel(Resource.VmType)} {Resource.VmId} {Resource.Name}",
                 ClusterResourceType.Storage => $"{Resource.Node}/{Resource.Storage}",
                 ClusterResourceType.Pool => Resource.Pool,
                 ClusterResourceType.Sdn => Resource.Sdn,

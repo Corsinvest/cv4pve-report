@@ -79,7 +79,15 @@ cmdExport.SetAction(async (action) =>
     await using var file = File.Create(outputPath);
     await stream.CopyToAsync(file);
 
-    if (!Console.IsOutputRedirected) { Console.WriteLine(); }
+    if (!Console.IsOutputRedirected) { Console.Write($"\r{new string(' ', 60)}\r"); }
+
+    if (engine.NetworkDiagramSvg is { } svg)
+    {
+        var svgPath = Path.ChangeExtension(outputPath, ".svg");
+        await File.WriteAllTextAsync(svgPath, svg);
+        Console.Out.WriteLine($"Network diagram SVG: {svgPath}");
+    }
+
     Console.Out.WriteLine($"Report generated: {outputPath}");
 });
 

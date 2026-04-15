@@ -69,7 +69,6 @@ public partial class ReportEngine
 
         sw.ReserveIndexRows(2);
         CreateNodeNetworkTable(sw, "Nodes Networks", _pendingNodeNetworkRows);
-        _pendingNodeNetworkRows.Clear();
 
         sw.CreateTable("VM Networks",
                        _pendingNetworkRows.ConvertAll(row => new
@@ -82,6 +81,7 @@ public partial class ReportEngine
                            row.Hostname,
                            IsInternalFlag = ToX(row.IsInternal),
                            NetId = row.Network.Id,
+                           NetName = row.Network.Name,
                            row.Network.MacAddress,
                            row.Network.Bridge,
                            row.Network.Tag,
@@ -99,8 +99,6 @@ public partial class ReportEngine
                            sw.ApplyNodeLinks(tbl);
                            sw.ApplyVmIdLinks(tbl);
                        });
-
-        _pendingNetworkRows.Clear();
 
         sw.WriteIndex();
         sw.AdjustColumns();

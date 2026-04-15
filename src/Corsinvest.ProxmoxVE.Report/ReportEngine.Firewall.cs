@@ -84,11 +84,11 @@ public partial class ReportEngine
         var clusterRulesTask = client.Cluster.Firewall.Rules.GetAsync();
         var clusterAliasesTask = client.Cluster.Firewall.Aliases.GetAsync();
         var clusterIpSetsTask = client.Cluster.Firewall.Ipset.GetAsync();
-        await Task.WhenAll(clusterRulesTask, clusterAliasesTask, clusterIpSetsTask);
+        await TaskExtensions.WhenAllSafe(clusterRulesTask, clusterAliasesTask, clusterIpSetsTask);
 
-        AppendRules("cluster", "cluster", "", clusterRulesTask.Result);
-        AppendAliases("cluster", "cluster", "", clusterAliasesTask.Result);
-        AppendIpSets("cluster", "cluster", "", clusterIpSetsTask.Result);
+        AppendRules("cluster", "cluster", "", clusterRulesTask.ResultOrDefault() ?? []);
+        AppendAliases("cluster", "cluster", "", clusterAliasesTask.ResultOrDefault() ?? []);
+        AppendIpSets("cluster", "cluster", "", clusterIpSetsTask.ResultOrDefault() ?? []);
 
         // Nodes firewall — parallel
         var nodeFirewallResults = await RunParallelAsync(
@@ -131,14 +131,14 @@ public partial class ReportEngine
                     ipSetsTask = ctFw.Ipset.GetAsync();
                 }
 
-                await Task.WhenAll(rulesTask, aliasesTask, ipSetsTask);
+                await TaskExtensions.WhenAllSafe(rulesTask, aliasesTask, ipSetsTask);
 
                 return (scopeType: item.Type,
                         scope: item.VmId.ToString(),
                         scopeName: item.Name,
-                        rules: rulesTask.Result,
-                        aliases: aliasesTask.Result,
-                        ipSets: ipSetsTask.Result);
+                        rules: rulesTask.ResultOrDefault() ?? [],
+                        aliases: aliasesTask.ResultOrDefault() ?? [],
+                        ipSets: ipSetsTask.ResultOrDefault() ?? []);
             });
 
         foreach (var (scopeType, scope, scopeName, rules, aliases, ipSets) in guestFirewallResults.OrderBy(r => r.scope))

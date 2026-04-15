@@ -39,17 +39,17 @@ public partial class ReportEngine
         var dnsTask = node.Dns.GetAsync();
         var timeTask = node.Time.GetAsync();
         var networksTask = node.Network.GetAsync();
-        await Task.WhenAll(statusTask, versionTask, subscriptionTask, dnsTask, timeTask, networksTask);
+        await TaskExtensions.WhenAllSafe(statusTask, versionTask, subscriptionTask, dnsTask, timeTask, networksTask);
 
         return new()
         {
             Item = item,
-            Status = statusTask.Result,
-            Version = versionTask.Result,
-            Subscription = subscriptionTask.Result,
-            Dns = dnsTask.Result,
-            Time = timeTask.Result,
-            Networks = networksTask.Result,
+            Status = statusTask.ResultOrDefault(),
+            Version = versionTask.ResultOrDefault(),
+            Subscription = subscriptionTask.ResultOrDefault(),
+            Dns = dnsTask.ResultOrDefault(),
+            Time = timeTask.ResultOrDefault(),
+            Networks = networksTask.ResultOrDefault() ?? [],
         };
     }
 
@@ -190,10 +190,10 @@ public partial class ReportEngine
         var certificatesTask = client.Nodes[node].Certificates.Info.GetAsync();
         var hostsTask = client.Nodes[node].Hosts.GetEtcHosts();
 
-        await Task.WhenAll(servicesTask, certificatesTask, hostsTask);
+        await TaskExtensions.WhenAllSafe(servicesTask, certificatesTask, hostsTask);
 
         sw.CreateTable("Services",
-                       servicesTask.Result.Select(a => new
+                       (servicesTask.ResultOrDefault() ?? []).Select(a => new
                        {
                            a.Name,
                            a.Service,
@@ -250,8 +250,9 @@ public partial class ReportEngine
                        }),
                        tbl => sw.RegisterNetworkLinks(tbl, node));
 
+        var hostsResult = hostsTask.ResultOrDefault();
         sw.CreateTable("/etc/hosts",
-                       ((string)hostsTask.Result.ToData().data)
+                       (hostsResult is null ? "" : (string)hostsResult.ToData().data)
                                 .Split('\n')
                                 .Select(a => a.Trim())
                                 .Where(a => a.Length > 0 && !a.StartsWith('#'))
@@ -327,10 +328,10 @@ public partial class ReportEngine
                 pt.Step("Directory/ZFS Pools");
                 var directoryTask = client.Nodes[node].Disks.Directory.GetAsync();
                 var zfsPoolsListTask = client.Nodes[node].Disks.Zfs.GetAsync();
-                await Task.WhenAll(directoryTask, zfsPoolsListTask);
+                await TaskExtensions.WhenAllSafe(directoryTask, zfsPoolsListTask);
 
                 sw.CreateTable("Directory",
-                               directoryTask.Result.Select(a => new
+                               (directoryTask.ResultOrDefault() ?? []).Select(a => new
                                {
                                    a.Device,
                                    a.Path,
@@ -339,7 +340,7 @@ public partial class ReportEngine
                                    a.UnitFile
                                }));
 
-                var zfsPoolList = zfsPoolsListTask.Result.ToList();
+                var zfsPoolList = (zfsPoolsListTask.ResultOrDefault() ?? []).ToList();
                 var zfsPoolDetails = await RunParallelAsync(zfsPoolList, p => client.Nodes[node].Disks.Zfs[p.Name].GetAsync());
 
                 sw.CreateTable("ZFS Pools", zfsPoolList.Zip(zfsPoolDetails, (pool, poolData) => new
@@ -371,10 +372,11 @@ public partial class ReportEngine
             var aptRepositoriesTask = client.Nodes[node].Apt.Repositories.GetAsync();
             var aptUpdatesTask = client.Nodes[node].Apt.Update.GetAsync();
             var aptVersionsTask = client.Nodes[node].Apt.Versions.GetAsync();
-            await Task.WhenAll(aptRepositoriesTask, aptUpdatesTask, aptVersionsTask);
+            await TaskExtensions.WhenAllSafe(aptRepositoriesTask, aptUpdatesTask, aptVersionsTask);
 
+            var aptRepositories = aptRepositoriesTask.ResultOrDefault();
             sw.CreateTable("Apt Repository",
-                           aptRepositoriesTask.Result.Files.SelectMany(a => a.Repositories, (file, repo) => new
+                           (aptRepositories?.Files ?? []).SelectMany(a => a.Repositories, (file, repo) => new
                            {
                                FilePath = file.Path,
                                file.FileType,
@@ -387,7 +389,7 @@ public partial class ReportEngine
                            }));
 
             sw.CreateTable("Apt Update",
-                           aptUpdatesTask.Result.Select(a => new
+                           (aptUpdatesTask.ResultOrDefault() ?? []).Select(a => new
                            {
                                a.Package,
                                a.Version,
@@ -401,7 +403,7 @@ public partial class ReportEngine
                            }));
 
             sw.CreateTable("Package Version",
-                           aptVersionsTask.Result.Select(a => new
+                           (aptVersionsTask.ResultOrDefault() ?? []).Select(a => new
                            {
                                a.Package,
                                a.Version,
@@ -427,7 +429,7 @@ public partial class ReportEngine
         }
 
         sw.CreateTable("SSL Certificates",
-                       certificatesTask.Result.Select(cert => new
+                       (certificatesTask.ResultOrDefault() ?? []).Select(cert => new
                        {
                            cert.FileName,
                            cert.Subject,
