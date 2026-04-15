@@ -79,7 +79,6 @@ public partial class ReportEngine
         var domainsTask = client.Access.Domains.GetAsync();
         var backupJobsTask = client.Cluster.Backup.GetAsync();
         var replicationTask = client.Cluster.Replication.GetAsync();
-        var storagesTask = client.Storage.GetAsync();
         var metricServersTask = client.Cluster.Metrics.Server.GetAsync();
         var sdnZonesTask = client.Cluster.Sdn.Zones.GetAsync();
         var vnetsTask = client.Cluster.Sdn.Vnets.GetAsync();
@@ -103,7 +102,7 @@ public partial class ReportEngine
         var waitTasks = new List<Task>
         {
             optionsTask, usersTask, tfaTask, groupsTask, rolesTask, aclTask, domainsTask,
-            backupJobsTask, replicationTask, storagesTask, metricServersTask,
+            backupJobsTask, replicationTask, metricServersTask,
             sdnZonesTask, vnetsTask, sdnControllersTask, sdnIpamsTask,
             mappingDirTask, mappingPciTask, mappingUsbTask,
             poolsTask, haResourcesTask, haStatusTask,
@@ -255,7 +254,7 @@ public partial class ReportEngine
 
         ReportGlobal("Cluster: Storages");
         sw.CreateTable("Storages",
-                       storagesTask.Result.Select(a => new
+                       _storageConfigs.Select(a => new
                        {
                            a.Storage,
                            a.Type,

@@ -17,9 +17,15 @@ Report Tool for Proxmox VE (Made in Italy)
 [![WinGet](https://img.shields.io/winget/v/Corsinvest.cv4pve.report?style=flat-square&logo=windows)](https://winstall.app/apps/Corsinvest.cv4pve.report)
 [![AUR](https://img.shields.io/aur/version/cv4pve-report?style=flat-square&logo=archlinux)](https://aur.archlinux.org/packages/cv4pve-report)
 
-> **The RVTools for Proxmox VE** — exports your entire Proxmox VE infrastructure to a single Excel file.
+> **The RVTools for Proxmox VE** — exports your entire Proxmox VE infrastructure to a single Excel file plus a network topology diagram (SVG).
 
 **Fully navigable** — every node, VM and storage in the summary tables is a hyperlink to its dedicated detail sheet. Detail sheets have a clickable index to jump to any table inside. One click, no searching.
+
+**Network Diagram** — each export also produces an SVG showing the full network topology per node (physical NICs → bonds → bridges → gateway VMs → internal bridges → leaf VMs) plus a dedicated strip for network-backed storage. Open it in any browser — see the [guide](docs/network-diagram.md) and [sample](docs/network-diagram.svg).
+
+<p align="center">
+  <a href="docs/network-diagram.svg"><img src="docs/network-diagram.png" alt="Network Diagram preview" width="75%"></a>
+</p>
 
 ---
 
@@ -31,7 +37,7 @@ RVTools is a pure inventory tool for VMware — it exports infrastructure data t
 |---|---------|:-----------------:|:-----------:|
 | **Platform** | VMware vSphere | Proxmox VE | Proxmox VE |
 | **Purpose** | Inventory & reporting | **Inventory & reporting** | **Diagnostics & health checks** |
-| **Output** | Excel | Excel | Text / HTML / JSON / Markdown / Excel |
+| **Output** | Excel | Excel + SVG network diagram | Text / HTML / JSON / Markdown / Excel |
 
 ### Capabilities
 
@@ -41,6 +47,7 @@ RVTools is a pure inventory tool for VMware — it exports infrastructure data t
 | Node / host inventory | ✓ | ✓ | |
 | CPU / memory / disk details | ✓ | ✓ | |
 | Network inventory (NICs, IPs, MACs) | ✓ | ✓ | |
+| [Network topology diagram (SVG)](docs/network-diagram.md) | | ✓ | |
 | Storage / datastore inventory | ✓ | ✓ | |
 | Snapshot inventory | ✓ | ✓ | |
 | Snapshot with RAM state | ✓ | ✓ | |
@@ -81,6 +88,15 @@ With API token (recommended):
 ```bash
 ./cv4pve-report --host=YOUR_HOST --api-token=user@realm!token=uuid export
 ```
+
+Each `export` produces **two files** side-by-side:
+
+```
+Report_20260415_120000.xlsx   ← full infrastructure inventory
+Report_20260415_120000.svg    ← network topology diagram
+```
+
+With `--output` / `-o` the same basename is used for both, only the extension differs.
 
 ---
 
@@ -174,6 +190,7 @@ cv4pve-report --host=YOUR_HOST --api-token=user@realm!token=uuid export --full  
 ## Features
 
 - **Single `.xlsx` file** — global sheets plus a dedicated detail sheet per node, VM and container
+- **Network topology SVG** — each export produces a `.svg` next to the `.xlsx` showing the physical-to-logical network chain for every node, plus the network-backed storage strip — [guide](docs/network-diagram.md)
 - **Fully navigable** — summary rows link to detail sheets; detail sheets have a `← Back` link and a clickable index
 - **Cluster** — users, API tokens, TFA, groups, roles, ACL, firewall options, domains, backup jobs, HA, SDN, pools
 - **Nodes** — services, network, disks, SMART, ZFS, APT, SSL certificates, replication, syslog, firewall logs, tasks

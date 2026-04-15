@@ -2,6 +2,25 @@
 
 ---
 
+## [1.8.0] — 2026-04-15
+
+### What's new
+
+- **Network topology diagram** — every export now produces an SVG diagram next to the Excel file, with the same name. For each Proxmox node it shows the full network path from physical NICs to bonds, bridges, firewall/router VMs, internal bridges and the VMs/CTs they serve, plus a dedicated row for network storage (NFS, CIFS, PBS, iSCSI, Ceph, RBD, GlusterFS). Open it in any browser — colours and arrows make routing, multi-homed gateways and inactive interfaces immediately visible.
+
+### Fixes
+
+- **VM data more resilient** — when a single QEMU agent call fails (e.g. `get-fsinfo` on OPNsense), the rest of the agent data (hostname, OS info, network) is still collected instead of being lost.
+- **Clearer error messages** — when the QEMU agent fails the `Hostname` column now shows the actual reason, not just "Agent not running".
+
+### Documentation
+
+- New page **[docs/network-diagram.md](docs/network-diagram.md)** with the legend, layout and how to read the diagram.
+- A sample diagram is included in the repo at **[docs/network-diagram.svg](docs/network-diagram.svg)** (cluster anonymised with example data).
+- README updated with a preview of the new diagram.
+
+---
+
 ## [1.7.0] — 2026-04-13
 
 ### What's new

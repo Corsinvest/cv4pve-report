@@ -72,14 +72,14 @@ public partial class ReportEngine
                         var hostNameTask = vmQemu.Agent.GetHostName.GetAsync();
                         var networkTask = vmQemu.Agent.NetworkGetInterfaces.GetAsync();
                         var fsInfoTask = vmQemu.Agent.GetFsinfo.GetAsync();
-                        await Task.WhenAll(osInfoTask, hostNameTask, networkTask, fsInfoTask);
+                        await TaskExtensions.WhenAllSafe(osInfoTask, hostNameTask, networkTask, fsInfoTask);
 
-                        agentOsInfo = osInfoTask.Result;
+                        agentOsInfo = osInfoTask.ResultOrDefault();
                         osVersion = agentOsInfo?.Result?.OsVersion ?? osVersion;
-                        hostname = hostNameTask.Result?.Result?.HostName ?? "";
-                        fsInfo = fsInfoTask.Result?.Result ?? [];
+                        hostname = hostNameTask.ResultOrDefault()?.Result?.HostName ?? "";
+                        fsInfo = fsInfoTask.ResultOrDefault()?.Result ?? [];
 
-                        var agentNetwork = networkTask.Result;
+                        var agentNetwork = networkTask.ResultOrDefault();
                         if (agentNetwork?.Result != null)
                         {
                             var netDict = config.Networks.Where(n => !string.IsNullOrEmpty(n.MacAddress))
@@ -120,9 +120,12 @@ public partial class ReportEngine
                         }
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    hostname = "Agent not running!";
+                    // Include short exception detail so issues like timeouts, auth errors, or
+                    // agent-returned errors can be diagnosed without re-running with a debugger.
+                    var msg = ex.InnerException?.Message ?? ex.Message;
+                    hostname = $"Agent not running! ({msg})";
                 }
             }
         }
