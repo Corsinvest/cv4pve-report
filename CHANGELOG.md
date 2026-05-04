@@ -2,6 +2,14 @@
 
 ---
 
+## [1.8.1] — 2026-05-04
+
+### Fixes
+
+- **Compatibility with older PVE clusters** — the `/cluster/mapping/dir` endpoint was added in newer Proxmox VE releases; older clusters (e.g. 8.3.x) returned `501 Not Implemented` and crashed the report. The fetch now degrades gracefully: the **Mapping Dir** sheet is simply empty when the endpoint isn't available, and the rest of the report is unaffected. Thanks @janrenard for the report (#20).
+
+---
+
 ## [1.8.0] — 2026-04-15
 
 ### What's new
