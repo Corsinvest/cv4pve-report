@@ -84,7 +84,10 @@ public partial class ReportEngine
         var vnetsTask = client.Cluster.Sdn.Vnets.GetAsync();
         var sdnControllersTask = client.Cluster.Sdn.Controllers.GetAsync();
         var sdnIpamsTask = client.Cluster.Sdn.Ipams.GetAsync();
-        var mappingDirTask = client.Cluster.Mapping.Dir.GetAsync();
+
+        var mappingDirTask = client.Cluster.Mapping.Dir.Index()
+                                                       .ToModelEnumerableSafeAsync<Api.Shared.Models.Cluster.ClusterMappingDir>();
+
         var mappingPciTask = client.Cluster.Mapping.Pci.GetAsync();
         var mappingUsbTask = client.Cluster.Mapping.Usb.GetAsync();
         var poolsTask = client.Pools.GetAsync();
@@ -116,15 +119,15 @@ public partial class ReportEngine
         ReportGlobal("Cluster: Options");
         sw.CreateTable("Options",
                        [new
-                           {
-                               optionsTask.Result.Console,
-                               optionsTask.Result.Keyboard,
-                               optionsTask.Result.MacPrefix,
-                               DescriptionWrap = optionsTask.Result.Description,
-                               AllowedTags = ToNewLine(string.Join(",", optionsTask.Result.AllowedTags ?? [])),
-                               MigrationType = optionsTask.Result.Migration?.Type,
-                               MigrationNetwork = optionsTask.Result.Migration?.Network,
-                           }]);
+                        {
+                            optionsTask.Result.Console,
+                            optionsTask.Result.Keyboard,
+                            optionsTask.Result.MacPrefix,
+                            DescriptionWrap = optionsTask.Result.Description,
+                            AllowedTags = ToNewLine(string.Join(",", optionsTask.Result.AllowedTags ?? [])),
+                            MigrationType = optionsTask.Result.Migration?.Type,
+                            MigrationNetwork = optionsTask.Result.Migration?.Network,
+                        }]);
 
         ReportGlobal("Cluster: Security");
         sw.CreateTable("Users",
