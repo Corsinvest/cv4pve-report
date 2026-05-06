@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
-using ClosedXML.Excel;
 using Corsinvest.ProxmoxVE.Api.Extension;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Vm;
 using Corsinvest.ProxmoxVE.Api.Shared.Utils;
+using Corsinvest.ProxmoxVE.Report.Writers;
 
 namespace Corsinvest.ProxmoxVE.Report;
 
@@ -159,9 +159,9 @@ public partial class ReportEngine
         };
     }
 
-    private async Task<int> AddVmsDataAsync(XLWorkbook workbook)
+    private async Task<int> AddVmsDataAsync()
     {
-        var sw = CreateSheetWriter(workbook, "Vms");
+        using var sw = _writer.AddSection("VMs");
 
         var resources = GetResources(ClusterResourceType.Vm)
                                   .Where(a => a.VmType == VmType.Qemu)
@@ -249,29 +249,40 @@ public partial class ReportEngine
 
                 if (settings.Guest.Detail.Enabled)
                 {
-                    await AddVmDetailAsync(workbook, d, pt);
+                    await AddVmDetailAsync(d, pt);
                 }
             }
         }
 
-        sw.CreateTable(null,
-                       items,
-                       tbl =>
-                       {
-                           sw.ApplyNodeLinks(tbl);
-                           sw.ApplyVmIdLinks(tbl);
-                       });
-
-        sw.AdjustColumns();
+        sw.AddTable(null, items,
+                    new TableOptions<dynamic>()
+                        .WithNodeLink<dynamic>(r => (string?)r.Node)
+                        .WithVmIdLink<dynamic>(r => r.VmId is long id ? id : (long?)null));
 
         return resources.Count;
     }
 
-    private async Task AddVmDetailAsync(XLWorkbook workbook, VmFetchData d, ProgressTracker pt)
+    private async Task AddVmDetailAsync(VmFetchData d, ProgressTracker pt)
     {
         var config = d.Config!;
-        var sw = CreateSheetWriter(workbook, GetSheetName(ClusterResourceType.Vm, d.Item.VmId.ToString())!);
-        sw.WriteBackLink("Vms", "list:vms");
+        using var sw = _writer.AddSection(GetSheetName(ClusterResourceType.Vm, d.Item.VmId.ToString())!);
+        sw.AddBackLink("VMs", "list:vms");
+
+        var mainKv = new Dictionary<string, object?>
+        {
+            ["VM ID"] = d.Item.VmId,
+            ["Name"] = d.Item.Name,
+            ["Hostname"] = d.Hostname,
+            ["Agent Version"] = d.AgentVersion,
+            ["Node"] = d.Item.Node,
+            ["Status"] = d.Item.Status,
+            ["CPU"] = d.Item.CpuSize,
+            ["CPU Usage %"] = d.Item.HostCpuUsage,
+            ["Memory GB"] = ToGB(d.Item.MemorySize),
+            ["Memory Host %"] = d.Item.HostMemoryUsage,
+            ["Disk GB"] = ToGB(d.Item.DiskSize),
+            ["Uptime"] = FormatHelper.UptimeInfo(d.Item.Uptime),
+        };
 
         var configKv = new Dictionary<string, object?>
         {
@@ -317,57 +328,30 @@ public partial class ReportEngine
 
         pt.Step("QemuAgent");
 
-        sw.WriteKeyValue($"{d.Item.VmId} - {d.Item.Name}",
-                         new()
-                         {
-                             ["VM ID"] = d.Item.VmId,
-                             ["Name"] = d.Item.Name,
-                             ["Hostname"] = d.Hostname,
-                             ["Agent Version"] = d.AgentVersion,
-                             ["Node"] = d.Item.Node,
-                             ["Status"] = d.Item.Status,
-                             ["CPU"] = d.Item.CpuSize,
-                             ["CPU Usage %"] = d.Item.HostCpuUsage,
-                             ["Memory GB"] = ToGB(d.Item.MemorySize),
-                             ["Memory Host %"] = d.Item.HostMemoryUsage,
-                             ["Disk GB"] = ToGB(d.Item.DiskSize),
-                             ["Uptime"] = FormatHelper.UptimeInfo(d.Item.Uptime),
-                         });
-
-        var mainRow = sw.Row;
-        sw.Row = 1;
-        sw.Col = 4;
-        sw.WriteKeyValue("Config", configKv);
-        sw.Row = Math.Max(sw.Row, mainRow);
-        sw.Col = 1;
-
         if (d.AgentRunning && d.AgentOsInfo?.Result != null)
         {
-            var mainRowOs = sw.Row;
-            sw.Row = 1;
-            sw.Col = 7;
-            sw.WriteKeyValue("Agent OS Info",
-                             new Dictionary<string, object?>
-                             {
-                                 ["Name"] = d.AgentOsInfo.Result.Name,
-                                 ["Pretty Name"] = d.AgentOsInfo.Result.PrettyName,
-                                 ["Version"] = d.AgentOsInfo.Result.Version,
-                                 ["Version Id"] = d.AgentOsInfo.Result.VersionId,
-                                 ["Id"] = d.AgentOsInfo.Result.Id,
-                                 ["Kernel Release"] = d.AgentOsInfo.Result.KernelRelease,
-                                 ["Kernel Version"] = d.AgentOsInfo.Result.KernelVersion,
-                                 ["Machine"] = d.AgentOsInfo.Result.Machine,
-                                 ["Variant"] = d.AgentOsInfo.Result.Variant,
-                                 ["Variant Id"] = d.AgentOsInfo.Result.VariantId,
-                             });
-            sw.Row = Math.Max(sw.Row, mainRowOs);
-            sw.Col = 1;
+            var osKv = new Dictionary<string, object?>
+            {
+                ["Name"] = d.AgentOsInfo.Result.Name,
+                ["Pretty Name"] = d.AgentOsInfo.Result.PrettyName,
+                ["Version"] = d.AgentOsInfo.Result.Version,
+                ["Version Id"] = d.AgentOsInfo.Result.VersionId,
+                ["Id"] = d.AgentOsInfo.Result.Id,
+                ["Kernel Release"] = d.AgentOsInfo.Result.KernelRelease,
+                ["Kernel Version"] = d.AgentOsInfo.Result.KernelVersion,
+                ["Machine"] = d.AgentOsInfo.Result.Machine,
+                ["Variant"] = d.AgentOsInfo.Result.Variant,
+                ["Variant Id"] = d.AgentOsInfo.Result.VariantId,
+            };
+            sw.AddKeyValueRow(($"{d.Item.VmId} - {d.Item.Name}", mainKv),
+                              ("Config", configKv),
+                              ("Agent OS Info", osKv));
         }
-
-        var tableCount = (settings.Firewall.Enabled && settings.Guest.Detail.IncludeFirewallLog ? 1 : 0)  // Firewall Logs
-                         + (settings.Guest.Detail.Tasks.Enabled ? 1 : 0);
-
-        sw.ReserveIndexRows(tableCount);
+        else
+        {
+            sw.AddKeyValueRow(($"{d.Item.VmId} - {d.Item.Name}", mainKv),
+                              ("Config", configKv));
+        }
 
         if (settings.Firewall.Enabled && settings.Guest.Detail.IncludeFirewallLog)
         {
@@ -384,8 +368,5 @@ public partial class ReportEngine
         }
 
         await AddGuestTasksTableAsync(sw, pt, d.Item.Node, d.Item.VmId);
-
-        sw.WriteIndex();
-        sw.AdjustColumns();
     }
 }

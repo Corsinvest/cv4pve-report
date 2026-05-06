@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
-using ClosedXML.Excel;
 using Corsinvest.ProxmoxVE.Api.Extension;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Vm;
 using Corsinvest.ProxmoxVE.Api.Shared.Utils;
+using Corsinvest.ProxmoxVE.Report.Writers;
 
 namespace Corsinvest.ProxmoxVE.Report;
 
@@ -53,10 +53,8 @@ public partial class ReportEngine
         };
     }
 
-    private async Task<int> AddContainersDataAsync(XLWorkbook workbook)
+    private async Task<int> AddContainersDataAsync()
     {
-        var sw = CreateSheetWriter(workbook, "Containers");
-
         var resources = GetResources(ClusterResourceType.Vm)
                                   .Where(a => a.VmType == VmType.Lxc)
                                   .OrderBy(a => a.Id)
@@ -126,27 +124,41 @@ public partial class ReportEngine
 
                 if (settings.Guest.Detail.Enabled)
                 {
-                    await AddContainerDetailAsync(workbook, d, pt);
+                    await AddContainerDetailAsync(d, pt);
                 }
             }
         }
 
-        sw.CreateTable(null, items, tbl =>
-        {
-            sw.ApplyNodeLinks(tbl);
-            sw.ApplyVmIdLinks(tbl);
-        });
-
-        sw.AdjustColumns();
+        using var sw = _writer.AddSection("Containers");
+        sw.AddTable(null, items,
+                    new TableOptions<dynamic>()
+                        .WithNodeLink<dynamic>(r => (string?)r.Node)
+                        .WithVmIdLink<dynamic>(r => r.VmId is long id ? id : (long?)null));
 
         return resources.Count;
     }
 
-    private async Task AddContainerDetailAsync(XLWorkbook workbook, CtFetchData d, ProgressTracker pt)
+    private async Task AddContainerDetailAsync(CtFetchData d, ProgressTracker pt)
     {
         var config = d.Config!;
-        var sw = CreateSheetWriter(workbook, GetSheetName(ClusterResourceType.Vm, d.Item.VmId.ToString())!);
-        sw.WriteBackLink("Containers", "list:containers");
+        using var sw = _writer.AddSection(GetSheetName(ClusterResourceType.Vm, d.Item.VmId.ToString())!);
+
+        sw.AddBackLink("Containers", "list:containers");
+
+        var mainKv = new Dictionary<string, object?>
+        {
+            ["VM ID"] = d.Item.VmId,
+            ["Name"] = d.Item.Name,
+            ["Hostname"] = config.Hostname,
+            ["Node"] = d.Item.Node,
+            ["Status"] = d.Item.Status,
+            ["CPU"] = d.Item.CpuSize,
+            ["CPU Usage"] = d.Item.HostCpuUsage,
+            ["Memory GB"] = ToGB(d.Item.MemorySize),
+            ["Memory Host %"] = d.Item.HostMemoryUsage,
+            ["Disk GB"] = ToGB(d.Item.DiskSize),
+            ["Uptime"] = FormatHelper.UptimeInfo(d.Item.Uptime),
+        };
 
         var configKv = new Dictionary<string, object?>
         {
@@ -174,33 +186,7 @@ public partial class ReportEngine
             configKv.TryAdd(key, value);
         }
 
-        sw.WriteKeyValue($"{d.Item.VmId} - {d.Item.Name}",
-                         new()
-                         {
-                             ["VM ID"] = d.Item.VmId,
-                             ["Name"] = d.Item.Name,
-                             ["Hostname"] = config.Hostname,
-                             ["Node"] = d.Item.Node,
-                             ["Status"] = d.Item.Status,
-                             ["CPU"] = d.Item.CpuSize,
-                             ["CPU Usage"] = d.Item.HostCpuUsage,
-                             ["Memory GB"] = ToGB(d.Item.MemorySize),
-                             ["Memory Host %"] = d.Item.HostMemoryUsage,
-                             ["Disk GB"] = ToGB(d.Item.DiskSize),
-                             ["Uptime"] = FormatHelper.UptimeInfo(d.Item.Uptime),
-                         });
-
-        var mainRow = sw.Row;
-        sw.Row = 1;
-        sw.Col = 4;
-        sw.WriteKeyValue("Config", configKv);
-        sw.Row = Math.Max(sw.Row, mainRow);
-        sw.Col = 1;
-
-        var tableCount = (settings.Firewall.Enabled && settings.Guest.Detail.IncludeFirewallLog ? 1 : 0)  // Firewall Logs
-                       + (settings.Guest.Detail.Tasks.Enabled ? 1 : 0);
-
-        sw.ReserveIndexRows(tableCount);
+        sw.AddKeyValueRow(($"{d.Item.VmId} - {d.Item.Name}", mainKv), ("Config", configKv));
 
         if (settings.Firewall.Enabled && settings.Guest.Detail.IncludeFirewallLog)
         {
@@ -217,8 +203,5 @@ public partial class ReportEngine
         }
 
         await AddGuestTasksTableAsync(sw, pt, d.Item.Node, d.Item.VmId);
-
-        sw.WriteIndex();
-        sw.AdjustColumns();
     }
 }

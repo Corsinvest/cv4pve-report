@@ -3,15 +3,15 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
-using ClosedXML.Excel;
 using Corsinvest.ProxmoxVE.Api.Extension;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
+using Corsinvest.ProxmoxVE.Report.Writers;
 
 namespace Corsinvest.ProxmoxVE.Report;
 
 public partial class ReportEngine
 {
-    private async Task<int> AddRrdGuestDataAsync(XLWorkbook workbook)
+    private async Task<int> AddRrdGuestDataAsync()
     {
         if (!settings.Guest.RrdData.Enabled) { return 0; }
 
@@ -57,15 +57,13 @@ public partial class ReportEngine
                             }).ToList());
         });
 
-        var sw = CreateSheetWriter(workbook, "RRD Guests");
-        sw.CreateTable(null,
-                       results.OrderBy(r => r.item.Id).SelectMany(r => r.rows).ToList(),
-                       tbl =>
-                       {
-                           sw.ApplyVmIdLinks(tbl);
-                           sw.ApplyNodeLinks(tbl);
-                       });
-        sw.AdjustColumns();
+        var rows = results.OrderBy(r => r.item.Id).SelectMany(r => r.rows).ToList();
+
+        using var sw = _writer.AddSection("RRD Guests");
+        sw.AddTable(null, rows,
+                    new TableOptions<dynamic>()
+                        .WithVmIdLink<dynamic>(r => r.VmId is long id ? id : (long?)null)
+                        .WithNodeLink<dynamic>(r => (string?)r.Node));
 
         return results.Sum(r => r.rows.Count);
     }

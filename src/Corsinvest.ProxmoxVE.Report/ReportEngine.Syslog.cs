@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
-using ClosedXML.Excel;
 using Corsinvest.ProxmoxVE.Api.Extension;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
+using Corsinvest.ProxmoxVE.Report.Writers;
 using System.Text.RegularExpressions;
 
 namespace Corsinvest.ProxmoxVE.Report;
@@ -47,7 +47,7 @@ public partial class ReportEngine
         return new SyslogRow(node, "", "", "", "", null, line);
     }
 
-    private async Task<int> AddSyslogDataAsync(XLWorkbook workbook)
+    private async Task<int> AddSyslogDataAsync()
     {
         if (!settings.Node.Syslog.Enabled) { return 0; }
 
@@ -58,25 +58,29 @@ public partial class ReportEngine
 
         if (filtered.Count == 0) { return 0; }
 
-        var sw = CreateSheetWriter(workbook, "Syslog");
-        IXLTable? table = null;
+        using var sw = _writer.AddSection("Syslog");
+        ITableHandle? table = null;
 
         foreach (var item in filtered)
         {
             ReportGlobal($"Syslog: {item.Node}");
 
-            sw.CreateOrAddTable(ref table,
-                                null,
-                                (await client.Nodes[item.Node]
-                                       .Journal
-                                       .GetAsync(lastentries: settings.Node.Syslog.Limit,
-                                                 since: settings.Node.Syslog.SinceUnix,
-                                                 until: settings.Node.Syslog.UntilUnix))
-                                    .Select(a => ParseSyslogLine(item.Node, a)).ToList());
+            var rows = (await client.Nodes[item.Node]
+                                    .Journal
+                                    .GetAsync(lastentries: settings.Node.Syslog.Limit,
+                                              since: settings.Node.Syslog.SinceUnix,
+                                              until: settings.Node.Syslog.UntilUnix))
+                            .Select(a => ParseSyslogLine(item.Node, a)).ToList();
 
+            if (table == null)
+            {
+                table = sw.AddTable(null, rows);
+            }
+            else
+            {
+                sw.AppendData(table, rows);
+            }
         }
-
-        sw.AdjustColumns();
 
         return filtered.Count;
     }

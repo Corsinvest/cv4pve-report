@@ -37,7 +37,7 @@ RVTools is a pure inventory tool for VMware — it exports infrastructure data t
 |---|---------|:-----------------:|:-----------:|
 | **Platform** | VMware vSphere | Proxmox VE | Proxmox VE |
 | **Purpose** | Inventory & reporting | **Inventory & reporting** | **Diagnostics & health checks** |
-| **Output** | Excel | Excel + SVG network diagram | Text / HTML / JSON / Markdown / Excel |
+| **Output** | Excel | Excel **or** static HTML site, plus SVG network diagram | Text / HTML / JSON / Markdown / Excel |
 
 ### Capabilities
 
@@ -89,14 +89,26 @@ With API token (recommended):
 ./cv4pve-report --host=YOUR_HOST --api-token=user@realm!token=uuid export
 ```
 
-Each `export` produces **two files** side-by-side:
+By default `export` produces an Excel workbook plus the network topology SVG:
 
 ```
-Report_20260415_120000.xlsx   ← full infrastructure inventory
-Report_20260415_120000.svg    ← network topology diagram
+Report_20260506_120000.xlsx   ← full infrastructure inventory
+Report_20260506_120000.svg    ← network topology diagram (next to the .xlsx)
 ```
 
-With `--output` / `-o` the same basename is used for both, only the extension differs.
+To get a self-contained HTML report instead, pass `--format Html`:
+
+```bash
+./cv4pve-report --host=YOUR_HOST --api-token=user@realm!token=uuid export --format Html
+```
+
+```
+Report_20260506_120000.zip    ← static website (open report/index.html in any browser)
+```
+
+The `.zip` contains `index.html`, one page per Excel sheet, the network diagram SVG and shared assets. Extract anywhere and open `index.html` — it works fully offline.
+
+With `--output` / `-o` you choose the output path; the file extension is decided by the format you pick (`.xlsx` for Excel, `.zip` for HTML).
 
 ---
 
@@ -189,9 +201,10 @@ cv4pve-report --host=YOUR_HOST --api-token=user@realm!token=uuid export --full  
 
 ## Features
 
-- **Single `.xlsx` file** — global sheets plus a dedicated detail sheet per node, VM and container
-- **Network topology SVG** — each export produces a `.svg` next to the `.xlsx` showing the physical-to-logical network chain for every node, plus the network-backed storage strip — [guide](docs/network-diagram.md)
-- **Fully navigable** — summary rows link to detail sheets; detail sheets have a `← Back` link and a clickable index
+- **Two output formats** — pick `--format Xlsx` (default) for a single Excel workbook or `--format Html` for a self-contained zipped static website
+- **Network topology SVG** — every export ships the network diagram (next to the `.xlsx` for Excel, embedded inside the `.zip` for HTML) — [guide](docs/network-diagram.md)
+- **Fully navigable** — cross-page hyperlinks for nodes, VMs/CTs and storages; per-sheet "← Back" link and section index
+- **HTML extras** — sortable columns (click header), per-table filter, sidebar search, light/dark theme toggle (auto-follows the OS preference), responsive layout, print stylesheet
 - **Cluster** — users, API tokens, TFA, groups, roles, ACL, firewall options, domains, backup jobs, HA, SDN, pools
 - **Nodes** — services, network, disks, SMART, ZFS, APT, SSL certificates, replication, syslog, firewall logs, tasks
 - **VMs/CTs** — config, network, disks, snapshots, firewall logs, tasks, QEMU agent info

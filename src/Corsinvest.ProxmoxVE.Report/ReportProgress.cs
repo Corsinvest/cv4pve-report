@@ -4,7 +4,6 @@
  */
 
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
-using Corsinvest.ProxmoxVE.Api.Shared.Models.Vm;
 
 namespace Corsinvest.ProxmoxVE.Report;
 

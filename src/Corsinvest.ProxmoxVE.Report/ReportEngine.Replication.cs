@@ -3,15 +3,15 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
-using ClosedXML.Excel;
 using Corsinvest.ProxmoxVE.Api.Extension;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
+using Corsinvest.ProxmoxVE.Report.Writers;
 
 namespace Corsinvest.ProxmoxVE.Report;
 
 public partial class ReportEngine
 {
-    private async Task<int> AddReplicationDataAsync(XLWorkbook workbook)
+    private async Task<int> AddReplicationDataAsync()
     {
         if (!settings.Node.IncludeReplicationSheet) { return 0; }
 
@@ -54,12 +54,16 @@ public partial class ReportEngine
                         }).ToList());
         });
 
-        var sw = CreateSheetWriter(workbook, "Replication");
-        sw.CreateTable(null,
-                       results.OrderBy(r => r.Node).SelectMany(r => r.rows).ToList(),
-                       tbl => sw.ApplyReplicationLinks(tbl));
-        sw.AdjustColumns();
+        var rows = results.OrderBy(r => r.Node).SelectMany(r => r.rows).ToList();
 
-        return results.Sum(r => r.rows.Count);
+        using var sw = _writer.AddSection("Replication");
+        sw.AddTable(null, rows,
+                    new TableOptions<dynamic>().WithReplicationLinks<dynamic>(
+                        nodeSelector: r => (string?)r.Node,
+                        vmIdSelector: r => long.TryParse((string?)r.VmId, out var id) ? id : (long?)null,
+                        sourceSelector: r => (string?)r.Source,
+                        targetSelector: r => (string?)r.Target));
+
+        return rows.Count;
     }
 }

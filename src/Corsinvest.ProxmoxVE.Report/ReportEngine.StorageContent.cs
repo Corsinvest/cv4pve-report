@@ -3,26 +3,26 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
-using ClosedXML.Excel;
 using Corsinvest.ProxmoxVE.Api.Extension;
+using Corsinvest.ProxmoxVE.Report.Writers;
 
 namespace Corsinvest.ProxmoxVE.Report;
 
 public partial class ReportEngine
 {
-    private async Task<int> AddStorageContentDataAsync(XLWorkbook workbook)
+    private async Task<int> AddStorageContentDataAsync()
     {
         if (!settings.Storage.IncludeContentSheet && !settings.Storage.IncludeBackupsSheet) { return 0; }
 
         var filtered = _uniqueStorages.Where(a => !a.IsUnknown).OrderBy(a => a.Id).ToList();
         if (filtered.Count == 0) { return 0; }
 
-        double? StorageUsagePct(long size, ulong storageSize)
+        static double? StorageUsagePct(long size, ulong storageSize)
             => storageSize > 0
                 ? (double)size / storageSize
                 : null;
 
-        string FormatVmId(long vmId)
+        static string FormatVmId(long vmId)
             => vmId > 0
                 ? vmId.ToString()
                 : "";
@@ -85,32 +85,23 @@ public partial class ReportEngine
         });
         var ordered = results.OrderBy(r => r.item.Id).ToList();
 
+        // VmId in these tables is a string (FormatVmId converts it). Build the link by
+        // column name explicitly rather than via the long-typed WithVmIdLink shorthand.
+        static TableOptions<dynamic> ContentLinks() => new TableOptions<dynamic>()
+            .WithNodeLink<dynamic>(r => (string?)r.Node)
+            .WithStorageLink<dynamic>(r => (string?)r.Storage)
+            .WithColumnLink<dynamic>("VmId", r => long.TryParse((string?)r.VmId, out var id) && id > 0 ? $"vm:{id}" : null);
+
         if (settings.Storage.IncludeContentSheet)
         {
-            var sw = CreateSheetWriter(workbook, "Storage Content");
-            sw.CreateTable(null,
-                           ordered.SelectMany(r => r.contentRows).ToList(),
-                           tbl =>
-                           {
-                               sw.ApplyNodeLinks(tbl);
-                               sw.ApplyStorageLinks(tbl);
-                               sw.ApplyVmIdLinks(tbl);
-                           });
-            sw.AdjustColumns();
+            using var sw = _writer.AddSection("Storage Content");
+            sw.AddTable(null, ordered.SelectMany(r => r.contentRows).ToList(), ContentLinks());
         }
 
         if (settings.Storage.IncludeBackupsSheet)
         {
-            var sw = CreateSheetWriter(workbook, "Backups");
-            sw.CreateTable(null,
-                           ordered.SelectMany(r => r.backupRows).ToList(),
-                           tbl =>
-                           {
-                               sw.ApplyNodeLinks(tbl);
-                               sw.ApplyStorageLinks(tbl);
-                               sw.ApplyVmIdLinks(tbl);
-                           });
-            sw.AdjustColumns();
+            using var sw = _writer.AddSection("Backups");
+            sw.AddTable(null, ordered.SelectMany(r => r.backupRows).ToList(), ContentLinks());
         }
 
         return results.Sum(r => r.contentRows.Count + r.backupRows.Count);

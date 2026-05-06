@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
-using ClosedXML.Excel;
 using Corsinvest.ProxmoxVE.Api.Extension;
+using Corsinvest.ProxmoxVE.Report.Writers;
 
 namespace Corsinvest.ProxmoxVE.Report;
 
 public partial class ReportEngine
 {
-    private async Task<int> AddClusterLogDataAsync(XLWorkbook workbook)
+    private async Task<int> AddClusterLogDataAsync()
     {
         if (!settings.Cluster.Log.Enabled) { return 0; }
 
@@ -18,20 +18,19 @@ public partial class ReportEngine
                                                             ? settings.Cluster.Log.MaxCount
                                                             : null)).ToList();
 
-        var sw = CreateSheetWriter(workbook, "Cluster Log");
-        sw.CreateTable(null,
-                       logs.Select(a => new
-                       {
-                           a.TimeDate,
-                           a.Node,
-                           a.User,
-                           a.SeverityEnum,
-                           a.Service,
-                           a.Message,
-                       }),
-                       tbl => sw.ApplyNodeLinks(tbl));
 
-        sw.AdjustColumns();
+        using var sw = _writer.AddSection("Cluster Log");
+        sw.AddTable(null,
+                    logs.ConvertAll(a => new
+                    {
+                        a.TimeDate,
+                        a.Node,
+                        a.User,
+                        a.SeverityEnum,
+                        a.Service,
+                        a.Message,
+                    }),
+                    new TableOptions<dynamic>().WithNodeLink<dynamic>(r => (string?)r.Node));
 
         return logs.Count;
     }

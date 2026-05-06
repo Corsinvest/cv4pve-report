@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
-using ClosedXML.Excel;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Vm;
+using Corsinvest.ProxmoxVE.Report.Writers;
 
 namespace Corsinvest.ProxmoxVE.Report;
 
@@ -17,7 +17,7 @@ public partial class ReportEngine
         _pendingDiskRows.Add((vm, disks));
     }
 
-    private int WriteDiskData(XLWorkbook workbook)
+    private int WriteDiskData()
     {
         if (_pendingDiskRows.Count == 0) { return 0; }
 
@@ -26,52 +26,49 @@ public partial class ReportEngine
 
         var count = _pendingDiskRows.Sum(e => e.Disks.Count());
 
-        var sw = CreateSheetWriter(workbook, "Disks");
-        sw.CreateTable(null,
-                       _pendingDiskRows.SelectMany(entry => entry.Disks.Select(a =>
-                       {
-                           storageLookup.TryGetValue((entry.Vm.Node, a.Storage), out var storageRes);
+        var rows = _pendingDiskRows.SelectMany(entry => entry.Disks.Select(a =>
+        {
+            storageLookup.TryGetValue((entry.Vm.Node, a.Storage), out var storageRes);
 
-                           return new
-                           {
-                               entry.Vm.Node,
-                               entry.Vm.VmId,
-                               VmName = entry.Vm.Name,
-                               VmType = entry.Vm.Type,
-                               VmStatus = entry.Vm.Status,
-                               a.Id,
-                               a.Storage,
-                               StorageType = storageRes?.PluginType,
-                               StorageSharedFlag = ToX(storageRes?.Shared),
-                               a.FileName,
-                               SizeGB = ToGB(a.SizeBytes),
-                               StorageUsagePct = storageRes is { DiskSize: > 0 }
-                                                   ? (double)a.SizeBytes / storageRes.DiskSize
-                                                   : (double?)null,
-                               a.Cache,
-                               BackupFlag = ToX(a.Backup),
-                               IsUnusedFlag = ToX(a.IsUnused),
-                               a.Device,
-                               a.MountPoint,
-                               a.MountSourcePath,
-                               PassthroughFlag = ToX(a.Passthrough),
-                               a.Prealloc,
-                               a.Format,
-                           };
-                       }))
-                       .OrderBy(a => a.Node)
-                       .ThenBy(a => a.VmId)
-                       .ThenBy(a => a.Id)
-                       .ToList(),
-                       tbl =>
-                       {
-                           sw.ApplyNodeLinks(tbl);
-                           sw.ApplyVmIdLinks(tbl);
-                           sw.ApplyStorageLinks(tbl);
-                       });
+            return new
+            {
+                entry.Vm.Node,
+                entry.Vm.VmId,
+                VmName = entry.Vm.Name,
+                VmType = entry.Vm.Type,
+                VmStatus = entry.Vm.Status,
+                a.Id,
+                a.Storage,
+                StorageType = storageRes?.PluginType,
+                StorageSharedFlag = ToX(storageRes?.Shared),
+                a.FileName,
+                SizeGB = ToGB(a.SizeBytes),
+                StorageUsagePct = storageRes is { DiskSize: > 0 }
+                                    ? (double)a.SizeBytes / storageRes.DiskSize
+                                    : (double?)null,
+                a.Cache,
+                BackupFlag = ToX(a.Backup),
+                IsUnusedFlag = ToX(a.IsUnused),
+                a.Device,
+                a.MountPoint,
+                a.MountSourcePath,
+                PassthroughFlag = ToX(a.Passthrough),
+                a.Prealloc,
+                a.Format,
+            };
+        }))
+        .OrderBy(a => a.Node)
+        .ThenBy(a => a.VmId)
+        .ThenBy(a => a.Id)
+        .ToList();
 
-        sw.WriteIndex();
-        sw.AdjustColumns();
+        using var sw = _writer.AddSection("Disks");
+        sw.AddTable(null, rows,
+                    new TableOptions<dynamic>()
+                        .WithNodeLink<dynamic>(r => (string?)r.Node)
+                        .WithVmIdLink<dynamic>(r => r.VmId is long id ? id : (long?)null)
+                        .WithStorageLink<dynamic>(r => (string?)r.Storage));
+
         _pendingDiskRows.Clear();
 
         return count;

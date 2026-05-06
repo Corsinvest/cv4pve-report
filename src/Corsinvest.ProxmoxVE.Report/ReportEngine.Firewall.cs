@@ -3,26 +3,25 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
-using ClosedXML.Excel;
 using Corsinvest.ProxmoxVE.Api.Extension;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Common;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Vm;
+using Corsinvest.ProxmoxVE.Report.Writers;
 
 namespace Corsinvest.ProxmoxVE.Report;
 
 public partial class ReportEngine
 {
-    private async Task<int> AddFirewallDataAsync(XLWorkbook workbook)
+    private async Task<int> AddFirewallDataAsync()
     {
         if (!settings.Firewall.Enabled) { return 0; }
 
-        var sw = CreateSheetWriter(workbook, "Firewall");
-        sw.ReserveIndexRows(3);
+        using var sw = _writer.AddSection("Firewall");
 
-        IXLTable? rulesTable = null;
-        IXLTable? aliasTable = null;
-        IXLTable? ipSetTable = null;
+        ITableHandle? rulesTable = null;
+        ITableHandle? aliasTable = null;
+        ITableHandle? ipSetTable = null;
         var rulesCount = 0;
 
         void AppendRules(string scopeType, string scope, string scopeName, IEnumerable<FirewallRule> rules)
@@ -50,34 +49,41 @@ public partial class ReportEngine
             }).ToList();
 
             rulesCount += rows.Count;
-            sw.CreateOrAddTable(ref rulesTable, "Firewall Rules", rows);
+            if (rulesTable == null) { rulesTable = sw.AddTable("Firewall Rules", rows); }
+            else { sw.AppendData(rulesTable, rows); }
         }
 
         void AppendAliases(string scopeType, string scope, string scopeName, IEnumerable<FirewallAlias> aliases)
-            => sw.CreateOrAddTable(ref aliasTable,
-                                   "Firewall Aliases",
-                                   aliases.Select(a => new
-                                   {
-                                       ScopeType = scopeType,
-                                       Scope = scope,
-                                       ScopeName = scopeName,
-                                       a.Name,
-                                       a.Cidr,
-                                       a.IpVersion,
-                                       CommentWrap = a.Comment,
-                                   }).ToList());
+        {
+            var rows = aliases.Select(a => new
+            {
+                ScopeType = scopeType,
+                Scope = scope,
+                ScopeName = scopeName,
+                a.Name,
+                a.Cidr,
+                a.IpVersion,
+                CommentWrap = a.Comment,
+            }).ToList();
+
+            if (aliasTable == null) { aliasTable = sw.AddTable("Firewall Aliases", rows); }
+            else { sw.AppendData(aliasTable, rows); }
+        }
 
         void AppendIpSets(string scopeType, string scope, string scopeName, IEnumerable<FirewallIpSet> ipSets)
-            => sw.CreateOrAddTable(ref ipSetTable,
-                                   "Firewall IPSets",
-                                   ipSets.Select(a => new
-                                   {
-                                       ScopeType = scopeType,
-                                       Scope = scope,
-                                       ScopeName = scopeName,
-                                       a.Name,
-                                       CommentWrap = a.Comment,
-                                   }).ToList());
+        {
+            var rows = ipSets.Select(a => new
+            {
+                ScopeType = scopeType,
+                Scope = scope,
+                ScopeName = scopeName,
+                a.Name,
+                CommentWrap = a.Comment,
+            }).ToList();
+
+            if (ipSetTable == null) { ipSetTable = sw.AddTable("Firewall IPSets", rows); }
+            else { sw.AppendData(ipSetTable, rows); }
+        }
 
         // Cluster firewall
         ReportGlobal("Firewall: Cluster");
@@ -147,9 +153,6 @@ public partial class ReportEngine
             AppendAliases(scopeType, scope, scopeName, aliases);
             AppendIpSets(scopeType, scope, scopeName, ipSets);
         }
-
-        sw?.WriteIndex();
-        sw?.AdjustColumns();
 
         return rulesCount;
     }

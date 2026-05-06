@@ -5,16 +5,16 @@
 
 using ClosedXML.Excel;
 
-namespace Corsinvest.ProxmoxVE.Report;
+namespace Corsinvest.ProxmoxVE.Report.Writers.Xlsx;
 
-public partial class ReportEngine
+internal sealed partial class XlsxReportWriter
 {
-    private void AddCoverPage(XLWorkbook workbook, List<SectionStat> stats)
+    public void WriteCoverPage(ReportInfo info, Settings settings, IEnumerable<SectionStat> stats)
     {
-        var ws = workbook.Worksheets.Add("Summary");
+        var ws = _workbook.Worksheets.Add("Summary");
         var row = 1;
 
-        void Add(string value)
+        void AddHeader(string value)
         {
             ws.Cell(row, 1).Value = value;
             ws.Cell(row, 1).Style.Font.SetBold(true);
@@ -35,13 +35,13 @@ public partial class ReportEngine
         ws.Range(row, 1, row, 3).Merge();
         row += 2;
 
-        Add("Report Information");
+        AddHeader("Report Information");
 
         AddKV("Generated:", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
         AddKV("Application:", $"{info.ApplicationName} v{info.ApplicationVersion}");
         row++;
 
-        Add("Filters Applied");
+        AddHeader("Filters Applied");
 
         AddKV("Nodes:", settings.Node.Names);
         AddKV("VMs/Containers:", settings.Guest.Ids);
@@ -64,7 +64,7 @@ public partial class ReportEngine
             AddKV("Storage RRD Consolidation:", settings.Storage.RrdData.Consolidation.ToString());
         }
 
-        Add("Contents");
+        AddHeader("Contents");
 
         var sections = new List<(string, string)>();
 
@@ -74,7 +74,7 @@ public partial class ReportEngine
         }
 
         sections.Add(("Nodes", "Node list with hardware, subscription, DNS, kernel details"));
-        sections.Add(("Vms", "Virtual machines (QEMU) with agent info, OS name/version/kernel, bios, cpu, memory and disk details"));
+        sections.Add(("VMs", "Virtual machines (QEMU) with agent info, OS name/version/kernel, bios, cpu, memory and disk details"));
         sections.Add(("Containers", "LXC containers with hostname, swap, nameserver and privilege details"));
 
         if (settings.Guest.IncludeDisksSheet)
@@ -92,7 +92,6 @@ public partial class ReportEngine
             sections.Add(("Snapshots", "Global snapshot inventory across all VMs and containers"));
         }
 
-        // Network / Storage
         sections.Add(("Network", "Global network overview: node interfaces and VM/CT network inventory"));
         sections.Add(("Storages", "Storage list with size, usage and type"));
 
@@ -146,7 +145,6 @@ public partial class ReportEngine
             sections.Add(("Cluster Tasks", "All recent tasks across the cluster with status, duration and node"));
         }
 
-        // Header row for Contents table
         ws.Cell(row, 1).Value = "Sheet";
         ws.Cell(row, 2).Value = "Description";
         ws.Cell(row, 3).Value = "Count";
@@ -158,17 +156,19 @@ public partial class ReportEngine
         }
         row++;
 
+        var statsList = stats.ToList();
+
         foreach (var (sheetName, description) in sections)
         {
             ws.Cell(row, 1).Value = sheetName;
             ws.Cell(row, 1).Style.Font.SetUnderline(XLFontUnderlineValues.Single);
             ws.Cell(row, 1).Style.Font.SetFontColor(XLColor.Blue);
 
-            var actualSheet = workbook.Worksheets.FirstOrDefault(s => s.Name.StartsWith(sheetName[..Math.Min(sheetName.Length, MaxSheetNameLength)]))?.Name ?? sheetName;
+            var actualSheet = _workbook.Worksheets.FirstOrDefault(s => s.Name.StartsWith(sheetName[..Math.Min(sheetName.Length, MaxSheetNameLength)]))?.Name ?? sheetName;
             ws.Cell(row, 1).SetHyperlink(new XLHyperlink($"'{actualSheet}'!A1"));
             ws.Cell(row, 2).Value = description;
 
-            var stat = stats.FirstOrDefault(s => string.Equals(s.Name, sheetName, StringComparison.OrdinalIgnoreCase));
+            var stat = statsList.FirstOrDefault(s => string.Equals(s.Name, sheetName, StringComparison.OrdinalIgnoreCase));
             if (stat != null)
             {
                 ws.Cell(row, 3).Value = stat.Count;
@@ -180,7 +180,7 @@ public partial class ReportEngine
             row++;
         }
 
-        var totalDuration = TimeSpan.FromSeconds(stats.Sum(s => s.Duration.TotalSeconds));
+        var totalDuration = TimeSpan.FromSeconds(statsList.Sum(s => s.Duration.TotalSeconds));
         ws.Cell(row, 1).Value = "Total";
         ws.Cell(row, 1).Style.Font.SetBold(true);
         ws.Cell(row, 4).Value = totalDuration.TotalSeconds < 60
