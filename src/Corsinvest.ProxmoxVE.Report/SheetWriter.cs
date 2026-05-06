@@ -202,6 +202,10 @@ internal partial class SheetWriter(IXLWorksheet ws, Dictionary<string, string> s
         cell.SetHyperlink(new XLHyperlink(href));
     }
 
+    /// <summary>Registers a hyperlink target pointing at a specific row of this sheet by absolute row number.</summary>
+    public void RegisterDirectLink(string linkKey, int rowNumber)
+        => sheetLinks[linkKey] = $"{ws.Name}!A{rowNumber}";
+
     /// <summary>Registers per-row links for each cell in a column so other sheets can link directly to that row.</summary>
     public void RegisterRowLinks(IXLTable table, string colName, Func<IXLCell, string?> getKey)
     {

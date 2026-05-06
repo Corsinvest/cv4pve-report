@@ -28,4 +28,8 @@
         <PackageReference Include="Corsinvest.ProxmoxVE.Api.Extension" />
         <PackageReference Include="ClosedXML" />
     </ItemGroup>
+    <ItemGroup>
+        <EmbeddedResource Include="Writers\Html\Assets\style.css" />
+        <EmbeddedResource Include="Writers\Html\Assets\app.js" />
+    </ItemGroup>
 </Project>

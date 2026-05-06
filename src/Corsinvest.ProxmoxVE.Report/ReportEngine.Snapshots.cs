@@ -3,15 +3,15 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
-using ClosedXML.Excel;
 using Corsinvest.ProxmoxVE.Api.Extension.Utils;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
+using Corsinvest.ProxmoxVE.Report.Writers;
 
 namespace Corsinvest.ProxmoxVE.Report;
 
 public partial class ReportEngine
 {
-    private async Task<int> AddSnapshotsDataAsync(XLWorkbook workbook)
+    private async Task<int> AddSnapshotsDataAsync()
     {
         if (!settings.Guest.IncludeSnapshotsSheet) { return 0; }
 
@@ -50,15 +50,13 @@ public partial class ReportEngine
             return (item, rows);
         });
 
-        var sw = CreateSheetWriter(workbook, "Snapshots");
-        sw.CreateTable(null,
-                       results.OrderBy(r => r.item.Id).SelectMany(r => r.rows).ToList(),
-                       tbl =>
-                       {
-                           sw.ApplyNodeLinks(tbl);
-                           sw.ApplyVmIdLinks(tbl);
-                       });
-        sw.AdjustColumns();
+        var rows = results.OrderBy(r => r.item.Id).SelectMany(r => r.rows).ToList();
+
+        using var sw = _writer.AddSection("Snapshots");
+        sw.AddTable(null, rows,
+                    new TableOptions<dynamic>()
+                        .WithNodeLink<dynamic>(r => (string?)r.Node)
+                        .WithVmIdLink<dynamic>(r => r.VmId is long id ? id : (long?)null));
 
         return results.Sum(r => r.rows.Count);
     }

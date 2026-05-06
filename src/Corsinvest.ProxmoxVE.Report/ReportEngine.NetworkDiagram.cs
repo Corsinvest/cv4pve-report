@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
-using System.Text;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Node;
+using System.Text;
 
 namespace Corsinvest.ProxmoxVE.Report;
 
