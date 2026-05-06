@@ -31,9 +31,19 @@ public partial class ReportEngine
         pt.Next(item);
 
         pt.Step("Config");
-        var config = item.IsUnknown
+        VmConfigQemu? config;
+        try
+        {
+            config = item.IsUnknown
                         ? null
                         : await client.Nodes[item.Node].Qemu[item.VmId].Config.GetAsync();
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException(
+                $"Failed to read config for VM {item.VmId} on node '{item.Node}' (name: '{item.Name}'). See inner exception for details.",
+                ex);
+        }
 
         VmQemuAgentOsInfo? agentOsInfo = null;
         var hostname = "";

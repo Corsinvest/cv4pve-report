@@ -25,9 +25,19 @@ public partial class ReportEngine
         pt.Next(item);
 
         pt.Step("Config");
-        var config = item.IsUnknown
+        VmConfigLxc? config;
+        try
+        {
+            config = item.IsUnknown
                         ? null
                         : await client.Nodes[item.Node].Lxc[item.VmId].Config.GetAsync();
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException(
+                $"Failed to read config for CT {item.VmId} on node '{item.Node}' (name: '{item.Name}'). See inner exception for details.",
+                ex);
+        }
 
         var networks = new List<VmNetworkRow>();
         if (config != null)
