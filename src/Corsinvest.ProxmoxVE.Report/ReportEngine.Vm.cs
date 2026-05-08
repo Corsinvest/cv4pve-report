@@ -331,9 +331,12 @@ public partial class ReportEngine
             ["Hookscript"] = config.Hookscript,
         };
 
-        foreach (var (key, value) in config.ExtensionData.OrderBy(a => a.Key))
+        if (config.ExtensionData != null)
         {
-            configKv.TryAdd(key, value);
+            foreach (var (key, value) in config.ExtensionData.OrderBy(a => a.Key))
+            {
+                configKv.TryAdd(key, value);
+            }
         }
 
         pt.Step("QemuAgent");

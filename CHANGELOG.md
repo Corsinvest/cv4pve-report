@@ -2,6 +2,14 @@
 
 ---
 
+## [2.0.1] — 2026-05-08
+
+### Fixes
+
+- **Reports no longer crash on VM/CT detail pages** — a leftover code path in v2.0.0 still failed when a VM or container had a minimal config without extra fields. The detail page now renders cleanly in those cases. Thanks again @janrenard for spotting it (#24).
+
+---
+
 ## [2.0.0] — 2026-05-08
 
 ### What's new
