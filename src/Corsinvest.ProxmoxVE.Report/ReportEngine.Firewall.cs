@@ -85,7 +85,6 @@ public partial class ReportEngine
             else { sw.AppendData(ipSetTable, rows); }
         }
 
-        // Cluster firewall
         ReportGlobal("Firewall: Cluster");
         var clusterRulesTask = client.Cluster.Firewall.Rules.GetAsync();
         var clusterAliasesTask = client.Cluster.Firewall.Aliases.GetAsync();
@@ -96,7 +95,6 @@ public partial class ReportEngine
         AppendAliases("cluster", "cluster", "", clusterAliasesTask.ResultOrDefault() ?? []);
         AppendIpSets("cluster", "cluster", "", clusterIpSetsTask.ResultOrDefault() ?? []);
 
-        // Nodes firewall — parallel
         var nodeFirewallResults = await RunParallelAsync(
             GetResources(ClusterResourceType.Node).Where(a => !a.IsUnknown),
             async item =>
@@ -111,7 +109,6 @@ public partial class ReportEngine
             AppendRules("node", scope, "", rules);
         }
 
-        // VMs and CTs firewall — parallel
         var guestFirewallResults = await RunParallelAsync(
             GetResources(ClusterResourceType.Vm).Where(a => !a.IsUnknown),
             async item =>

@@ -17,9 +17,9 @@ Report Tool for Proxmox VE (Made in Italy)
 [![WinGet](https://img.shields.io/winget/v/Corsinvest.cv4pve.report?style=flat-square&logo=windows)](https://winstall.app/apps/Corsinvest.cv4pve.report)
 [![AUR](https://img.shields.io/aur/version/cv4pve-report?style=flat-square&logo=archlinux)](https://aur.archlinux.org/packages/cv4pve-report)
 
-> **The RVTools for Proxmox VE** — exports your entire Proxmox VE infrastructure to a single Excel file plus a network topology diagram (SVG).
+> **The RVTools for Proxmox VE** — exports your entire Proxmox VE infrastructure as a single Excel workbook **or** a self-contained HTML site, plus a network topology diagram (SVG).
 
-**Fully navigable** — every node, VM and storage in the summary tables is a hyperlink to its dedicated detail sheet. Detail sheets have a clickable index to jump to any table inside. One click, no searching.
+**Fully navigable** — every node, VM and storage in the overview tables is a hyperlink to its dedicated detail page. Click and you're there.
 
 **Network Diagram** — each export also produces an SVG showing the full network topology per node (physical NICs → bonds → bridges → gateway VMs → internal bridges → leaf VMs) plus a dedicated strip for network-backed storage. Open it in any browser — see the [guide](docs/network-diagram.md) and [sample](docs/network-diagram.svg).
 
@@ -89,26 +89,51 @@ With API token (recommended):
 ./cv4pve-report --host=YOUR_HOST --api-token=user@realm!token=uuid export
 ```
 
-By default `export` produces an Excel workbook plus the network topology SVG:
+Pick the output format that fits your workflow:
+
+```bash
+./cv4pve-report ... export                  # Excel (default)
+./cv4pve-report ... export --format Html    # HTML zipped site
+```
+
+With `--output` / `-o` you choose the output path; the extension follows the format (`.xlsx` for Excel, `.zip` for HTML).
+
+---
+
+## Output Formats
+
+Both formats expose **the same data** (see [Report Contents](#report-contents)). Pick the one that matches what you need to do with the report.
+
+### Excel output `(--format Xlsx, default)`
 
 ```
-Report_20260506_120000.xlsx   ← full infrastructure inventory
+Report_20260506_120000.xlsx   ← single workbook with one sheet per section
 Report_20260506_120000.svg    ← network topology diagram (next to the .xlsx)
 ```
 
-To get a self-contained HTML report instead, pass `--format Html`:
+For analysts and capacity planning. Open in Excel, LibreOffice Calc or any spreadsheet tool.
 
-```bash
-./cv4pve-report --host=YOUR_HOST --api-token=user@realm!token=uuid export --format Html
+- **One workbook**, one sheet per section (Cluster, Nodes, VMs, Containers, Storages, …) plus per-node and per-VM detail sheets at the end
+- **Hyperlinks everywhere** — click a node, VM or storage in any list to jump straight to its detail sheet; every detail sheet has a `← Back` link to its overview
+- **Per-sheet index** — every detail sheet starts with a clickable index of its tables so you can jump to the section you need
+- **Native filtering / sorting / pivot** — every table is a real Excel table; use built-in autofilter, sort, slicer or pivot the data without exporting elsewhere
+- **Network topology SVG** — written next to the `.xlsx`; open in any browser to see the full network map (NICs → bonds → bridges → VMs → storages) — [guide](docs/network-diagram.md)
+
+### HTML output `(--format Html)`
+
+```
+Report_20260506_120000.zip    ← static website (extract and open index.html)
 ```
 
-```
-Report_20260506_120000.zip    ← static website (open report/index.html in any browser)
-```
+For sharing on a wiki, ticket system or with non-technical stakeholders. Extract the zip and open `index.html` in any browser — works fully offline, no server needed.
 
-The `.zip` contains `index.html`, one page per Excel sheet, the network diagram SVG and shared assets. Extract anywhere and open `index.html` — it works fully offline.
-
-With `--output` / `-o` you choose the output path; the file extension is decided by the format you pick (`.xlsx` for Excel, `.zip` for HTML).
+- **Static website** — `index.html` plus one page per section, all linked together; navigate with the sidebar like any wiki
+- **Search & sort** — global sidebar filter (find any node, VM or container by id or name), per-table search and click-to-sort headers on every column
+- **Light & dark theme** — toggle in the top corner; auto-follows your OS preference
+- **Share a single page** — every node/VM/container detail page has an Export button (top right) that bundles the page as a stand-alone `.html` file (CSS and table interactions inline) — paste it into a ticket or attach it to an email without sending the whole report
+- **Built for large clusters** — sidebar groups (Nodes, VMs, Containers) load their entries on demand, so the report stays fast and the zip stays small even with thousands of guests; tested up to 2700+ VMs
+- **Print-friendly** — dedicated print stylesheet hides chrome and lays tables out for paper / PDF export from the browser
+- **Network topology SVG** — bundled inside the zip and accessible from the sidebar — [guide](docs/network-diagram.md)
 
 ---
 
@@ -201,16 +226,19 @@ cv4pve-report --host=YOUR_HOST --api-token=user@realm!token=uuid export --full  
 
 ## Features
 
-- **Two output formats** — pick `--format Xlsx` (default) for a single Excel workbook or `--format Html` for a self-contained zipped static website
-- **Network topology SVG** — every export ships the network diagram (next to the `.xlsx` for Excel, embedded inside the `.zip` for HTML) — [guide](docs/network-diagram.md)
-- **Fully navigable** — cross-page hyperlinks for nodes, VMs/CTs and storages; per-sheet "← Back" link and section index
-- **HTML extras** — sortable columns (click header), per-table filter, sidebar search, light/dark theme toggle (auto-follows the OS preference), responsive layout, print stylesheet
+What's collected:
+
 - **Cluster** — users, API tokens, TFA, groups, roles, ACL, firewall options, domains, backup jobs, HA, SDN, pools
 - **Nodes** — services, network, disks, SMART, ZFS, APT, SSL certificates, replication, syslog, firewall logs, tasks
 - **VMs/CTs** — config, network, disks, snapshots, firewall logs, tasks, QEMU agent info
-- **Global sheets** — Firewall (rules/aliases/ipsets), RRD Nodes, RRD Storage, RRD Guests, Syslog, Cluster Log, Cluster Tasks, Replication, Network, Disks, Partitions, Snapshots, Storage Content, Backups
-- **Flexible filtering** — `@all`, pools, tags, nodes, ID ranges, wildcards, exclusions — [see VM/CT Selection Patterns](#vmct-selection-patterns)
-- **Fully customizable** — three built-in profiles (Fast/Standard/Full) or bring your own `settings.json` to control exactly which sheets are generated — [see Settings Reference](#settings-reference)
+- **Global sections** — Firewall (rules/aliases/ipsets), RRD Nodes/Storage/Guests, Syslog, Cluster Log, Cluster Tasks, Replication, Network, Disks, Partitions, Snapshots, Storage Content, Backups
+- **Network topology** — auto-generated SVG diagram of physical NICs, bonds, bridges, gateway VMs and network-backed storage — [guide](docs/network-diagram.md)
+
+How you can shape it:
+
+- **Three profiles** — `--fast` for a quick scan on large clusters, default Standard for daily reporting, `--full` for audits and capacity planning
+- **`settings.json`** — bring your own config to enable/disable exactly the sections you want — [see Settings Reference](#settings-reference)
+- **Flexible target selection** — `@all`, pools, tags, nodes, ID ranges, wildcards, exclusions — [see VM/CT Selection Patterns](#vmct-selection-patterns)
 - **API token** support, cross-platform (Windows, Linux, macOS), no root access required
 
 ---

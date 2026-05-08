@@ -88,9 +88,9 @@ public partial class ReportEngine
         // VmId in these tables is a string (FormatVmId converts it). Build the link by
         // column name explicitly rather than via the long-typed WithVmIdLink shorthand.
         static TableOptions<dynamic> ContentLinks() => new TableOptions<dynamic>()
-            .WithNodeLink<dynamic>(r => (string?)r.Node)
-            .WithStorageLink<dynamic>(r => (string?)r.Storage)
-            .WithColumnLink<dynamic>("VmId", r => long.TryParse((string?)r.VmId, out var id) && id > 0 ? $"vm:{id}" : null);
+            .WithNodeLink(r => (string?)r.Node)
+            .WithStorageLink(r => (string?)r.Storage)
+            .WithColumnLink("VmId", r => long.TryParse((string?)r.VmId, out var id) && id > 0 ? LinkKey.Vm(id) : null);
 
         if (settings.Storage.IncludeContentSheet)
         {

@@ -63,10 +63,10 @@ internal sealed class TableBlock<T> : IBlock
         var dataType = col.Kind switch
         {
             ColumnKind.Number or ColumnKind.Percentage => " data-type=\"number\"",
-            ColumnKind.DateTime => " data-type=\"date\"",
+            ColumnKind.DateTime or ColumnKind.DateOnly => " data-type=\"date\"",
             _ => "",
         };
-        return $"""<th{dataType}>{HtmlEncoder.Text(col.DisplayName)}</th>""";
+        return $"<th{dataType}>{HtmlEncoder.Text(col.DisplayName)}</th>";
     }
 
     private string RenderRow(T row, IDictionary<string, string> links)
@@ -102,21 +102,22 @@ internal sealed class TableBlock<T> : IBlock
         return $"<td{classAttr}>{text}</td>";
     }
 
-    private static string ClassFor(ColumnKind kind) => kind switch
-    {
-        ColumnKind.Number or ColumnKind.Percentage => " class=\"num\"",
-        ColumnKind.Flag => " class=\"flag\"",
-        ColumnKind.Wrap => " class=\"wrap\"",
-        ColumnKind.DateTime => " class=\"date\"",
-        _ => "",
-    };
+    private static string ClassFor(ColumnKind kind)
+        => kind switch
+        {
+            ColumnKind.Number or ColumnKind.Percentage => " class=\"num\"",
+            ColumnKind.Flag => " class=\"flag\"",
+            ColumnKind.Wrap => " class=\"wrap\"",
+            ColumnKind.DateTime or ColumnKind.DateOnly => " class=\"date\"",
+            _ => "",
+        };
 
     private static string FormatCell(object? value, ColumnKind kind) => value switch
     {
         null => "",
         bool b => b ? "Yes" : "No",
-        DateTime d when kind == ColumnKind.DateTime => d.ToString("yyyy-MM-dd HH:mm:ss"),
-        DateTime d => d.ToString("yyyy-MM-dd"),
+        DateTime d when kind == ColumnKind.DateOnly => d.ToString("yyyy-MM-dd"),
+        DateTime d => d.ToString("yyyy-MM-dd HH:mm:ss"),
         DateTimeOffset dto => dto.ToString("yyyy-MM-dd HH:mm:ss"),
         double dbl when kind == ColumnKind.Percentage => (dbl * 100).ToString("0.00", CultureInfo.InvariantCulture) + "%",
         float fl when kind == ColumnKind.Percentage => (fl * 100).ToString("0.00", CultureInfo.InvariantCulture) + "%",
@@ -130,39 +131,21 @@ internal sealed class TableBlock<T> : IBlock
 
     private static ColumnInfo BuildColumn(PropertyInfo p)
     {
-        var name = p.Name;
-        var kind = ColumnKind.Text;
-        var displayName = PascalCaseToWords(name);
+        var (suffix, displayName) = ColumnNameSuffix.Parse(p.Name);
 
-        if (name.EndsWith("Pct", StringComparison.OrdinalIgnoreCase))
+        var kind = suffix switch
         {
-            kind = ColumnKind.Percentage;
-            displayName = PascalCaseToWords(name[..^"Pct".Length]) + " %";
-        }
-        else if (name.EndsWith("GB", StringComparison.OrdinalIgnoreCase) || name.EndsWith("MB", StringComparison.OrdinalIgnoreCase))
-        {
-            kind = ColumnKind.Number;
-        }
-        else if (name.EndsWith("Wrap", StringComparison.OrdinalIgnoreCase))
-        {
-            kind = ColumnKind.Wrap;
-            displayName = PascalCaseToWords(name[..^"Wrap".Length]);
-        }
-        else if (name.EndsWith("Flag", StringComparison.OrdinalIgnoreCase))
-        {
-            kind = ColumnKind.Flag;
-            displayName = PascalCaseToWords(name[..^"Flag".Length]);
-        }
-        else if (IsNumeric(p.PropertyType))
-        {
-            kind = ColumnKind.Number;
-        }
-        else if (IsDate(p.PropertyType))
-        {
-            kind = ColumnKind.DateTime;
-        }
+            ColumnSuffix.Pct => ColumnKind.Percentage,
+            ColumnSuffix.GB or ColumnSuffix.MB => ColumnKind.Number,
+            ColumnSuffix.Wrap => ColumnKind.Wrap,
+            ColumnSuffix.Flag => ColumnKind.Flag,
+            ColumnSuffix.DateOnly => ColumnKind.DateOnly,
+            _ => IsNumeric(p.PropertyType) ? ColumnKind.Number
+               : IsDate(p.PropertyType) ? ColumnKind.DateTime
+               : ColumnKind.Text,
+        };
 
-        return new ColumnInfo(p, name, displayName, kind);
+        return new ColumnInfo(p, p.Name, displayName, kind);
     }
 
     private static bool IsNumeric(Type t)
@@ -179,24 +162,6 @@ internal sealed class TableBlock<T> : IBlock
         return t == typeof(DateTime) || t == typeof(DateTimeOffset);
     }
 
-    private static string PascalCaseToWords(string name)
-    {
-        if (string.IsNullOrEmpty(name)) { return name; }
-        var sb = new StringBuilder(name.Length + 4);
-        for (var i = 0; i < name.Length; i++)
-        {
-            var c = name[i];
-            if (i > 0 && char.IsUpper(c)
-                && (char.IsLower(name[i - 1])
-                    || (i + 1 < name.Length && char.IsLower(name[i + 1]))))
-            {
-                sb.Append(' ');
-            }
-            sb.Append(c);
-        }
-        return sb.ToString();
-    }
-
-    private enum ColumnKind { Text, Number, Percentage, DateTime, Wrap, Flag }
+    private enum ColumnKind { Text, Number, Percentage, DateTime, DateOnly, Wrap, Flag }
     private sealed record ColumnInfo(PropertyInfo Property, string Name, string DisplayName, ColumnKind Kind);
 }

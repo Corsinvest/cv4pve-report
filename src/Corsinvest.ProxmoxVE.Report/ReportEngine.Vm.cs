@@ -266,8 +266,8 @@ public partial class ReportEngine
 
         sw.AddTable(null, items,
                     new TableOptions<dynamic>()
-                        .WithNodeLink<dynamic>(r => (string?)r.Node)
-                        .WithVmIdLink<dynamic>(r => r.VmId is long id ? id : (long?)null));
+                        .WithNodeLink(r => (string?)r.Node)
+                        .WithVmIdLink(r => r.VmId is long id ? id : (long?)null));
 
         return resources.Count;
     }
@@ -275,8 +275,8 @@ public partial class ReportEngine
     private async Task AddVmDetailAsync(VmFetchData d, ProgressTracker pt)
     {
         var config = d.Config!;
-        using var sw = _writer.AddSection(GetSheetName(ClusterResourceType.Vm, d.Item.VmId.ToString())!);
-        sw.AddBackLink("VMs", "list:vms");
+        using var sw = _writer.AddSection(new SectionId.Vm(d.Item.VmId, d.Item.Name ?? ""));
+        sw.AddBackLink("VMs", LinkKey.ListVms());
 
         var mainKv = new Dictionary<string, object?>
         {
@@ -338,6 +338,9 @@ public partial class ReportEngine
 
         pt.Step("QemuAgent");
 
+        sw.AddKeyValueRow(($"{d.Item.VmId} - {d.Item.Name}", mainKv),
+                          ("Config", configKv));
+
         if (d.AgentRunning && d.AgentOsInfo?.Result != null)
         {
             var osKv = new Dictionary<string, object?>
@@ -353,14 +356,7 @@ public partial class ReportEngine
                 ["Variant"] = d.AgentOsInfo.Result.Variant,
                 ["Variant Id"] = d.AgentOsInfo.Result.VariantId,
             };
-            sw.AddKeyValueRow(($"{d.Item.VmId} - {d.Item.Name}", mainKv),
-                              ("Config", configKv),
-                              ("Agent OS Info", osKv));
-        }
-        else
-        {
-            sw.AddKeyValueRow(($"{d.Item.VmId} - {d.Item.Name}", mainKv),
-                              ("Config", configKv));
+            sw.AddKeyValue("Agent OS Info", osKv);
         }
 
         if (settings.Firewall.Enabled && settings.Guest.Detail.IncludeFirewallLog)

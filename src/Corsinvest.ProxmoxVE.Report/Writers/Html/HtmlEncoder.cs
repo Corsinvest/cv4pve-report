@@ -14,16 +14,16 @@ internal static class HtmlEncoder
     {
         if (string.IsNullOrEmpty(value)) { return ""; }
         var sb = new StringBuilder(value.Length);
-        foreach (var c in value)
+        foreach (var item in value)
         {
-            switch (c)
+            switch (item)
             {
                 case '&': sb.Append("&amp;"); break;
                 case '<': sb.Append("&lt;"); break;
                 case '>': sb.Append("&gt;"); break;
                 case '"': sb.Append("&quot;"); break;
                 case '\'': sb.Append("&#39;"); break;
-                default: sb.Append(c); break;
+                default: sb.Append(item); break;
             }
         }
         return sb.ToString();
@@ -36,33 +36,36 @@ internal static class HtmlEncoder
     public static string PageHref(string sectionName) => Attr(PageFileName(sectionName));
 
     /// <summary>
+    /// <para>
     /// Translates a logical section name into a relative file path inside the report bundle.
     /// Detail pages live under category sub-directories so the root stays clean even with
     /// hundreds of VMs/containers/nodes:
-    ///
+    /// </para>
+    /// <para>
     ///   "Cluster"          → "cluster.html"
     ///   "Node cc01"        → "nodes/cc01.html"
     ///   "VM 100"           → "vms/100.html"
     ///   "CT 200"           → "containers/200.html"
+    /// </para>
     /// </summary>
     public static string PageFileName(string sectionName)
     {
-        // Detail-page routing: peel the prefix and put the rest under a sub-directory.
         if (sectionName.StartsWith("Node ", StringComparison.Ordinal))
         {
             return $"nodes/{Slug(sectionName["Node ".Length..])}.html";
         }
-        if (sectionName.StartsWith("VM ", StringComparison.Ordinal))
+        else if (sectionName.StartsWith("VM ", StringComparison.Ordinal))
         {
             return $"vms/{Slug(sectionName["VM ".Length..])}.html";
         }
-        if (sectionName.StartsWith("CT ", StringComparison.Ordinal))
+        else if (sectionName.StartsWith("CT ", StringComparison.Ordinal))
         {
             return $"containers/{Slug(sectionName["CT ".Length..])}.html";
         }
-
-        // Root-level pages (the section "lists" + cluster + storage + …)
-        return $"{Slug(sectionName)}.html";
+        else
+        {
+            return $"{Slug(sectionName)}.html";
+        }
     }
 
     /// <summary>Number of "../" needed to reach the report root from the page named
@@ -74,12 +77,11 @@ internal static class HtmlEncoder
     private static string Slug(string name)
     {
         var slug = new StringBuilder(name.Length);
-        foreach (var c in name.ToLowerInvariant())
+        foreach (var item in name.ToLowerInvariant())
         {
-            if (char.IsLetterOrDigit(c)) { slug.Append(c); }
-            else if (c == ' ' || c == '_' || c == '/' || c == '\\') { slug.Append('-'); }
-            else if (c == '.' || c == ':') { slug.Append('-'); }
-            // skip everything else
+            if (char.IsLetterOrDigit(item)) { slug.Append(item); }
+            else if (item == ' ' || item == '_' || item == '/' || item == '\\') { slug.Append('-'); }
+            else if (item == '.' || item == ':') { slug.Append('-'); }
         }
         return slug.ToString();
     }

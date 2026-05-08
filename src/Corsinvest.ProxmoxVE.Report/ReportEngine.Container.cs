@@ -142,8 +142,8 @@ public partial class ReportEngine
         using var sw = _writer.AddSection("Containers");
         sw.AddTable(null, items,
                     new TableOptions<dynamic>()
-                        .WithNodeLink<dynamic>(r => (string?)r.Node)
-                        .WithVmIdLink<dynamic>(r => r.VmId is long id ? id : (long?)null));
+                        .WithNodeLink(r => (string?)r.Node)
+                        .WithVmIdLink(r => r.VmId is long id ? id : (long?)null));
 
         return resources.Count;
     }
@@ -151,9 +151,9 @@ public partial class ReportEngine
     private async Task AddContainerDetailAsync(CtFetchData d, ProgressTracker pt)
     {
         var config = d.Config!;
-        using var sw = _writer.AddSection(GetSheetName(ClusterResourceType.Vm, d.Item.VmId.ToString())!);
+        using var sw = _writer.AddSection(new SectionId.Container(d.Item.VmId, d.Item.Name ?? ""));
 
-        sw.AddBackLink("Containers", "list:containers");
+        sw.AddBackLink("Containers", LinkKey.ListContainers());
 
         var mainKv = new Dictionary<string, object?>
         {

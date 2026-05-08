@@ -90,7 +90,7 @@ public partial class ReportEngine
                 SwapUsedGB = ToGB(d.Status?.Swap.Used ?? 0),
 
                 SwapUsagePct = d.Status?.Swap.Total > 0
-                                ? (double)(d.Status.Swap.Used) / d.Status.Swap.Total
+                                ? (double)d.Status.Swap.Used / d.Status.Swap.Total
                                 : (double?)null,
 
                 DiskSizeGB = ToGB(d.Item.DiskSize),
@@ -128,7 +128,7 @@ public partial class ReportEngine
         }
 
         sw.AddTable(null, items,
-                    new TableOptions<dynamic>().WithNodeLink<dynamic>(r => (string?)r.Node));
+                    new TableOptions<dynamic>().WithNodeLink(r => (string?)r.Node));
 
         return filtered.Count;
     }
@@ -136,8 +136,8 @@ public partial class ReportEngine
     private async Task AddNodeDetailAsync(NodeFetchData data, ProgressTracker pt)
     {
         var node = data.Item.Node;
-        using var sw = _writer.AddSection(GetSheetName(ClusterResourceType.Node, node)!);
-        sw.AddBackLink("Nodes", "list:nodes");
+        using var sw = _writer.AddSection(new SectionId.Node(node));
+        sw.AddBackLink("Nodes", LinkKey.ListNodes());
 
         sw.AddKeyValue(node,
                        new Dictionary<string, object?>
@@ -231,7 +231,7 @@ public partial class ReportEngine
             a.Comments6,
         }).ToList();
         sw.AddTable("Network", networkRows,
-                    new TableOptions<dynamic>().WithRowKeys<dynamic>(r => [$"node:{node}:network:{r.Interface}"]));
+                    new TableOptions<dynamic>().WithRowKeys(r => [LinkKey.NodeNetwork(node, (string)r.Interface)]));
 
         var hostsResult = hostsTask.ResultOrDefault();
         sw.AddTable("/etc/hosts",
@@ -449,7 +449,7 @@ public partial class ReportEngine
                                 a.Duration,
                             }).ToList();
             sw.AddTable("Tasks", taskRows,
-                        new TableOptions<dynamic>().WithVmIdLink<dynamic>(r => r.VmId is long id ? id : (long?)null));
+                        new TableOptions<dynamic>().WithVmIdLink(r => r.VmId is long id ? id : (long?)null));
         }
     }
 

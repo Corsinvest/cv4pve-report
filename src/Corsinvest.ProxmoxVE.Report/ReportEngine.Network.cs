@@ -59,7 +59,7 @@ public partial class ReportEngine
         }).ToList();
 
         sw.AddTable(title, rows,
-                    new TableOptions<dynamic>().WithNodeLink<dynamic>(r => (string?)r.Node));
+                    new TableOptions<dynamic>().WithNodeLink(r => (string?)r.Node));
     }
 
     private int WriteNetworkData()
@@ -96,8 +96,8 @@ public partial class ReportEngine
 
         sw.AddTable("VM Networks", vmRows,
                     new TableOptions<dynamic>()
-                        .WithNodeLink<dynamic>(r => (string?)r.Node)
-                        .WithVmIdLink<dynamic>(r => r.VmId is long id ? id : (long?)null));
+                        .WithNodeLink(r => (string?)r.Node)
+                        .WithVmIdLink(r => r.VmId is long id ? id : (long?)null));
 
         return count;
     }

@@ -62,8 +62,8 @@ public partial class ReportEngine
         using var sw = _writer.AddSection("RRD Guests");
         sw.AddTable(null, rows,
                     new TableOptions<dynamic>()
-                        .WithVmIdLink<dynamic>(r => r.VmId is long id ? id : (long?)null)
-                        .WithNodeLink<dynamic>(r => (string?)r.Node));
+                        .WithVmIdLink(r => r.VmId is long id ? id : (long?)null)
+                        .WithNodeLink(r => (string?)r.Node));
 
         return results.Sum(r => r.rows.Count);
     }

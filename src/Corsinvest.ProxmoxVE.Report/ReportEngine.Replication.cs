@@ -58,7 +58,7 @@ public partial class ReportEngine
 
         using var sw = _writer.AddSection("Replication");
         sw.AddTable(null, rows,
-                    new TableOptions<dynamic>().WithReplicationLinks<dynamic>(
+                    new TableOptions<dynamic>().WithReplicationLinks(
                         nodeSelector: r => (string?)r.Node,
                         vmIdSelector: r => long.TryParse((string?)r.VmId, out var id) ? id : (long?)null,
                         sourceSelector: r => (string?)r.Source,

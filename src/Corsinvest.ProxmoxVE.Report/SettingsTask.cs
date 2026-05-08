@@ -25,7 +25,6 @@ public class SettingsTask
     /// </summary>
     public int MaxCount { get; set; }
 
-
     /// <summary>
     /// Task source filter: all, local, active
     /// </summary>

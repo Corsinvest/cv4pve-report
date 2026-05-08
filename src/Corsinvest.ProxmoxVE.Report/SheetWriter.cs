@@ -5,30 +5,17 @@ using DocumentFormat.OpenXml.Spreadsheet;
  */
 
 using ClosedXML.Excel;
-using System.Text.RegularExpressions;
+using Corsinvest.ProxmoxVE.Report.Writers;
 
 namespace Corsinvest.ProxmoxVE.Report;
 
-internal partial class SheetWriter(IXLWorksheet ws, Dictionary<string, string> sheetLinks)
+internal class SheetWriter(IXLWorksheet ws, Dictionary<string, string> sheetLinks)
 {
     private readonly List<(string Title, int Row)> _tableIndex = [];
     private int _indexStartRow;
 
     public int Row { get; set; } = 1;
     public int Col { get; set; } = 1;
-
-    [GeneratedRegex("(?<=[a-z])([A-Z])|(?<=[A-Z])([A-Z][a-z])")]
-    private static partial Regex PascalCaseSplitRegex();
-
-    private static string PascalCaseToWords(string name)
-        => PascalCaseSplitRegex().Replace(name, " $1$2").Trim();
-
-    private static bool IsGB(string name) => name.EndsWith("GB", StringComparison.OrdinalIgnoreCase);
-    private static bool IsMB(string name) => name.EndsWith("MB", StringComparison.OrdinalIgnoreCase);
-    private static bool IsPct(string name) => name.EndsWith("Pct", StringComparison.OrdinalIgnoreCase);
-    private static bool IsWrap(string name) => name.EndsWith("Wrap", StringComparison.OrdinalIgnoreCase);
-    private static bool IsDateOnly(string name) => name.EndsWith("Date", StringComparison.OrdinalIgnoreCase);
-    private static bool IsFlag(string name) => name.EndsWith("Flag", StringComparison.OrdinalIgnoreCase);
 
     public void AdjustColumns() => ws.Columns().AdjustToContents();
 
@@ -73,7 +60,7 @@ internal partial class SheetWriter(IXLWorksheet ws, Dictionary<string, string> s
             }
             else if (key.Equals("Node", StringComparison.OrdinalIgnoreCase) && value is string nodeName)
             {
-                SetHyperlink(valueCell, $"node:{nodeName}");
+                SetHyperlink(valueCell, LinkKey.Node(nodeName));
             }
             Row++;
         }
@@ -141,36 +128,30 @@ internal partial class SheetWriter(IXLWorksheet ws, Dictionary<string, string> s
         foreach (var col in table.Fields)
         {
             var dataCol = table.DataRange.Column(col.Index + 1);
+            var (suffix, displayName) = ColumnNameSuffix.Parse(col.Name);
+            col.HeaderCell.Value = displayName;
 
-            if (IsPct(col.Name))
+            switch (suffix)
             {
-                col.HeaderCell.Value = PascalCaseToWords(col.Name[..^"Pct".Length]) + " %";
-                dataCol.Style.NumberFormat.Format = "0.00%";
-            }
-            else if (IsGB(col.Name) || IsMB(col.Name))
-            {
-                col.HeaderCell.Value = PascalCaseToWords(col.Name);
-                dataCol.Style.NumberFormat.Format = "#,##0.00";
-            }
-            else if (IsWrap(col.Name))
-            {
-                col.HeaderCell.Value = PascalCaseToWords(col.Name[..^"Wrap".Length]);
-                table.Worksheet.Column(dataCol.FirstCell().Address.ColumnNumber).Width = 40;
-                dataCol.Style.Alignment.WrapText = true;
-            }
-            else if (IsFlag(col.Name))
-            {
-                col.HeaderCell.Value = PascalCaseToWords(col.Name[..^"Flag".Length]);
-                dataCol.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-            }
-            else
-            {
-                col.HeaderCell.Value = PascalCaseToWords(col.Name);
+                case ColumnSuffix.Pct:
+                    dataCol.Style.NumberFormat.Format = "0.00%";
+                    break;
+                case ColumnSuffix.GB:
+                case ColumnSuffix.MB:
+                    dataCol.Style.NumberFormat.Format = "#,##0.00";
+                    break;
+                case ColumnSuffix.Wrap:
+                    table.Worksheet.Column(dataCol.FirstCell().Address.ColumnNumber).Width = 40;
+                    dataCol.Style.Alignment.WrapText = true;
+                    break;
+                case ColumnSuffix.Flag:
+                    dataCol.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                    break;
             }
 
             if (dataCol.FirstCell().Value.IsDateTime)
             {
-                dataCol.Style.NumberFormat.Format = IsDateOnly(col.Name)
+                dataCol.Style.NumberFormat.Format = suffix == ColumnSuffix.DateOnly
                     ? "dd/MM/yyyy"
                     : "dd/MM/yyyy HH:mm:ss";
             }
@@ -227,7 +208,7 @@ internal partial class SheetWriter(IXLWorksheet ws, Dictionary<string, string> s
     {
         var col = table.Fields.FirstOrDefault(f => f.Name.Equals(colName, StringComparison.OrdinalIgnoreCase)
                                                     || f.HeaderCell.Value.ToString().Equals(colName, StringComparison.OrdinalIgnoreCase)
-                                                    || f.HeaderCell.Value.ToString().Equals(PascalCaseToWords(colName), StringComparison.OrdinalIgnoreCase));
+                                                    || f.HeaderCell.Value.ToString().Equals(ColumnNameSuffix.PascalCaseToWords(colName), StringComparison.OrdinalIgnoreCase));
         if (col == null) { return; }
 
         foreach (var cell in table.DataRange.Column(col.Index + 1).Cells())
@@ -238,7 +219,7 @@ internal partial class SheetWriter(IXLWorksheet ws, Dictionary<string, string> s
     }
 
     public void ApplyNodeLinks(IXLTable table)
-        => ApplyColumnLinks(table, "Node", cell => $"node:{cell.Value}");
+        => ApplyColumnLinks(table, "Node", cell => LinkKey.Node(cell.Value.ToString()));
 
     public void ApplyVmIdLinks(IXLTable table)
         => ApplyColumnLinks(table, "VmId", cell =>
@@ -254,7 +235,7 @@ internal partial class SheetWriter(IXLWorksheet ws, Dictionary<string, string> s
             }
 
             return id > 0
-                    ? $"vm:{id}"
+                    ? LinkKey.Vm(id)
                     : null;
         });
 
@@ -262,8 +243,8 @@ internal partial class SheetWriter(IXLWorksheet ws, Dictionary<string, string> s
     {
         ApplyNodeLinks(table);
         ApplyVmIdLinks(table);
-        ApplyColumnLinks(table, "Source", cell => $"node:{cell.Value}");
-        ApplyColumnLinks(table, "Target", cell => $"node:{cell.Value}");
+        ApplyColumnLinks(table, "Source", cell => LinkKey.Node(cell.Value.ToString()));
+        ApplyColumnLinks(table, "Target", cell => LinkKey.Node(cell.Value.ToString()));
     }
 
     public void ApplyStorageLinks(IXLTable table)
@@ -271,9 +252,8 @@ internal partial class SheetWriter(IXLWorksheet ws, Dictionary<string, string> s
                             "Storage",
                             cell => string.IsNullOrWhiteSpace(cell.Value.ToString())
                                     ? null
-                                    : "storage:link");
-
+                                    : LinkKey.Storage());
 
     public void RegisterNetworkLinks(IXLTable table, string node)
-        => RegisterRowLinks(table, "Interface", cell => $"node:{node}:network:{cell.Value}");
+        => RegisterRowLinks(table, "Interface", cell => LinkKey.NodeNetwork(node, cell.Value.ToString()));
 }

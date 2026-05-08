@@ -41,84 +41,138 @@
     });
   }
 
-  // --- Per-table filter ---
-  // Inject a small toolbar above each data table with at least 5 rows. The input
-  // narrows the visible rows to those matching the query (case-insensitive).
-  document.querySelectorAll('table.data').forEach(function (table) {
-    var tbody = table.querySelector('tbody');
-    if (!tbody) { return; }
-    var rows = tbody.querySelectorAll('tr');
-    if (rows.length < 5) { return; }
+  // --- Sidebar lazy groups ---
+  // Groups whose children scale with the cluster size (Nodes/VMs/Containers) are
+  // emitted as empty skeletons in the per-page HTML; the actual links live in
+  // `assets/sidebar-data.js` (loaded once and cached) and are injected into the
+  // DOM the first time the user expands the group.
+  function renderLazyGroup(details) {
+    var container = details.querySelector('.group-children');
+    if (!container || container.dataset.loaded === 'true') { return; }
+    var items = (window.__SIDEBAR_DATA__ || {})[details.dataset.group] || [];
+    var html = '';
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i];
+      var href = it.href || '';
+      var label = (it.label || '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      html += '<a href="' + href + '">' + label + '</a>';
+    }
+    container.innerHTML = html;
+    container.dataset.loaded = 'true';
 
-    var toolbar = document.createElement('div');
-    toolbar.className = 'table-toolbar';
+    // Mark the link to the current page using the DOM-resolved `.href` (the
+    // browser already accounts for <base> and file:// origins without emitting
+    // any "Unsafe attempt to load URL" warnings).
+    var currentHref = location.href.split('#')[0].toLowerCase();
+    container.querySelectorAll('a').forEach(function (a) {
+      if (a.href.split('#')[0].toLowerCase() === currentHref) { a.classList.add('active'); }
+    });
 
-    var input = document.createElement('input');
-    input.type = 'search';
-    input.className = 'table-filter';
-    input.placeholder = 'Filter rows…';
-    input.setAttribute('aria-label', 'Filter rows');
+    // Scroll the active link into view so the user immediately sees their
+    // current page within long lists (e.g. VMs with thousands of entries).
+    var active = container.querySelector('a.active');
+    if (active && active.scrollIntoView) {
+      active.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+    }
+  }
 
-    var count = document.createElement('span');
-    count.className = 'table-count';
-    count.textContent = rows.length + ' rows';
-
-    // Count first then input → with the toolbar's justify-content: flex-end the
-    // count sits left of the input, both pushed to the right edge of the toolbar.
-    toolbar.appendChild(count);
-    toolbar.appendChild(input);
-
-    // Insert the toolbar BEFORE the .table-scroll wrapper (or, if the table isn't
-    // wrapped, before the table itself). This keeps the toolbar fixed while the
-    // table inside scrolls horizontally.
-    var anchor = table.closest('.table-scroll') || table;
-    anchor.parentNode.insertBefore(toolbar, anchor);
-
-    input.addEventListener('input', function () {
-      var q = input.value.toLowerCase();
-      var visible = 0;
-      rows.forEach(function (r) {
-        var match = !q || r.textContent.toLowerCase().indexOf(q) !== -1;
-        r.hidden = !match;
-        if (match) { visible++; }
-      });
-      count.textContent = (q ? visible + ' / ' + rows.length : rows.length) + ' rows';
+  document.querySelectorAll('details[data-group]').forEach(function (d) {
+    d.addEventListener('toggle', function () {
+      if (d.open) { renderLazyGroup(d); }
     });
   });
 
-  // --- Sortable tables ---
-  document.querySelectorAll('table.sortable').forEach(function (table) {
-    var headers = table.querySelectorAll('thead th');
-    headers.forEach(function (th, idx) {
-      th.addEventListener('click', function () {
-        var current = th.getAttribute('aria-sort');
-        var asc = current !== 'ascending';
-        headers.forEach(function (h) { h.removeAttribute('aria-sort'); });
-        th.setAttribute('aria-sort', asc ? 'ascending' : 'descending');
+  // Auto-expand the group that owns the current page so the user sees the
+  // surrounding context without an extra click. Mapping is by sub-directory:
+  // /vms/* → "VMs", /containers/* → "Containers", /nodes/* → "Nodes".
+  (function () {
+    var path = location.pathname;
+    var groupName =
+      path.indexOf('/vms/') >= 0 ? 'VMs' :
+      path.indexOf('/containers/') >= 0 ? 'Containers' :
+      path.indexOf('/nodes/') >= 0 ? 'Nodes' : null;
+    if (!groupName) { return; }
+    var d = document.querySelector('details[data-group="' + groupName + '"]');
+    if (d) {
+      d.open = true;
+      renderLazyGroup(d);
+    }
+  })();
 
-        var type = th.dataset.type || 'text';
-        var tbody = table.querySelector('tbody');
-        var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
+  // --- Export standalone HTML ---
+  // exportPage() is self-contained: it lazy-loads `assets/export-data.js` (which
+  // declares window.__REPORT_CSS__ + window.__REPORT_TABLE_JS__ as inlined strings)
+  // the first time it's invoked, then runs the export. Subsequent calls go
+  // straight to the export logic.
+  function exportPage() {
+    if (!window.__REPORT_CSS__ || !window.__REPORT_TABLE_JS__) {
+      var s = document.createElement('script');
+      s.src = 'assets/export-data.js';
+      s.onload = function () {
+        if (window.__REPORT_CSS__ && window.__REPORT_TABLE_JS__) {
+          exportPage();
+        } else {
+          console.error('export-data.js loaded but data is missing');
+        }
+      };
+      s.onerror = function () { console.error('Failed to load assets/export-data.js'); };
+      document.head.appendChild(s);
+      return;
+    }
 
-        rows.sort(function (a, b) {
-          var av = (a.children[idx] && a.children[idx].textContent || '').trim();
-          var bv = (b.children[idx] && b.children[idx].textContent || '').trim();
-          var cmp;
-          if (type === 'number') {
-            cmp = parseFloat(av.replace(/[^\d.\-eE]/g, '')) - parseFloat(bv.replace(/[^\d.\-eE]/g, ''));
-            if (isNaN(cmp)) { cmp = av.localeCompare(bv); }
-          } else if (type === 'date') {
-            cmp = (Date.parse(av) || 0) - (Date.parse(bv) || 0);
-          } else {
-            cmp = av.localeCompare(bv, undefined, { numeric: true });
-          }
-          return asc ? cmp : -cmp;
-        });
+    var main = document.querySelector('main');
+    if (!main) { return; }
 
-        rows.forEach(function (r) { tbody.appendChild(r); });
-      });
+    var clone = main.cloneNode(true);
+    clone.querySelectorAll('.page-actions, .table-toolbar').forEach(function (n) { n.remove(); });
+
+    // Neutralise links that would point to other pages of the report (which don't
+    // exist in a standalone file). Three cases:
+    //   - external (http/https/mailto): keep as-is
+    //   - in-document anchors (#…): keep as-is
+    //   - everything else (relative paths): if href contains a fragment rewrite
+    //     to "#anchor"; otherwise replace the <a> with a plain <span>.
+    clone.querySelectorAll('a[href]').forEach(function (a) {
+      var href = a.getAttribute('href') || '';
+      if (/^(?:[a-z]+:|#)/i.test(href)) { return; }
+      var hashAt = href.indexOf('#');
+      if (hashAt >= 0) {
+        a.setAttribute('href', href.substring(hashAt));
+      } else {
+        var span = document.createElement('span');
+        span.textContent = a.textContent;
+        a.parentNode.replaceChild(span, a);
+      }
     });
-  });
+
+    var theme = document.documentElement.getAttribute('data-theme') || '';
+    var themeAttr = theme ? ' data-theme="' + theme + '"' : '';
+    var html = '<!doctype html>\n<html lang="en"' + themeAttr + '>\n'
+      + '<head>\n  <meta charset="utf-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1">\n'
+      + '  <title>' + document.title + '</title>\n'
+      + '  <style>' + window.__REPORT_CSS__ + '</style>\n'
+      + '</head>\n<body><main>' + clone.innerHTML + '</main>\n'
+      + '<script>' + window.__REPORT_TABLE_JS__ + '</' + 'script>\n'
+      + '</body>\n</html>';
+
+    var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    var fileName = location.pathname.split('/').pop() || 'page.html';
+    a.download = fileName.replace(/\.html?$/, '') + '-standalone.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  var exportBtn = document.getElementById('export-btn');
+  if (exportBtn) { exportBtn.addEventListener('click', exportPage); }
+
+  // Per-table filter + sortable headers live in `assets/table.js` so the same
+  // code can also be embedded inline into the standalone HTML produced by Export.
 
   // --- Sidebar: highlight current page + restore scroll ---
   var sidebar = document.querySelector('aside.sidebar');
@@ -160,18 +214,22 @@
   if (!filter) { return; }
 
   var nav = document.getElementById('sidebar-nav');
-  var items = nav.querySelectorAll('a');
   var groups = nav.querySelectorAll('details');
 
   filter.addEventListener('input', function () {
-    var q = filter.value.toLowerCase();
+    var q = filter.value.trim().toLowerCase();
 
-    items.forEach(function (a) {
-      var match = !q || a.textContent.toLowerCase().indexOf(q) !== -1;
-      a.hidden = !match;
+    // When filtering, make sure lazy groups are populated so their children
+    // are present in the DOM and filterable like any other link.
+    if (q) {
+      nav.querySelectorAll('details[data-group]').forEach(renderLazyGroup);
+    }
+
+    nav.querySelectorAll('a').forEach(function (a) {
+      a.hidden = q && a.textContent.toLowerCase().indexOf(q) === -1;
     });
 
-    // Hide groups that have no visible items
+    // Hide groups that have no visible items, expand those that do.
     groups.forEach(function (g) {
       var visibleCount = 0;
       g.querySelectorAll('a').forEach(function (a) { if (!a.hidden) { visibleCount++; } });
