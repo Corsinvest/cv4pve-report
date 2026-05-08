@@ -25,9 +25,19 @@ public partial class ReportEngine
         pt.Next(item);
 
         pt.Step("Config");
-        var config = item.IsUnknown
+        VmConfigLxc? config;
+        try
+        {
+            config = item.IsUnknown
                         ? null
                         : await client.Nodes[item.Node].Lxc[item.VmId].Config.GetAsync();
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException(
+                $"Failed to read config for CT {item.VmId} on node '{item.Node}' (name: '{item.Name}'). See inner exception for details.",
+                ex);
+        }
 
         var networks = new List<VmNetworkRow>();
         if (config != null)
@@ -132,8 +142,8 @@ public partial class ReportEngine
         using var sw = _writer.AddSection("Containers");
         sw.AddTable(null, items,
                     new TableOptions<dynamic>()
-                        .WithNodeLink<dynamic>(r => (string?)r.Node)
-                        .WithVmIdLink<dynamic>(r => r.VmId is long id ? id : (long?)null));
+                        .WithNodeLink(r => (string?)r.Node)
+                        .WithVmIdLink(r => r.VmId is long id ? id : (long?)null));
 
         return resources.Count;
     }
@@ -141,9 +151,9 @@ public partial class ReportEngine
     private async Task AddContainerDetailAsync(CtFetchData d, ProgressTracker pt)
     {
         var config = d.Config!;
-        using var sw = _writer.AddSection(GetSheetName(ClusterResourceType.Vm, d.Item.VmId.ToString())!);
+        using var sw = _writer.AddSection(new SectionId.Container(d.Item.VmId, d.Item.Name ?? ""));
 
-        sw.AddBackLink("Containers", "list:containers");
+        sw.AddBackLink("Containers", LinkKey.ListContainers());
 
         var mainKv = new Dictionary<string, object?>
         {

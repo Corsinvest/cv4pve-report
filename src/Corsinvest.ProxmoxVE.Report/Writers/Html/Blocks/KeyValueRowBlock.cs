@@ -7,10 +7,6 @@ using System.Text;
 
 namespace Corsinvest.ProxmoxVE.Report.Writers.Html.Blocks;
 
-/// <summary>
-/// A row of key-value blocks rendered side by side using CSS grid.
-/// Mirrors the multi-column key-value layout used in the Excel detail pages.
-/// </summary>
 internal sealed class KeyValueRowBlock(IReadOnlyList<(string Title, IDictionary<string, object?> Items)> blocks) : IBlock
 {
     public string? Title => null;

@@ -31,5 +31,6 @@
     <ItemGroup>
         <EmbeddedResource Include="Writers\Html\Assets\style.css" />
         <EmbeddedResource Include="Writers\Html\Assets\app.js" />
+        <EmbeddedResource Include="Writers\Html\Assets\table.js" />
     </ItemGroup>
 </Project>

@@ -328,6 +328,10 @@ a:hover { text-decoration: underline; }
   text-overflow: ellipsis;
 }
 
+/* Hidden attribute set by the sidebar filter — must override `display: block` above. */
+.sidebar nav a[hidden],
+.sidebar nav details[hidden] { display: none; }
+
 .sidebar nav a:hover {
   background: var(--color-table-hover);
   text-decoration: none;
@@ -352,6 +356,15 @@ a:hover { text-decoration: underline; }
 .sidebar nav a.overview.active {
   background: var(--color-primary);
   color: white;
+}
+
+/* ---------- Lazy sidebar groups (Nodes/VMs/Containers) ---------- */
+
+/* The lazy-injected children container; cap height so very long lists don't
+   push the rest of the sidebar off-screen — scroll inside the group instead. */
+.sidebar nav .group-children {
+  max-height: 22rem;
+  overflow-y: auto;
 }
 
 /* Theme toggle button (top right of sidebar header) */
@@ -420,22 +433,6 @@ main h2 {
 .back-link {
   margin: 0 0 1rem 0;
   font-size: 0.85rem;
-}
-
-/* Breadcrumb above the page title (e.g. "← Nodes" on node-cc01.html). */
-.breadcrumb {
-  margin: 0 0 0.25rem 0;
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
-}
-
-.breadcrumb a {
-  color: inherit;
-  text-decoration: none;
-}
-
-.breadcrumb a:hover {
-  color: var(--color-link);
 }
 
 /* Page-level table of contents — mirrors the per-sheet Index used in Excel.
@@ -671,37 +668,25 @@ table.kv tbody tr:last-child td { border-bottom: none; }
   margin-bottom: 1.5rem;
 }
 
-/* Shared footer style — used by:
-   - .cover-footer (visible at the bottom of the Home page)
-   - .print-footer (hidden on screen, shown only on printed pages)
-*/
-.cover-footer,
+/* Print-only footer (hidden on screen, shown only on printed pages). */
 .print-footer {
   font-style: italic;
   color: var(--color-text-muted);
   line-height: 1.5;
 }
 
-.cover-footer a,
 .print-footer a {
   color: inherit;
   text-decoration: underline;
 }
 
-.cover-footer a:hover,
 .print-footer a:hover {
   color: var(--color-link);
 }
 
-.cover-footer .generated-at,
 .print-footer .generated-at {
   font-style: normal;
   font-variant-numeric: tabular-nums;
-}
-
-.cover-footer {
-  margin-top: 2rem;
-  font-size: 0.85rem;
 }
 
 .print-footer {
@@ -733,6 +718,49 @@ table.kv tbody tr:last-child td { border-bottom: none; }
 
 .diagram-frame:hover {
   box-shadow: var(--shadow-8);
+}
+
+/* ---------- Page header (h1 + actions on detail pages) ---------- */
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+}
+
+.page-header h1 {
+  margin: 0;
+  flex: 1;
+}
+
+.page-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.page-action {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-table);
+  color: var(--color-text);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.page-action:hover {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+@media print {
+  .page-actions { display: none; }
 }
 
 /* ---------- Back to top button ---------- */

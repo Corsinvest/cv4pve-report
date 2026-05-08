@@ -3,17 +3,18 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
+using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Text.RegularExpressions;
 using Corsinvest.ProxmoxVE.Api;
 using Corsinvest.ProxmoxVE.Api.Extension;
+using Corsinvest.ProxmoxVE.Api.Extension.Utils;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Node;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Storage;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Vm;
 using Corsinvest.ProxmoxVE.Report.Writers;
 using Corsinvest.ProxmoxVE.Report.Writers.Xlsx;
-using System.Collections.Concurrent;
-using System.Diagnostics;
-using System.Text.RegularExpressions;
 
 namespace Corsinvest.ProxmoxVE.Report;
 
@@ -63,13 +64,12 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
             ? name
             : null;
 
-
     internal static string SheetLinkKey(ClusterResourceType type, params string[] values)
         => $"{type.ToString().ToLowerInvariant()}:{values.JoinAsString(":")}";
 
     private async Task LoadResourcesAsync()
     {
-        _resources = [.. (await client.GetResourcesAsync(ClusterResourceType.All))];
+        _resources = [.. await client.GetResourcesAsync(ClusterResourceType.All)];
         _resources.CalculateHostUsage();
 
         _resourcesByVmId = _resources.Where(r => r.VmId > 0)
@@ -86,10 +86,10 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
 
         _storageConfigs = await client.Storage.GetAsync();
 
-        _writer.Links["storage:link"] = "Storages";
-        _writer.Links["list:nodes"] = "Nodes";
-        _writer.Links["list:vms"] = "VMs";
-        _writer.Links["list:containers"] = "Containers";
+        _writer.Links[LinkKey.Storage()] = "Storages";
+        _writer.Links[LinkKey.ListNodes()] = "Nodes";
+        _writer.Links[LinkKey.ListVms()] = "VMs";
+        _writer.Links[LinkKey.ListContainers()] = "Containers";
 
         foreach (var item in _resources)
         {
@@ -128,7 +128,6 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
 
     private void ReportGlobal(string step)
         => _progress?.Report(new ReportProgress { Step = step });
-
 
     private async Task WriteReportAsync(ReportFormat format, Stream stream)
     {
@@ -202,10 +201,10 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
     internal static string VmTypeLabel(string? type)
         => string.Equals(type, "qemu", StringComparison.OrdinalIgnoreCase) ? "VM" : "CT";
 
-    private async Task<TResult[]> RunParallelAsync<T, TResult>(IEnumerable<T> source, Func<T, Task<TResult>> func)
+    private Task<TResult[]> RunParallelAsync<T, TResult>(IEnumerable<T> source, Func<T, Task<TResult>> func)
     {
         var semaphore = new SemaphoreSlim(settings.MaxParallelRequests);
-        return await Task.WhenAll(source.Select(async item =>
+        return Task.WhenAll(source.Select(async item =>
         {
             await semaphore.WaitAsync();
             try { return await func(item); }
@@ -288,6 +287,18 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
                            a.Duration
                        }).ToList();
         sw.AddTable("Tasks", rows);
+    }
+
+    private void BuildAndStoreNetworkDiagramSvg()
+    {
+        NetworkDiagramSvg = NetworkDiagramBuilder.BuildSvg(
+            _pendingNodeNetworkRows.Select(r => new NetworkDiagramBuilder.NodeNetworkRow(r.Node, r.Network)),
+            _pendingNetworkRows.Select(r => new NetworkDiagramBuilder.VmNetworkRow(r.VmId, r.Name, r.Node, r.Type, r.Status, r.Hostname, r.Network, r.IsInternal)),
+            _storageConfigs,
+            new NetworkDiagramBuilder.DiagramInfo(info.ApplicationName, info.ApplicationUrl, info.ApplicationVersion));
+
+        _pendingNodeNetworkRows.Clear();
+        _pendingNetworkRows.Clear();
     }
 
     private static void AddLogs(ISectionWriter sw, string title, IEnumerable<string>? logs)

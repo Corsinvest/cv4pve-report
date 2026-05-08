@@ -65,9 +65,9 @@ public partial class ReportEngine
         using var sw = _writer.AddSection("Disks");
         sw.AddTable(null, rows,
                     new TableOptions<dynamic>()
-                        .WithNodeLink<dynamic>(r => (string?)r.Node)
-                        .WithVmIdLink<dynamic>(r => r.VmId is long id ? id : (long?)null)
-                        .WithStorageLink<dynamic>(r => (string?)r.Storage));
+                        .WithNodeLink(r => (string?)r.Node)
+                        .WithVmIdLink(r => r.VmId is long id ? id : (long?)null)
+                        .WithStorageLink(r => (string?)r.Storage));
 
         _pendingDiskRows.Clear();
 

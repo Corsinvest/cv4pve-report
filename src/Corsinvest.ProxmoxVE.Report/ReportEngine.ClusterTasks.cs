@@ -30,7 +30,7 @@ public partial class ReportEngine
                         EndTime = a.EndTimeDate,
                         a.Duration,
                     }),
-                    new TableOptions<dynamic>().WithNodeLink<dynamic>(r => (string?)r.Node));
+                    new TableOptions<dynamic>().WithNodeLink(r => (string?)r.Node));
 
         return tasks.Count;
     }

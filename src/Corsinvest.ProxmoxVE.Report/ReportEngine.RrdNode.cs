@@ -59,7 +59,7 @@ public partial class ReportEngine
 
         using var sw = _writer.AddSection("RRD Nodes");
         sw.AddTable(null, rows,
-                    new TableOptions<dynamic>().WithNodeLink<dynamic>(r => (string?)r.Node));
+                    new TableOptions<dynamic>().WithNodeLink(r => (string?)r.Node));
 
         return results.Sum(r => r.rows.Count);
     }

@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
+using System.Text.Json;
 using Corsinvest.ProxmoxVE.Api.Console.Helpers;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Common;
 using Corsinvest.ProxmoxVE.Report;
 using Microsoft.Extensions.Logging;
-using System.Text.Json;
 
 const string settingsFileName = "settings.json";
 

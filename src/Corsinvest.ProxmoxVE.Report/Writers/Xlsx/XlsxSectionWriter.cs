@@ -7,11 +7,6 @@ using ClosedXML.Excel;
 
 namespace Corsinvest.ProxmoxVE.Report.Writers.Xlsx;
 
-/// <summary>
-/// Section writer that materializes content into an Excel sheet via the
-/// existing <see cref="SheetWriter"/> engine. Thin adapter that translates
-/// format-agnostic ISectionWriter calls into ClosedXML.
-/// </summary>
 internal sealed class XlsxSectionWriter(SheetWriter inner) : ISectionWriter
 {
     /// <summary>Underlying SheetWriter (exposed for migration of callers that still need direct ClosedXML access).</summary>
@@ -27,8 +22,6 @@ internal sealed class XlsxSectionWriter(SheetWriter inner) : ISectionWriter
     {
         if (blocks.Length == 0) { return; }
 
-        // Render each block at the same starting row but at increasing column offsets,
-        // mirroring the original side-by-side layout used by the detail pages.
         const int colsPerBlock = 3; // key column + value column + 1 spacer
         var startRow = Inner.Row;
         var maxRowAfter = startRow;
@@ -90,11 +83,9 @@ internal sealed class XlsxSectionWriter(SheetWriter inner) : ISectionWriter
     {
         if (rowKeys == null) { return; }
 
-        // For each row, register every key returned by the mapper against that row's address.
-        // We bypass SheetWriter.RegisterRowLinks (which is column-keyed) because we need
-        // arbitrary multi-key registration per row.
+        // SheetWriter.RegisterRowLinks is column-keyed; here we need arbitrary multi-key per row.
         var firstDataRow = table.DataRange.FirstRow().RowNumber();
-        for (int i = 0; i < rows.Count; i++)
+        for (var i = 0; i < rows.Count; i++)
         {
             var rowNumber = firstDataRow + i;
             foreach (var key in rowKeys(rows[i]))

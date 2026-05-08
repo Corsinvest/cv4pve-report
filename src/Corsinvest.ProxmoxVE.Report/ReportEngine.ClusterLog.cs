@@ -18,7 +18,6 @@ public partial class ReportEngine
                                                             ? settings.Cluster.Log.MaxCount
                                                             : null)).ToList();
 
-
         using var sw = _writer.AddSection("Cluster Log");
         sw.AddTable(null,
                     logs.ConvertAll(a => new
@@ -30,7 +29,7 @@ public partial class ReportEngine
                         a.Service,
                         a.Message,
                     }),
-                    new TableOptions<dynamic>().WithNodeLink<dynamic>(r => (string?)r.Node));
+                    new TableOptions<dynamic>().WithNodeLink(r => (string?)r.Node));
 
         return logs.Count;
     }

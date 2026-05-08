@@ -42,8 +42,8 @@ public partial class ReportEngine
         using var sw = _writer.AddSection("RRD Storage");
         sw.AddTable(null, rows,
                     new TableOptions<dynamic>()
-                        .WithNodeLink<dynamic>(r => (string?)r.Node)
-                        .WithStorageLink<dynamic>(r => (string?)r.Storage));
+                        .WithNodeLink(r => (string?)r.Node)
+                        .WithStorageLink(r => (string?)r.Storage));
 
         return results.Sum(r => r.rows.Count);
     }

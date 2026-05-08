@@ -24,10 +24,14 @@ internal interface IReportWriter : IDisposable
     void SetMetadata(ReportInfo info);
 
     /// <summary>
-    /// Adds a new section to the report and returns its writer.
-    /// In Excel a section becomes a sheet; in HTML a separate page.
+    /// Adds a new section to the report and returns its writer. In Excel a section
+    /// becomes a sheet; in HTML a separate page. Each writer derives its user-facing
+    /// label from the concrete <see cref="SectionId"/> subtype.
     /// </summary>
-    ISectionWriter AddSection(string name);
+    ISectionWriter AddSection(SectionId id);
+
+    /// <summary>Convenience overload for plain top-level sections (no extra metadata).</summary>
+    ISectionWriter AddSection(string name) => AddSection(new SectionId.Plain(name));
 
     /// <summary>
     /// Writes the cover/summary page for the report. Each format renders it natively

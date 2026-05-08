@@ -7,10 +7,6 @@ using ClosedXML.Excel;
 
 namespace Corsinvest.ProxmoxVE.Report.Writers.Xlsx;
 
-/// <summary>
-/// Top-level writer that builds an Excel workbook through ISectionWriter calls.
-/// Produces a single .xlsx on SaveAsync.
-/// </summary>
 internal sealed partial class XlsxReportWriter : IReportWriter
 {
     private readonly XLWorkbook _workbook = new();
@@ -39,13 +35,20 @@ internal sealed partial class XlsxReportWriter : IReportWriter
         _workbook.Properties.Company = "Corsinvest Srl";
     }
 
-    public ISectionWriter AddSection(string name)
+    public ISectionWriter AddSection(SectionId id)
     {
-        var safeName = SafeSheetName(name);
+        var sheetName = id switch
+        {
+            SectionId.Node n => $"Node {n.Hostname}",
+            SectionId.Vm v => $"VM {v.Id}",
+            SectionId.Container c => $"CT {c.Id}",
+            _ => id.Key,
+        };
+        var safeName = SafeSheetName(sheetName);
 
         // Update any sheetLink that still points to the logical name to the
         // actual safe name (mirrors the existing behaviour in ReportEngine).
-        foreach (var key in _sheetLinks.Where(kv => kv.Value == name).Select(kv => kv.Key).ToList())
+        foreach (var key in _sheetLinks.Where(kv => kv.Value == id.Key).Select(kv => kv.Key).ToList())
         {
             _sheetLinks[key] = safeName;
         }

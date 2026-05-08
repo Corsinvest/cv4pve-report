@@ -51,7 +51,6 @@ public partial class ReportEngine
                         a.NodeId,
                     }));
 
-        // Fetch all independent data in parallel
         ReportGlobal("Cluster: Fetching data");
 
         var optionsTask = client.Cluster.Options.GetAsync();
@@ -99,7 +98,6 @@ public partial class ReportEngine
 
         await Task.WhenAll(waitTasks);
 
-        // --- Write tables ---
         ReportGlobal("Cluster: Options");
         sw.AddTable("Options",
                     [new
@@ -237,7 +235,7 @@ public partial class ReportEngine
             a.RemoveJob,
         }).ToList();
         sw.AddTable("Replication", replicationRows,
-                    new TableOptions<dynamic>().WithReplicationLinks<dynamic>(
+                    new TableOptions<dynamic>().WithReplicationLinks(
                         nodeSelector: r => null,                  // Replication has no Node column
                         vmIdSelector: r => r.Guest is long g ? g : (long?)null,
                         sourceSelector: r => (string?)r.Source,
@@ -379,9 +377,9 @@ public partial class ReportEngine
         })).ToList();
         sw.AddTable("Pools", poolRows,
                     new TableOptions<dynamic>()
-                        .WithNodeLink<dynamic>(r => (string?)r.Node)
-                        .WithVmIdLink<dynamic>(r => r.VmId is long id ? id : (long?)null)
-                        .WithStorageLink<dynamic>(r => (string?)r.Storage));
+                        .WithNodeLink(r => (string?)r.Node)
+                        .WithVmIdLink(r => r.VmId is long id ? id : (long?)null)
+                        .WithStorageLink(r => (string?)r.Storage));
 
         ReportGlobal("Cluster: HA");
         sw.AddTable("HA Resources",

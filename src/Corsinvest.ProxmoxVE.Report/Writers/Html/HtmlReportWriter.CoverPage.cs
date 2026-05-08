@@ -59,8 +59,6 @@ internal sealed partial class HtmlReportWriter
                     </table>
                   </section>
 
-                  <p class="cover-footer">{{RenderGeneratedBy()}}</p>
-
             """;
     }
 

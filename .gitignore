@@ -3,6 +3,12 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# Generated reports (output of `dotnet run` from the Console project)
+Report_*/
+Report_*.zip
+Report_*.xlsx
+Report_*.svg
+
 # User-specific files
 *.suo
 *.user

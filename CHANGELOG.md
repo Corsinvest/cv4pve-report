@@ -2,6 +2,25 @@
 
 ---
 
+## [2.0.0] — 2026-05-08
+
+### What's new
+
+- **HTML output** — pick `--format Html` at the command line to get the report as a self-contained zipped website. Extract the zip and open `index.html` in any browser — works fully offline, no server needed. Built for large clusters (tested with **2700+ VMs**), with a sidebar to navigate every node/VM/container, click-to-sort and per-table search, light/dark theme, and an **Export** button on every detail page that lets you share a single page as a stand-alone file (ready to email, paste into a ticket or drop on a wiki). The Excel output (`--format Xlsx`, the default) is unchanged.
+
+### Fixes
+
+- **Reports no longer crash on VMs with empty cloud-init values** — a VM whose config has an empty `cicustom: ` field used to abort the whole report. The failing VM is now skipped cleanly. Thanks @janrenard for the report (#24).
+- **Reports no longer crash on user accounts with very long expiration dates** — accounts set to expire after the year 2038 caused the report to fail. All time-based fields (account expiry, scheduled next run, replication times, RRD timestamps, cluster log time…) now handle dates well into the future. Thanks @LordXearo for the report (#25).
+- **Reports no longer crash when the firewall log is empty** — an empty firewall log used to abort the report. Empty logs (firewall, system journal, task log, replication log) now produce an empty section instead. Thanks @LordXearo for the report (#26).
+- **Clearer error messages** — when a VM or container config fails to load, the error now identifies the offending guest (id, node and name) instead of a bare crash.
+
+### Documentation
+
+- README reorganised with a dedicated **Output Formats** section: Excel and HTML side-by-side, so you can pick the one that fits your workflow at a glance.
+
+---
+
 ## [1.8.1] — 2026-05-04
 
 ### Fixes

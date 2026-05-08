@@ -50,8 +50,8 @@ public partial class ReportEngine
         using var sw = _writer.AddSection("Partitions");
         sw.AddTable(null, rows,
                     new TableOptions<dynamic>()
-                        .WithNodeLink<dynamic>(r => (string?)r.Node)
-                        .WithVmIdLink<dynamic>(r => r.VmId is long id ? id : (long?)null));
+                        .WithNodeLink(r => (string?)r.Node)
+                        .WithVmIdLink(r => r.VmId is long id ? id : (long?)null));
 
         _pendingPartitionRows.Clear();
 
