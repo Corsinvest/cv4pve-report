@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
+using System.Text;
+
 namespace Corsinvest.ProxmoxVE.Report.Writers.Html;
 
 internal sealed partial class HtmlReportWriter
@@ -21,7 +23,7 @@ internal sealed partial class HtmlReportWriter
     {
         var sectionNames = _sections.Select(s => s.Name).ToHashSet();
         var displayNames = _sections.ToDictionary(s => s.Name, s => s.DisplayName);
-        var sb = new System.Text.StringBuilder();
+        var sb = new StringBuilder();
 
         sb.Append("""
                 <aside class="sidebar">
@@ -68,9 +70,9 @@ internal sealed partial class HtmlReportWriter
     /// expansion (no navigation). The first child is "Overview" — a link to the
     /// parent page (e.g. storages.html). Subsequent children are the detail pages.
     /// </summary>
-    private static void AppendGroup(System.Text.StringBuilder sb,
+    private static void AppendGroup(StringBuilder sb,
                                     HashSet<string> known,
-                                    IDictionary<string, string> displayNames,
+                                    Dictionary<string, string> displayNames,
                                     string parent,
                                     IReadOnlyList<string> children,
                                     string? parentLabel = null)
@@ -103,7 +105,7 @@ internal sealed partial class HtmlReportWriter
     /// Renders a synthetic group: the summary is text only (not a link), children below.
     /// Used for "Performance" which has no overview page of its own.
     /// </summary>
-    private static void AppendSyntheticGroup(System.Text.StringBuilder sb,
+    private static void AppendSyntheticGroup(StringBuilder sb,
                                              HashSet<string> known,
                                              string label,
                                              IReadOnlyList<string> children)
@@ -121,7 +123,7 @@ internal sealed partial class HtmlReportWriter
     }
 
     /// <summary>Single-page section rendered as a flat link (no expand/collapse).</summary>
-    private static void AppendFlat(System.Text.StringBuilder sb, HashSet<string> known, string name)
+    private static void AppendFlat(StringBuilder sb, HashSet<string> known, string name)
     {
         if (!known.Contains(name)) { return; }
         sb.AppendLine($"""        <a href="{HtmlEncoder.PageHref(name)}">{HtmlEncoder.Text(name)}</a>""");
@@ -142,7 +144,7 @@ internal sealed partial class HtmlReportWriter
     /// scales with the cluster (Nodes/VMs/Containers) to avoid duplicating thousands
     /// of links in every page.
     /// </summary>
-    private static void AppendLazyGroup(System.Text.StringBuilder sb,
+    private static void AppendLazyGroup(StringBuilder sb,
                                         HashSet<string> known,
                                         string parent,
                                         IReadOnlyList<string> children)
@@ -183,7 +185,7 @@ internal sealed partial class HtmlReportWriter
             ("Containers", sectionNames.Where(n => n.StartsWith("CT ")).OrderBy(VmIdSortKey)),
         };
 
-        var sb = new System.Text.StringBuilder();
+        var sb = new StringBuilder();
         sb.AppendLine("window.__SIDEBAR_DATA__ = {");
 
         for (var gi = 0; gi < groups.Length; gi++)
@@ -210,5 +212,8 @@ internal sealed partial class HtmlReportWriter
     }
 
     private static string JsString(string s)
-        => s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "");
+        => s.Replace("\\", "\\\\")
+            .Replace("\"", "\\\"")
+            .Replace("\n", "\\n")
+            .Replace("\r", "");
 }

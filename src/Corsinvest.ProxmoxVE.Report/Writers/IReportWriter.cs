@@ -15,7 +15,7 @@ internal interface IReportWriter : IDisposable
     /// Cross-section link table. Sections register entries (e.g. "node:cc01" → "Node cc01")
     /// to enable hyperlinks across the report. Owned by the writer, shared with all sections.
     /// </summary>
-    IDictionary<string, string> Links { get; }
+    Dictionary<string, string> Links { get; }
 
     /// <summary>
     /// Sets report metadata (author, title, version, etc.).

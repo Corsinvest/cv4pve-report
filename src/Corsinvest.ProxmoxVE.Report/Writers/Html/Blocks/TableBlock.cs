@@ -38,7 +38,7 @@ internal sealed class TableBlock<T> : IBlock
     public string AnchorId { get; } = $"table-{Guid.NewGuid():N}";
     string? IBlock.AnchorId => Title == null ? null : AnchorId;
 
-    public void Render(StringBuilder sb, IDictionary<string, string> links)
+    public void Render(StringBuilder sb, Dictionary<string, string> links)
     {
         var headers = string.Concat(_columns.Select(RenderHeader));
         var body = string.Concat(_rows.Select(r => RenderRow(r, links)));
@@ -69,13 +69,13 @@ internal sealed class TableBlock<T> : IBlock
         return $"<th{dataType}>{HtmlEncoder.Text(col.DisplayName)}</th>";
     }
 
-    private string RenderRow(T row, IDictionary<string, string> links)
+    private string RenderRow(T row, Dictionary<string, string> links)
     {
         var cells = string.Concat(_columns.Select(col => RenderCell(row, col, links)));
         return $"      <tr>{cells}</tr>{Environment.NewLine}";
     }
 
-    private string RenderCell(T row, ColumnInfo col, IDictionary<string, string> links)
+    private string RenderCell(T row, ColumnInfo col, Dictionary<string, string> links)
     {
         var value = col.Property.GetValue(row);
         var classAttr = ClassFor(col.Kind);

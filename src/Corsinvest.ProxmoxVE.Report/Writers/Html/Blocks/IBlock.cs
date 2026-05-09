@@ -11,5 +11,5 @@ internal interface IBlock
 {
     string? Title { get; }
     string? AnchorId { get; }
-    void Render(StringBuilder sb, IDictionary<string, string> links);
+    void Render(StringBuilder sb, Dictionary<string, string> links);
 }

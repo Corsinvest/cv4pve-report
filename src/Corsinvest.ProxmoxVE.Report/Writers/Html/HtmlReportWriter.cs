@@ -11,25 +11,20 @@ namespace Corsinvest.ProxmoxVE.Report.Writers.Html;
 
 internal sealed partial class HtmlReportWriter : IReportWriter
 {
-    private readonly Dictionary<string, string> _links = [];
     private readonly List<HtmlSectionWriter> _sections = [];
     private readonly DateTime _generatedAt = DateTime.Now;
     private string _coverHtml = "";
     private string? _networkDiagramSvg;
     private ReportInfo? _info;
 
-    public IDictionary<string, string> Links => _links;
-
-    /// <summary>List of sections in insertion order, used to build the sidebar.</summary>
-    internal IReadOnlyList<HtmlSectionWriter> Sections => _sections;
+    public Dictionary<string, string> Links { get; } = [];
 
     public void SetMetadata(ReportInfo info) => _info = info;
-
     public void SetNetworkDiagram(string svg) => _networkDiagramSvg = svg;
 
     public ISectionWriter AddSection(SectionId id)
     {
-        _links[id.Key] = id.Key;
+        Links[id.Key] = id.Key;
 
         var displayName = id switch
         {
