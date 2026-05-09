@@ -7,4 +7,10 @@ using ClosedXML.Excel;
 
 namespace Corsinvest.ProxmoxVE.Report.Writers.Xlsx;
 
-internal sealed record XlsxTableHandle(string Title, IXLTable Table) : ITableHandle;
+internal sealed class XlsxTableHandle(string title) : ITableHandle
+{
+    public string Title { get; } = title;
+
+    /// <summary>Set when the buffered <c>AddTable</c> action is replayed at <see cref="XlsxSectionWriter.Dispose"/>.</summary>
+    public IXLTable? Table { get; set; }
+}

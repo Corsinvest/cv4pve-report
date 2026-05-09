@@ -10,13 +10,9 @@ namespace Corsinvest.ProxmoxVE.Report.Writers.Xlsx;
 internal sealed partial class XlsxReportWriter : IReportWriter
 {
     private readonly XLWorkbook _workbook = new();
-    private readonly Dictionary<string, string> _sheetLinks = [];
     private readonly Dictionary<string, int> _usedSheetNames = [];
 
-    public IDictionary<string, string> Links => _sheetLinks;
-
-    /// <summary>Underlying workbook for Excel-specific callers (cover page, etc.).</summary>
-    public XLWorkbook Workbook => _workbook;
+    public Dictionary<string, string> Links { get; } = [];
 
     /// <summary>Excel hard limit on sheet name length.</summary>
     public const int MaxSheetNameLength = 31;
@@ -48,13 +44,13 @@ internal sealed partial class XlsxReportWriter : IReportWriter
 
         // Update any sheetLink that still points to the logical name to the
         // actual safe name (mirrors the existing behaviour in ReportEngine).
-        foreach (var key in _sheetLinks.Where(kv => kv.Value == id.Key).Select(kv => kv.Key).ToList())
+        foreach (var key in Links.Where(kv => kv.Value == id.Key).Select(kv => kv.Key).ToList())
         {
-            _sheetLinks[key] = safeName;
+            Links[key] = safeName;
         }
 
         var ws = _workbook.Worksheets.Add(safeName);
-        var sheet = new SheetWriter(ws, _sheetLinks);
+        var sheet = new SheetWriter(ws, Links);
         return new XlsxSectionWriter(sheet);
     }
 

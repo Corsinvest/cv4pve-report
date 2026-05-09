@@ -72,30 +72,39 @@ internal class SheetWriter(IXLWorksheet ws, Dictionary<string, string> sheetLink
         Row++; // empty row
     }
 
-    /// <summary>Reserves rows for the index (saved internally) and advances Row.</summary>
+    /// <summary>Reserves rows for the 2-column index (saved internally) and advances Row.</summary>
     public void ReserveIndexRows(int tableCount)
     {
+        if (tableCount == 0) { return; }
         _indexStartRow = Row;
-        Row += tableCount + 2;
+        Row += IndexRowsFor(tableCount);
     }
 
-    /// <summary>Writes the index at the previously reserved rows.</summary>
+    /// <summary>Reserved-rows count matching the 2-column index layout in <see cref="WriteIndex"/>.</summary>
+    public static int IndexRowsFor(int tableCount) => tableCount == 0 ? 0 : ((tableCount + 1) / 2) + 2;
+
+    /// <summary>Writes the index at the previously reserved rows. Layout: header on row r, then entries in 2 columns (A and C).</summary>
     public void WriteIndex()
     {
-        if (_indexStartRow == 0) { return; }
+        if (_indexStartRow == 0 || _tableIndex.Count == 0) { return; }
         var r = _indexStartRow;
         var c = Col;
         ws.Cell(r, c).Value = "Index";
         ws.Cell(r, c).Style.Font.SetBold(true);
         ws.Cell(r, c).Style.Font.SetFontSize(12);
         r++;
-        foreach (var (tblTitle, tblRow) in _tableIndex)
+
+        var rowsPerColumn = (_tableIndex.Count + 1) / 2;
+        for (var i = 0; i < _tableIndex.Count; i++)
         {
-            ws.Cell(r, c).Value = tblTitle;
-            ws.Cell(r, c).Style.Font.SetUnderline(XLFontUnderlineValues.Single);
-            ws.Cell(r, c).Style.Font.SetFontColor(XLColor.Blue);
-            ws.Cell(r, c).SetHyperlink(new XLHyperlink($"'{ws.Name}'!A{tblRow}"));
-            r++;
+            var (tblTitle, tblRow) = _tableIndex[i];
+            var cellRow = r + (i % rowsPerColumn);
+            var cellCol = c + (i / rowsPerColumn);
+            var cell = ws.Cell(cellRow, cellCol);
+            cell.Value = tblTitle;
+            cell.Style.Font.SetUnderline(XLFontUnderlineValues.Single);
+            cell.Style.Font.SetFontColor(XLColor.Blue);
+            cell.SetHyperlink(new XLHyperlink($"'{ws.Name}'!A{tblRow}"));
         }
     }
 

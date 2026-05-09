@@ -68,7 +68,7 @@ internal sealed partial class XlsxReportWriter
 
         var sections = new List<(string, string)>();
 
-        if (settings.Cluster.IncludeSheet)
+        if (settings.Cluster.Include)
         {
             sections.Add(("Cluster", "Cluster overview, users, roles, ACL, firewall, backup jobs"));
         }
@@ -77,17 +77,17 @@ internal sealed partial class XlsxReportWriter
         sections.Add(("VMs", "Virtual machines (QEMU) with agent info, OS name/version/kernel, bios, cpu, memory and disk details"));
         sections.Add(("Containers", "LXC containers with hostname, swap, nameserver and privilege details"));
 
-        if (settings.Guest.IncludeDisksSheet)
+        if (settings.Guest.IncludeDisks)
         {
             sections.Add(("Disks", "Global disk inventory: VM/CT disk configuration"));
         }
 
-        if (settings.Guest.IncludePartitionsSheet && settings.Guest.IncludeQemuAgent)
+        if (settings.Guest.IncludePartitions && settings.Guest.IncludeQemuAgent)
         {
             sections.Add(("Partitions", "Guest filesystem partitions with used/total space from QEMU agent"));
         }
 
-        if (settings.Guest.IncludeSnapshotsSheet)
+        if (settings.Guest.IncludeSnapshots)
         {
             sections.Add(("Snapshots", "Global snapshot inventory across all VMs and containers"));
         }
@@ -95,12 +95,12 @@ internal sealed partial class XlsxReportWriter
         sections.Add(("Network", "Global network overview: node interfaces and VM/CT network inventory"));
         sections.Add(("Storages", "Storage list with size, usage and type"));
 
-        if (settings.Storage.IncludeContentSheet)
+        if (settings.Storage.IncludeContent)
         {
             sections.Add(("Storage Content", "Storage content inventory (ISO, templates, disk images — excludes backups)"));
         }
 
-        if (settings.Storage.IncludeBackupsSheet)
+        if (settings.Storage.IncludeBackups)
         {
             sections.Add(("Backups", "Backup inventory across all storages with protection, encryption and verification status"));
         }
@@ -110,7 +110,7 @@ internal sealed partial class XlsxReportWriter
             sections.Add(("Firewall", "Global firewall rules, aliases and IPSets across cluster, nodes, VMs and containers"));
         }
 
-        if (settings.Node.IncludeReplicationSheet)
+        if (settings.Node.IncludeReplication)
         {
             sections.Add(("Replication", "Global replication status across all nodes: last sync, next sync, errors and duration"));
         }
@@ -140,7 +140,7 @@ internal sealed partial class XlsxReportWriter
             sections.Add(("Cluster Log", "Cluster log with user, node, service and message"));
         }
 
-        if (settings.Cluster.IncludeTasksSheet)
+        if (settings.Cluster.IncludeTasks)
         {
             sections.Add(("Cluster Tasks", "All recent tasks across the cluster with status, duration and node"));
         }
