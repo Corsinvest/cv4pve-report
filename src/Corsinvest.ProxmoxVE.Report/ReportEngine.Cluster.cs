@@ -13,7 +13,7 @@ public partial class ReportEngine
 {
     private async Task<int> AddClusterDataAsync()
     {
-        if (!settings.Cluster.IncludeSheet) { return 0; }
+        if (!settings.Cluster.Include) { return 0; }
 
         using var sw = _writer.AddSection("Cluster");
 

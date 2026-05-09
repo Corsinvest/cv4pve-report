@@ -34,8 +34,8 @@ public partial class ReportEngine
                         DiskUsagePct = a.DiskUsagePercentage,
                     }),
                     new TableOptions<dynamic>()
-                        .WithNodeLink<dynamic>(r => (string?)r.Node)
-                        .WithStorageLink<dynamic>(r => (string?)r.Storage));
+                        .WithNodeLink(r => (string?)r.Node)
+                        .WithStorageLink(r => (string?)r.Storage));
 
         return Task.FromResult(filtered.Count);
     }

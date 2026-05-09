@@ -15,7 +15,7 @@ public partial class ReportEngine
     private void AppendPartitionRows(ClusterResource vm,
                                      IEnumerable<VmQemuAgentGetFsInfo.ResultInfo> partitions)
     {
-        if (!settings.Guest.IncludePartitionsSheet) { return; }
+        if (!settings.Guest.IncludePartitions) { return; }
         _pendingPartitionRows.Add((vm, partitions));
     }
 

@@ -6,12 +6,12 @@
 namespace Corsinvest.ProxmoxVE.Report;
 
 /// <summary>
-/// Per-node detail sheet settings
+/// Per-node detail settings
 /// </summary>
 public class SettingsNodeDetail
 {
     /// <summary>
-    /// Enable detail sheets
+    /// Enable per-node detail section
     /// </summary>
     public bool Enabled { get; set; } = true;
 
@@ -31,7 +31,7 @@ public class SettingsNodeDetail
     public bool IncludeApt { get; set; } = true;
 
     /// <summary>
-    /// Include firewall log sheet
+    /// Include firewall log
     /// </summary>
     public bool IncludeFirewallLog { get; set; } = true;
 

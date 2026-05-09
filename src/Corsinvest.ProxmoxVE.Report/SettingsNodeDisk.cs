@@ -6,7 +6,7 @@
 namespace Corsinvest.ProxmoxVE.Report;
 
 /// <summary>
-/// Disk-related settings for node detail sheet
+/// Disk-related settings for node detail
 /// </summary>
 public class SettingsNodeDisk
 {

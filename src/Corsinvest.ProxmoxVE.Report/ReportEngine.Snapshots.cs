@@ -13,7 +13,7 @@ public partial class ReportEngine
 {
     private async Task<int> AddSnapshotsDataAsync()
     {
-        if (!settings.Guest.IncludeSnapshotsSheet) { return 0; }
+        if (!settings.Guest.IncludeSnapshots) { return 0; }
 
         var resources = GetResources(ClusterResourceType.Vm)
                                 .Where(a => !a.IsUnknown)

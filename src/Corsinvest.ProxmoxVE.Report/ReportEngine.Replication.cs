@@ -13,7 +13,7 @@ public partial class ReportEngine
 {
     private async Task<int> AddReplicationDataAsync()
     {
-        if (!settings.Node.IncludeReplicationSheet) { return 0; }
+        if (!settings.Node.IncludeReplication) { return 0; }
 
         var nodes = GetResources(ClusterResourceType.Node)
                               .Where(a => !a.IsUnknown)

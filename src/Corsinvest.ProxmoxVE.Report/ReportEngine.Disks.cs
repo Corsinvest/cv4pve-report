@@ -13,7 +13,7 @@ public partial class ReportEngine
 {
     private void AppendDiskRows(ClusterResource vm, IEnumerable<VmDisk> disks)
     {
-        if (!settings.Guest.IncludeDisksSheet) { return; }
+        if (!settings.Guest.IncludeDisks) { return; }
         _pendingDiskRows.Add((vm, disks));
     }
 

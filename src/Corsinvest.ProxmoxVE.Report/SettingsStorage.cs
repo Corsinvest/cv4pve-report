@@ -11,14 +11,14 @@ namespace Corsinvest.ProxmoxVE.Report;
 public class SettingsStorage
 {
     /// <summary>
-    /// Include storage content (ISO, templates, disk images) sheet
+    /// Include storage content (ISO, templates, disk images)
     /// </summary>
-    public bool IncludeContentSheet { get; set; } = true;
+    public bool IncludeContent { get; set; } = true;
 
     /// <summary>
-    /// Include backup files sheet
+    /// Include backup files
     /// </summary>
-    public bool IncludeBackupsSheet { get; set; } = true;
+    public bool IncludeBackups { get; set; } = true;
 
     /// <summary>
     /// Include RRD metrics data
