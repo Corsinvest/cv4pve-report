@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
+using static Corsinvest.ProxmoxVE.Report.Writers.Json.JsonBlock;
+
 namespace Corsinvest.ProxmoxVE.Report.Writers.Json;
 
 /// <summary>
@@ -13,21 +15,16 @@ namespace Corsinvest.ProxmoxVE.Report.Writers.Json;
 internal sealed class JsonSectionWriter(string name) : ISectionWriter
 {
     public string Name { get; } = name;
-
-    /// <summary>Ordered list of "blocks" captured for this section (KeyValue / KeyValueRow / Table).</summary>
     public List<JsonBlock> Blocks { get; } = [];
 
-    /// <summary>HTML/XLSX have a Back link concept; ignored in JSON.</summary>
     public void AddBackLink(string label, string linkKey) { }
-
-    public void AddKeyValue(string title, IDictionary<string, object?> items)
-        => Blocks.Add(new JsonBlock.KeyValue(title, NormaliseKeyValue(items)));
+    public void AddKeyValue(string title, IDictionary<string, object?> items) => Blocks.Add(new KeyValue(title, NormaliseKeyValue(items)));
 
     public void AddKeyValueRow(params (string Title, IDictionary<string, object?> Items)[] blocks)
     {
         foreach (var (title, items) in blocks)
         {
-            Blocks.Add(new JsonBlock.KeyValue(title, NormaliseKeyValue(items)));
+            Blocks.Add(new KeyValue(title, NormaliseKeyValue(items)));
         }
     }
 
@@ -35,7 +32,7 @@ internal sealed class JsonSectionWriter(string name) : ISectionWriter
     {
         var rows = data is IList<T> list ? list : [.. data];
         var serialisable = rows.Select(r => NormaliseRow(r)).Cast<object?>().ToList();
-        Blocks.Add(new JsonBlock.Table(title, serialisable));
+        Blocks.Add(new Table(title, serialisable));
         return new JsonTableHandle(title ?? "", serialisable);
     }
 
@@ -64,19 +61,23 @@ internal sealed class JsonSectionWriter(string name) : ISectionWriter
             var (suffix, _) = ColumnNameSuffix.Parse(p.Name);
             var raw = p.GetValue(row);
             var (key, value) = TransformByConvention(p.Name, raw, suffix);
-            result[ToCamelCase(key)] = value;
+            result[JsonKey.FromPropertyName(key)] = value;
         }
 
         return result;
     }
 
+    /// <summary>
+    /// Convert key-value blocks (as authored for Excel/HTML rendering, with
+    /// human-readable keys like "VM ID", "On Boot", "Memory Host %") into
+    /// JSON-friendly identifier keys ("vmID", "onBoot", "memoryHost").
+    /// </summary>
     private static IDictionary<string, object?> NormaliseKeyValue(IDictionary<string, object?> items)
     {
         var result = new Dictionary<string, object?>(items.Count);
         foreach (var (k, v) in items)
         {
-            // Key-value blocks use display-style keys ("VM ID", "On Boot"). Keep as-is.
-            result[k] = v;
+            result[JsonKey.FromDisplay(k)] = v;
         }
         return result;
     }
@@ -91,12 +92,6 @@ internal sealed class JsonSectionWriter(string name) : ISectionWriter
             // GB / MB / Pct / Date / None: keep the raw value as the engine produced it.
             _ => (name, raw),
         };
-
-    private static string ToCamelCase(string name)
-    {
-        if (string.IsNullOrEmpty(name) || char.IsLower(name[0])) { return name; }
-        return char.ToLowerInvariant(name[0]) + name[1..];
-    }
 }
 
 /// <summary>Discriminated record for the kinds of block a section can carry.</summary>

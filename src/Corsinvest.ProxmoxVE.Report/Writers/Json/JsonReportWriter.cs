@@ -15,11 +15,10 @@ namespace Corsinvest.ProxmoxVE.Report.Writers.Json;
 /// JSON report writer. Captures every section the engine emits and materialises
 /// the report as a multi-file zip with one file per section plus per-resource
 /// detail files for nodes / VMs / containers — see docs/json-format.md for the
-/// schema. Sections are accumulated in memory (not streamed); typical reports
-/// produce a handful of MB of JSON, well within memory budgets even on large
-/// clusters.
+/// schema. Each section is serialised straight into its zip entry (no intermediate
+/// string), so the peak memory footprint stays bounded even on very large clusters.
 /// </summary>
-internal sealed class JsonReportWriter : IReportWriter
+internal sealed partial class JsonReportWriter(ReportInfo info) : IReportWriter
 {
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
@@ -28,54 +27,48 @@ internal sealed class JsonReportWriter : IReportWriter
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
-    private readonly Dictionary<string, string> _links = [];
     private readonly List<JsonSectionWriter> _sections = [];
     private readonly DateTime _generatedAt = DateTime.UtcNow;
-    private string? _networkDiagramSvg;
-    private ReportInfo? _info;
+    private readonly ReportInfo _info = info;
+    private List<SectionStat> _stats = [];
     private Settings? _settings;
-    private List<SectionStat>? _stats;
+    private string? _networkDiagramSvg;
 
-    public IDictionary<string, string> Links => _links;
-
-    public void SetMetadata(ReportInfo info) => _info = info;
+    public Dictionary<string, string> Links { get; } = [];
 
     public void SetNetworkDiagram(string svg) => _networkDiagramSvg = svg;
 
     public ISectionWriter AddSection(SectionId id)
     {
-        _links[id.Key] = id.Key;
+        Links[id.Key] = id.Key;
         var section = new JsonSectionWriter(id.Key);
         _sections.Add(section);
         return section;
     }
 
-    public void WriteCoverPage(ReportInfo info, Settings settings, IEnumerable<SectionStat> stats)
+    public void WriteCoverPage(Settings settings, IEnumerable<SectionStat> stats)
     {
-        // The "cover" is metadata in JSON: stash inputs and emit metadata.json on save.
         _settings = settings;
-        _stats = stats.ToList();
+        _stats = [.. stats];
     }
 
-    public Task SaveAsync(Stream stream)
+    public async Task SaveAsync(Stream stream)
     {
         using var zip = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true);
 
-        WriteEntry(zip, "metadata.json", BuildMetadata());
+        await WriteJsonEntryAsync(zip, "metadata.json", BuildMetadata());
 
         foreach (var section in _sections)
         {
             var path = JsonFileName(section.Name);
             var payload = SectionPayload(section);
-            WriteEntry(zip, path, Serialize(payload));
+            await WriteJsonEntryAsync(zip, path, payload);
         }
 
         if (_networkDiagramSvg is { Length: > 0 })
         {
-            WriteEntry(zip, "network-diagram.svg", _networkDiagramSvg);
+            WriteTextEntry(zip, "network-diagram.svg", _networkDiagramSvg);
         }
-
-        return Task.CompletedTask;
     }
 
     public void Dispose() { }
@@ -142,48 +135,35 @@ internal sealed class JsonReportWriter : IReportWriter
             switch (block)
             {
                 case JsonBlock.KeyValue kv:
-                    result[kv.Title] = kv.Items;
+                    result[JsonKey.FromDisplay(kv.Title)] = kv.Items;
                     break;
+
                 case JsonBlock.Table tbl:
-                    result[tbl.Title ?? "rows"] = tbl.Rows;
+                    result[tbl.Title is null ? "rows" : JsonKey.FromDisplay(tbl.Title)] = tbl.Rows;
                     break;
             }
         }
         return result;
     }
 
-    private string BuildMetadata()
-    {
-        var payload = new Dictionary<string, object?>
-        {
-            ["schemaVersion"] = 1,
-            ["generatedAt"] = _generatedAt.ToString("O"),
-            ["applicationName"] = _info?.ApplicationName,
-            ["applicationVersion"] = _info?.ApplicationVersion,
-            ["applicationUrl"] = _info?.ApplicationUrl,
-        };
-
-        if (_stats is { Count: > 0 })
-        {
-            payload["sections"] = _stats.Select(s => new Dictionary<string, object?>
-            {
-                ["name"] = s.Name,
-                ["count"] = s.Count,
-                ["durationSeconds"] = s.Duration.TotalSeconds,
-            }).ToList();
-        }
-
-        return Serialize(payload);
-    }
-
-    private static string Serialize(object? payload)
-        => JsonSerializer.Serialize(payload, JsonOpts);
-
-    private static void WriteEntry(ZipArchive zip, string path, string content)
+    /// <summary>
+    /// Serialise <paramref name="payload"/> straight into a new zip entry,
+    /// without buffering the JSON as an intermediate string. This keeps the
+    /// peak memory bounded even when a single section serialises to tens of MB
+    /// (e.g. RRD data on large clusters).
+    /// </summary>
+    private static async Task WriteJsonEntryAsync(ZipArchive zip, string path, object? payload)
     {
         var entry = zip.CreateEntry(path, CompressionLevel.Optimal);
         using var stream = entry.Open();
-        using var writer = new StreamWriter(stream, new System.Text.UTF8Encoding(false));
+        await JsonSerializer.SerializeAsync(stream, payload, JsonOpts);
+    }
+
+    private static void WriteTextEntry(ZipArchive zip, string path, string content)
+    {
+        var entry = zip.CreateEntry(path, CompressionLevel.Optimal);
+        using var stream = entry.Open();
+        using var writer = new StreamWriter(stream, new UTF8Encoding(false));
         writer.Write(content);
     }
 }
