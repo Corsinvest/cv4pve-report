@@ -53,7 +53,8 @@ internal sealed class XlsxSectionWriter(SheetWriter inner) : ISectionWriter
 
             Inner.Row = maxRowAfter;
             Inner.Col = 1;
-        }));
+        }
+        ));
     }
 
     public ITableHandle AddTable<T>(string? title, IEnumerable<T> data, TableOptions<T>? options = null)
@@ -73,7 +74,8 @@ internal sealed class XlsxSectionWriter(SheetWriter inner) : ISectionWriter
                 ApplyColumnLinks(table, dataList, options.ColumnLinks);
                 RegisterRowKeys(table, dataList, options.RegisterRowKeys);
             }
-        }));
+        }
+        ));
 
         return handle;
     }
@@ -85,7 +87,8 @@ internal sealed class XlsxSectionWriter(SheetWriter inner) : ISectionWriter
         _pending.Add((OpKind.Append, () =>
         {
             if (xlsx.Table != null) { Inner.AppendData(xlsx.Table, dataList); }
-        }));
+        }
+        ));
     }
 
     public void Dispose()
