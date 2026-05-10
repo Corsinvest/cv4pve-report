@@ -14,7 +14,6 @@ using Corsinvest.ProxmoxVE.Api.Shared.Models.Node;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Storage;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Vm;
 using Corsinvest.ProxmoxVE.Report.Writers;
-using Corsinvest.ProxmoxVE.Report.Writers.Xlsx;
 
 namespace Corsinvest.ProxmoxVE.Report;
 
@@ -110,6 +109,10 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
     public async Task<Stream> GenerateAsync(ReportFormat format,
                                             IProgress<ReportProgress>? progress = null)
     {
+        ArgumentNullException.ThrowIfNull(client);
+        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(info);
+
         _progress = progress;
         var originalTimeout = client.Timeout;
         if (settings.ApiTimeout > 0) { client.Timeout = TimeSpan.FromSeconds(settings.ApiTimeout); }
@@ -134,11 +137,10 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
         ReportGlobal("Init");
         _writer = format switch
         {
-            ReportFormat.Xlsx => new XlsxReportWriter(),
-            ReportFormat.Html => new Writers.Html.HtmlReportWriter(),
+            ReportFormat.Xlsx => new Writers.Xlsx.XlsxReportWriter(info),
+            ReportFormat.Html => new Writers.Html.HtmlReportWriter(info),
             _ => throw new ArgumentOutOfRangeException(nameof(format), format, null),
         };
-        _writer.SetMetadata(info);
 
         await LoadResourcesAsync();
 
@@ -178,7 +180,7 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
         if (NetworkDiagramSvg is { Length: > 0 } svg) { _writer.SetNetworkDiagram(svg); }
 
         ReportGlobal("Cover");
-        _writer.WriteCoverPage(info, settings, stats);
+        _writer.WriteCoverPage(settings, stats);
 
         ReportGlobal("Saving");
         await _writer.SaveAsync(stream);
@@ -195,11 +197,12 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
     private static double ToMB(double bytes) => Math.Round(bytes / 1024 / 1024, 2);
 
     internal static string? LabeledValue(string label, string? value)
-        => string.IsNullOrWhiteSpace(value) ? null : $"{label}: {value}";
+        => string.IsNullOrWhiteSpace(value)
+            ? null :
+            $"{label}: {value}";
 
     internal static string VmTypeLabel(VmType type) => type == VmType.Qemu ? "VM" : "CT";
-    internal static string VmTypeLabel(string? type)
-        => string.Equals(type, "qemu", StringComparison.OrdinalIgnoreCase) ? "VM" : "CT";
+    internal static string VmTypeLabel(string? type) => string.Equals(type, "qemu", StringComparison.OrdinalIgnoreCase) ? "VM" : "CT";
 
     private Task<TResult[]> RunParallelAsync<T, TResult>(IEnumerable<T> source, Func<T, Task<TResult>> func)
     {

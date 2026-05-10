@@ -28,8 +28,8 @@ internal sealed partial class HtmlReportWriter
         sb.Append("""
                 <aside class="sidebar">
             """);
-        var appName = HtmlEncoder.Text(_info?.ApplicationName ?? "cv4pve-report");
-        var appUrl = HtmlEncoder.Attr(_info?.ApplicationUrl ?? "https://github.com/Corsinvest/cv4pve-report");
+        var appName = HtmlEncoder.Text(_info.ApplicationName);
+        var appUrl = HtmlEncoder.Attr(_info.ApplicationUrl);
 
         sb.AppendLine("""      <div class="sidebar-header">""");
         sb.AppendLine("""        <div class="sidebar-brand-block">""");

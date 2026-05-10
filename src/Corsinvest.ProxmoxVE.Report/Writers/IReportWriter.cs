@@ -18,12 +18,6 @@ internal interface IReportWriter : IDisposable
     Dictionary<string, string> Links { get; }
 
     /// <summary>
-    /// Sets report metadata (author, title, version, etc.).
-    /// Excel maps these to workbook properties; HTML to head meta tags.
-    /// </summary>
-    void SetMetadata(ReportInfo info);
-
-    /// <summary>
     /// Adds a new section to the report and returns its writer. In Excel a section
     /// becomes a sheet; in HTML a separate page. Each writer derives its user-facing
     /// label from the concrete <see cref="SectionId"/> subtype.
@@ -37,7 +31,7 @@ internal interface IReportWriter : IDisposable
     /// Writes the cover/summary page for the report. Each format renders it natively
     /// (Excel: "Summary" sheet; HTML: "index.html"). Called once after all sections.
     /// </summary>
-    void WriteCoverPage(ReportInfo info, Settings settings, IEnumerable<SectionStat> stats);
+    void WriteCoverPage(Settings settings, IEnumerable<SectionStat> stats);
 
     /// <summary>
     /// Provides the network topology SVG to the writer. Each format decides what to do

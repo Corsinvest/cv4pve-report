@@ -7,10 +7,8 @@ namespace Corsinvest.ProxmoxVE.Report.Writers.Html;
 
 internal sealed partial class HtmlReportWriter
 {
-    public void WriteCoverPage(ReportInfo info, Settings settings, IEnumerable<SectionStat> stats)
+    public void WriteCoverPage(Settings settings, IEnumerable<SectionStat> stats)
     {
-        _info = info;
-
         var statsList = stats.ToList();
         var totalDuration = TimeSpan.FromSeconds(statsList.Sum(s => s.Duration.TotalSeconds));
 
@@ -34,7 +32,7 @@ internal sealed partial class HtmlReportWriter
                     <table class="kv">
                       <tbody>
                         <tr><th scope="row">Generated</th><td>{{DateTime.Now:yyyy-MM-dd HH:mm:ss}}</td></tr>
-                        <tr><th scope="row">Application</th><td>{{HtmlEncoder.Text(info.ApplicationName)}} v{{HtmlEncoder.Text(info.ApplicationVersion)}}</td></tr>
+                        <tr><th scope="row">Application</th><td>{{HtmlEncoder.Text(_info.ApplicationName)}} v{{HtmlEncoder.Text(_info.ApplicationVersion)}}</td></tr>
                       </tbody>
                     </table>
                   </section>
@@ -49,14 +47,16 @@ internal sealed partial class HtmlReportWriter
 
                   <section class="cover-contents">
                     <h2>Contents</h2>
-                    <table class="data">
-                      <thead><tr><th>Section</th><th>Rows</th><th>Duration</th></tr></thead>
-                      <tbody>
+                    <div class="table-scroll">
+                      <table class="data">
+                        <thead><tr><th>Section</th><th>Rows</th><th>Duration</th></tr></thead>
+                        <tbody>
             {{rows}}      </tbody>
-                      <tfoot>
-                        <tr><th>Total</th><th class="num"></th><th class="num">{{FormatDuration(totalDuration)}}</th></tr>
-                      </tfoot>
-                    </table>
+                        <tfoot>
+                          <tr><th>Total</th><th class="num"></th><th class="num">{{FormatDuration(totalDuration)}}</th></tr>
+                        </tfoot>
+                      </table>
+                    </div>
                   </section>
 
             """;
