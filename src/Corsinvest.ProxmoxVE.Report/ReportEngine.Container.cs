@@ -140,7 +140,8 @@ public partial class ReportEngine
         }
 
         using var sw = _writer.AddSection("Containers");
-        sw.AddTable(null, items,
+        sw.AddTable(null,
+                    items,
                     new TableOptions<dynamic>()
                         .WithNodeLink(r => (string?)r.Node)
                         .WithVmIdLink(r => r.VmId is long id ? id : (long?)null));

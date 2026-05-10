@@ -13,7 +13,7 @@ namespace Corsinvest.ProxmoxVE.Report;
 public class SettingsRrdData
 {
     /// <summary>
-    /// Enable RRD data sheets
+    /// Enable RRD data
     /// </summary>
     public bool Enabled { get; set; } = true;
 

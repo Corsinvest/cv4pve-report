@@ -15,13 +15,7 @@ internal interface IReportWriter : IDisposable
     /// Cross-section link table. Sections register entries (e.g. "node:cc01" → "Node cc01")
     /// to enable hyperlinks across the report. Owned by the writer, shared with all sections.
     /// </summary>
-    IDictionary<string, string> Links { get; }
-
-    /// <summary>
-    /// Sets report metadata (author, title, version, etc.).
-    /// Excel maps these to workbook properties; HTML to head meta tags.
-    /// </summary>
-    void SetMetadata(ReportInfo info);
+    Dictionary<string, string> Links { get; }
 
     /// <summary>
     /// Adds a new section to the report and returns its writer. In Excel a section
@@ -37,7 +31,7 @@ internal interface IReportWriter : IDisposable
     /// Writes the cover/summary page for the report. Each format renders it natively
     /// (Excel: "Summary" sheet; HTML: "index.html"). Called once after all sections.
     /// </summary>
-    void WriteCoverPage(ReportInfo info, Settings settings, IEnumerable<SectionStat> stats);
+    void WriteCoverPage(Settings settings, IEnumerable<SectionStat> stats);
 
     /// <summary>
     /// Provides the network topology SVG to the writer. Each format decides what to do

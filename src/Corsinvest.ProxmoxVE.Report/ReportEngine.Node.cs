@@ -127,7 +127,8 @@ public partial class ReportEngine
             }
         }
 
-        sw.AddTable(null, items,
+        sw.AddTable(null,
+                    items,
                     new TableOptions<dynamic>().WithNodeLink(r => (string?)r.Node));
 
         return filtered.Count;
@@ -186,51 +187,51 @@ public partial class ReportEngine
                            DescriptionWrap = a.Description,
                        }));
 
-        var networkRows = data.Networks.Select(a => new
-        {
-            ActiveFlag = ToX(a.Active),
-            AutoStartFlag = ToX(a.AutoStart),
-            ExistsFlag = ToX(a.Exists),
-            a.Type,
-            a.Interface,
-            a.LinkType,
-            a.Method,
-            a.Cidr,
-            a.Address,
-            a.Netmask,
-            a.Gateway,
-            a.Method6,
-            a.Cidr6,
-            a.Address6,
-            a.Netmask6,
-            a.Gateway6,
-            a.Priority,
-            a.Mtu,
-            a.BondMode,
-            a.BondMiimon,
-            a.BondPrimary,
-            a.BondXmitHashPolicy,
-            a.Slaves,
-            a.BridgeStp,
-            a.BridgeVlanAware,
-            a.BridgeVids,
-            a.BridgeFd,
-            a.BridgePorts,
-            a.VlanId,
-            a.VlanRawDevice,
-            a.VlanProtocol,
-            a.OvsBridge,
-            a.OvsBonds,
-            a.OvsPorts,
-            a.OvsOptions,
-            a.OvsTag,
-            a.VxlanId,
-            a.VxlanLocalTunnelIp,
-            a.VxlanPhysDev,
-            CommentsWrap = a.Comments,
-            a.Comments6,
-        }).ToList();
-        sw.AddTable("Network", networkRows,
+        sw.AddTable("Network",
+                    data.Networks.Select(a => new
+                    {
+                        ActiveFlag = ToX(a.Active),
+                        AutoStartFlag = ToX(a.AutoStart),
+                        ExistsFlag = ToX(a.Exists),
+                        a.Type,
+                        a.Interface,
+                        a.LinkType,
+                        a.Method,
+                        a.Cidr,
+                        a.Address,
+                        a.Netmask,
+                        a.Gateway,
+                        a.Method6,
+                        a.Cidr6,
+                        a.Address6,
+                        a.Netmask6,
+                        a.Gateway6,
+                        a.Priority,
+                        a.Mtu,
+                        a.BondMode,
+                        a.BondMiimon,
+                        a.BondPrimary,
+                        a.BondXmitHashPolicy,
+                        a.Slaves,
+                        a.BridgeStp,
+                        a.BridgeVlanAware,
+                        a.BridgeVids,
+                        a.BridgeFd,
+                        a.BridgePorts,
+                        a.VlanId,
+                        a.VlanRawDevice,
+                        a.VlanProtocol,
+                        a.OvsBridge,
+                        a.OvsBonds,
+                        a.OvsPorts,
+                        a.OvsOptions,
+                        a.OvsTag,
+                        a.VxlanId,
+                        a.VxlanLocalTunnelIp,
+                        a.VxlanPhysDev,
+                        CommentsWrap = a.Comments,
+                        a.Comments6,
+                    }).ToList(),
                     new TableOptions<dynamic>().WithRowKeys(r => [LinkKey.NodeNetwork(node, (string)r.Interface)]));
 
         var hostsResult = hostsTask.ResultOrDefault();
@@ -258,25 +259,25 @@ public partial class ReportEngine
             {
                 pt.Step("Disks");
                 sw.AddTable("Disks",
-                               disksData.OrderBy(a => a.DevPath)
-                                        .Select(a => new
-                                        {
-                                            DevicePath = $"{new string(' ', string.IsNullOrEmpty(a.Parent) ? 0 : 2)}{a.DevPath}",
-                                            Used = $"{new string(' ', string.IsNullOrEmpty(a.Parent) ? 0 : 2)}{a.Used}",
-                                            Type = $"{new string(' ', string.IsNullOrEmpty(a.Parent) ? 0 : 2)}{a.Type}",
-                                            a.Vendor,
-                                            a.Serial,
-                                            a.Model,
-                                            a.Wwn,
-                                            a.Health,
-                                            a.Gpt,
-                                            a.Wearout,
-                                            a.Rpm,
-                                            SizeGB = ToGB(a.Size),
-                                            MountedFlag = ToX(a.Mounted),
-                                            a.ByIdLink,
-                                            a.OsdId,
-                                        }));
+                            disksData.OrderBy(a => a.DevPath)
+                                     .Select(a => new
+                                     {
+                                         DevicePath = $"{new string(' ', string.IsNullOrEmpty(a.Parent) ? 0 : 2)}{a.DevPath}",
+                                         Used = $"{new string(' ', string.IsNullOrEmpty(a.Parent) ? 0 : 2)}{a.Used}",
+                                         Type = $"{new string(' ', string.IsNullOrEmpty(a.Parent) ? 0 : 2)}{a.Type}",
+                                         a.Vendor,
+                                         a.Serial,
+                                         a.Model,
+                                         a.Wwn,
+                                         a.Health,
+                                         a.Gpt,
+                                         a.Wearout,
+                                         a.Rpm,
+                                         SizeGB = ToGB(a.Size),
+                                         MountedFlag = ToX(a.Mounted),
+                                         a.ByIdLink,
+                                         a.OsdId,
+                                     }));
             }
 
             if (settings.Node.Detail.Disk.IncludeSmartData)
@@ -286,24 +287,24 @@ public partial class ReportEngine
                 var smartResults = await RunParallelAsync(rootDisks, d => client.GetDiskSmart(node, d.DevPath));
 
                 sw.AddTable("S.M.A.R.T. Data",
-                               rootDisks.Zip(smartResults, (disk, smart) => (smart.Attributes ?? []).Select(attr => new
-                               {
-                                   Disk = disk.DevPath,
-                                   disk.Model,
-                                   DiskType = disk.Type,
-                                   DiskHealth = disk.Health,
-                                   SmartHealth = smart.Health,
-                                   attr.Id,
-                                   attr.Name,
-                                   attr.Value,
-                                   attr.Worst,
-                                   attr.Threshold,
-                                   attr.Flags,
-                                   attr.Raw,
-                                   attr.Fail,
-                               }))
-                               .SelectMany(x => x)
-                               .ToList());
+                            rootDisks.Zip(smartResults, (disk, smart) => (smart.Attributes ?? []).Select(attr => new
+                            {
+                                Disk = disk.DevPath,
+                                disk.Model,
+                                DiskType = disk.Type,
+                                DiskHealth = disk.Health,
+                                SmartHealth = smart.Health,
+                                attr.Id,
+                                attr.Name,
+                                attr.Value,
+                                attr.Worst,
+                                attr.Threshold,
+                                attr.Flags,
+                                attr.Raw,
+                                attr.Fail,
+                            }))
+                            .SelectMany(x => x)
+                            .ToList());
             }
 
             if (settings.Node.Detail.Disk.IncludeDiskDetail)
@@ -314,38 +315,39 @@ public partial class ReportEngine
                 await TaskExtensions.WhenAllSafe(directoryTask, zfsPoolsListTask);
 
                 sw.AddTable("Directory",
-                               (directoryTask.ResultOrDefault() ?? []).Select(a => new
-                               {
-                                   a.Device,
-                                   a.Path,
-                                   a.Type,
-                                   a.Options,
-                                   a.UnitFile
-                               }));
+                            (directoryTask.ResultOrDefault() ?? []).Select(a => new
+                            {
+                                a.Device,
+                                a.Path,
+                                a.Type,
+                                a.Options,
+                                a.UnitFile
+                            }));
 
                 var zfsPoolList = (zfsPoolsListTask.ResultOrDefault() ?? []).ToList();
                 var zfsPoolDetails = await RunParallelAsync(zfsPoolList, p => client.Nodes[node].Disks.Zfs[p.Name].GetAsync());
 
-                sw.AddTable("ZFS Pools", zfsPoolList.Zip(zfsPoolDetails, (pool, poolData) => new
-                {
-                    pool.Name,
-                    SizeGB = ToGB(pool.Size),
-                    FreeGB = ToGB(pool.Free),
-                    AllocatedGB = ToGB(pool.Alloc),
-                    FragmentationPct = pool.Frag / 100.0,
-                    Deduplication = pool.Dedup,
-                    pool.Health,
-                    poolData.Scan,
-                    poolData.Status,
-                    poolData.Action,
-                    poolData.Errors,
-                })
-                .ToList());
+                sw.AddTable("ZFS Pools",
+                            zfsPoolList.Zip(zfsPoolDetails, (pool, poolData) => new
+                            {
+                                pool.Name,
+                                SizeGB = ToGB(pool.Size),
+                                FreeGB = ToGB(pool.Free),
+                                AllocatedGB = ToGB(pool.Alloc),
+                                FragmentationPct = pool.Frag / 100.0,
+                                Deduplication = pool.Dedup,
+                                pool.Health,
+                                poolData.Scan,
+                                poolData.Status,
+                                poolData.Action,
+                                poolData.Errors,
+                            })
+                            .ToList());
 
                 sw.AddTable("ZFS Pool Status",
-                               zfsPoolList.Zip(zfsPoolDetails, (pool, poolData) => MakeZfsStatus(pool.Name, poolData.Children, null, 0))
-                                          .SelectMany(x => x)
-                                          .ToList());
+                            zfsPoolList.Zip(zfsPoolDetails, (pool, poolData) => MakeZfsStatus(pool.Name, poolData.Children, null, 0))
+                                       .SelectMany(x => x)
+                                       .ToList());
             }
         }
 
@@ -359,46 +361,46 @@ public partial class ReportEngine
 
             var aptRepositories = aptRepositoriesTask.ResultOrDefault();
             sw.AddTable("Apt Repository",
-                           (aptRepositories?.Files ?? []).SelectMany(a => a.Repositories, (file, repo) => new
-                           {
-                               FilePath = file.Path,
-                               file.FileType,
-                               EnabledFlag = ToX(repo.Enabled),
-                               TypesWrap = repo.Types.JoinAsString(Environment.NewLine),
-                               URIsWrap = repo.URIs.JoinAsString(Environment.NewLine),
-                               SuitesWrap = repo.Suites.JoinAsString(Environment.NewLine),
-                               ComponentsWrap = repo.Components.JoinAsString(Environment.NewLine),
-                               CommentWrap = repo.Comment,
-                           }));
+                        (aptRepositories?.Files ?? []).SelectMany(a => a.Repositories, (file, repo) => new
+                        {
+                            FilePath = file.Path,
+                            file.FileType,
+                            EnabledFlag = ToX(repo.Enabled),
+                            TypesWrap = repo.Types.JoinAsString(Environment.NewLine),
+                            URIsWrap = repo.URIs.JoinAsString(Environment.NewLine),
+                            SuitesWrap = repo.Suites.JoinAsString(Environment.NewLine),
+                            ComponentsWrap = repo.Components.JoinAsString(Environment.NewLine),
+                            CommentWrap = repo.Comment,
+                        }));
 
             sw.AddTable("Apt Update",
-                           (aptUpdatesTask.ResultOrDefault() ?? []).Select(a => new
-                           {
-                               a.Package,
-                               a.Version,
-                               a.OldVersion,
-                               a.Arch,
-                               a.Origin,
-                               a.Section,
-                               a.Priority,
-                               a.Title,
-                               a.Description
-                           }));
+                        (aptUpdatesTask.ResultOrDefault() ?? []).Select(a => new
+                        {
+                            a.Package,
+                            a.Version,
+                            a.OldVersion,
+                            a.Arch,
+                            a.Origin,
+                            a.Section,
+                            a.Priority,
+                            a.Title,
+                            a.Description
+                        }));
 
             sw.AddTable("Package Version",
-                           (aptVersionsTask.ResultOrDefault() ?? []).Select(a => new
-                           {
-                               a.Package,
-                               a.Version,
-                               a.OldVersion,
-                               a.CurrentState,
-                               a.Arch,
-                               a.Origin,
-                               a.Section,
-                               a.Priority,
-                               a.Title,
-                               a.Description
-                           }));
+                        (aptVersionsTask.ResultOrDefault() ?? []).Select(a => new
+                        {
+                            a.Package,
+                            a.Version,
+                            a.OldVersion,
+                            a.CurrentState,
+                            a.Arch,
+                            a.Origin,
+                            a.Section,
+                            a.Priority,
+                            a.Title,
+                            a.Description
+                        }));
         }
 
         if (settings.Firewall.Enabled && settings.Node.Detail.IncludeFirewallLog)
@@ -412,21 +414,21 @@ public partial class ReportEngine
         }
 
         sw.AddTable("SSL Certificates",
-                       (certificatesTask.ResultOrDefault() ?? []).Select(cert => new
-                       {
-                           cert.FileName,
-                           cert.Subject,
-                           cert.Issuer,
-                           cert.Fingerprint,
-                           cert.PublicKeyType,
-                           cert.PublicKeyBits,
-                           San = string.Join(", ", cert.San ?? []),
-                           NotBefore = FromUnixTime(cert.NotBefore),
-                           NotAfter = FromUnixTime(cert.NotAfter),
-                           DaysUntilExpiry = FromUnixTime(cert.NotAfter) is { } expiry
-                                                ? (expiry - DateTime.UtcNow).Days
-                                                : (int?)null,
-                       }));
+                    (certificatesTask.ResultOrDefault() ?? []).Select(cert => new
+                    {
+                        cert.FileName,
+                        cert.Subject,
+                        cert.Issuer,
+                        cert.Fingerprint,
+                        cert.PublicKeyType,
+                        cert.PublicKeyBits,
+                        San = string.Join(", ", cert.San ?? []),
+                        NotBefore = FromUnixTime(cert.NotBefore),
+                        NotAfter = FromUnixTime(cert.NotAfter),
+                        DaysUntilExpiry = FromUnixTime(cert.NotAfter) is { } expiry
+                                             ? (expiry - DateTime.UtcNow).Days
+                                             : (int?)null,
+                    }));
 
         if (settings.Node.Detail.Tasks.Enabled)
         {
@@ -448,7 +450,8 @@ public partial class ReportEngine
                                 EndTime = a.EndTimeDate,
                                 a.Duration,
                             }).ToList();
-            sw.AddTable("Tasks", taskRows,
+            sw.AddTable("Tasks",
+                        taskRows,
                         new TableOptions<dynamic>().WithVmIdLink(r => r.VmId is long id ? id : (long?)null));
         }
     }

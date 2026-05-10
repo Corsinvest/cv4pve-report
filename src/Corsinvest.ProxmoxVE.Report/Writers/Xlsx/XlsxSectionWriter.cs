@@ -7,59 +7,104 @@ using ClosedXML.Excel;
 
 namespace Corsinvest.ProxmoxVE.Report.Writers.Xlsx;
 
+/// <summary>
+/// Buffers all section operations and replays them at <see cref="Dispose"/> time.
+/// The buffering exists so the per-sheet Index can reserve exactly N rows
+/// (where N = number of titled tables) at a known offset — between the first
+/// key/value block (the resource "identity" header) and the first table —
+/// without using <c>InsertRowsAbove</c>, which desynchronises ClosedXML
+/// table ranges and breaks already-written hyperlinks.
+/// </summary>
 internal sealed class XlsxSectionWriter(SheetWriter inner) : ISectionWriter
 {
-    /// <summary>Underlying SheetWriter (exposed for migration of callers that still need direct ClosedXML access).</summary>
+    private enum OpKind { BackLink, KeyValue, Table, Append }
+
+    private readonly List<(OpKind Kind, Action Run)> _pending = [];
+    private int _titledTableCount;
+
     public SheetWriter Inner { get; } = inner;
 
     public void AddBackLink(string label, string linkKey)
-        => Inner.WriteBackLink(label, linkKey);
+        => _pending.Add((OpKind.BackLink, () => Inner.WriteBackLink(label, linkKey)));
 
     public void AddKeyValue(string title, IDictionary<string, object?> items)
-        => Inner.WriteKeyValue(title, new Dictionary<string, object?>(items));
+        => _pending.Add((OpKind.KeyValue, () => Inner.WriteKeyValue(title, new(items))));
 
     public void AddKeyValueRow(params (string Title, IDictionary<string, object?> Items)[] blocks)
     {
         if (blocks.Length == 0) { return; }
 
-        const int colsPerBlock = 3; // key column + value column + 1 spacer
-        var startRow = Inner.Row;
-        var maxRowAfter = startRow;
+        var items = blocks.Select(b => (b.Title, Items: new Dictionary<string, object?>(b.Items)))
+                          .ToArray();
 
-        for (var i = 0; i < blocks.Length; i++)
+        _pending.Add((OpKind.KeyValue, () =>
         {
-            Inner.Row = startRow;
-            Inner.Col = 1 + (i * colsPerBlock);
-            Inner.WriteKeyValue(blocks[i].Title, new Dictionary<string, object?>(blocks[i].Items));
-            if (Inner.Row > maxRowAfter) { maxRowAfter = Inner.Row; }
-        }
+            const int colsPerBlock = 3;
+            var startRow = Inner.Row;
+            var maxRowAfter = startRow;
 
-        Inner.Row = maxRowAfter;
-        Inner.Col = 1;
+            for (var i = 0; i < items.Length; i++)
+            {
+                Inner.Row = startRow;
+                Inner.Col = 1 + (i * colsPerBlock);
+                Inner.WriteKeyValue(items[i].Title, items[i].Items);
+                if (Inner.Row > maxRowAfter) { maxRowAfter = Inner.Row; }
+            }
+
+            Inner.Row = maxRowAfter;
+            Inner.Col = 1;
+        }
+        ));
     }
 
     public ITableHandle AddTable<T>(string? title, IEnumerable<T> data, TableOptions<T>? options = null)
     {
         var dataList = data as IList<T> ?? [.. data];
-        var table = Inner.CreateTable(title, dataList);
+        var handle = new XlsxTableHandle(title ?? "");
 
-        if (options != null)
+        if (title != null) { _titledTableCount++; }
+
+        _pending.Add((OpKind.Table, () =>
         {
-            ApplyColumnLinks(table, dataList, options.ColumnLinks);
-            RegisterRowKeys(table, dataList, options.RegisterRowKeys);
-        }
+            var table = Inner.CreateTable(title, dataList);
+            handle.Table = table;
 
-        return new XlsxTableHandle(title ?? "", table);
+            if (options != null)
+            {
+                ApplyColumnLinks(table, dataList, options.ColumnLinks);
+                RegisterRowKeys(table, dataList, options.RegisterRowKeys);
+            }
+        }
+        ));
+
+        return handle;
     }
 
     public void AppendData<T>(ITableHandle table, IEnumerable<T> data)
     {
         var xlsx = (XlsxTableHandle)table;
-        Inner.AppendData(xlsx.Table, data);
+        var dataList = data as IList<T> ?? [.. data];
+        _pending.Add((OpKind.Append, () =>
+        {
+            if (xlsx.Table != null) { Inner.AppendData(xlsx.Table, dataList); }
+        }
+        ));
     }
 
     public void Dispose()
     {
+        // Replay until we've flushed: BackLink + the first KeyValue block (the "identity" header).
+        // Then reserve the index rows. Then replay the remaining ops (other KeyValues + Tables).
+        // If there is no leading KeyValue, the index is reserved at the very top.
+        var firstKvIndex = _pending.FindIndex(op => op.Kind == OpKind.KeyValue);
+        var splitAfter = firstKvIndex < 0 ? -1 : firstKvIndex;
+
+        for (var i = 0; i <= splitAfter; i++) { _pending[i].Run(); }
+
+        if (_titledTableCount > 0) { Inner.ReserveIndexRows(_titledTableCount); }
+
+        for (var i = splitAfter + 1; i < _pending.Count; i++) { _pending[i].Run(); }
+
         Inner.WriteIndex();
         Inner.AdjustColumns();
     }
@@ -83,7 +128,6 @@ internal sealed class XlsxSectionWriter(SheetWriter inner) : ISectionWriter
     {
         if (rowKeys == null) { return; }
 
-        // SheetWriter.RegisterRowLinks is column-keyed; here we need arbitrary multi-key per row.
         var firstDataRow = table.DataRange.FirstRow().RowNumber();
         for (var i = 0; i < rows.Count; i++)
         {

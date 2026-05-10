@@ -58,7 +58,8 @@ public partial class ReportEngine
         var rows = results.OrderBy(r => r.item.Id).SelectMany(r => r.rows).ToList();
 
         using var sw = _writer.AddSection("RRD Nodes");
-        sw.AddTable(null, rows,
+        sw.AddTable(null,
+                    rows,
                     new TableOptions<dynamic>().WithNodeLink(r => (string?)r.Node));
 
         return results.Sum(r => r.rows.Count);

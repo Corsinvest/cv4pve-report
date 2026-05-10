@@ -6,12 +6,12 @@
 namespace Corsinvest.ProxmoxVE.Report;
 
 /// <summary>
-/// Per-VM/CT detail sheet settings
+/// Per-VM/CT detail settings
 /// </summary>
 public class SettingsGuestDetail
 {
     /// <summary>
-    /// Enable detail sheets
+    /// Enable per-VM/CT detail section
     /// </summary>
     public bool Enabled { get; set; } = true;
 
@@ -21,7 +21,7 @@ public class SettingsGuestDetail
     public SettingsTask Tasks { get; set; } = new();
 
     /// <summary>
-    /// Include firewall log sheet
+    /// Include firewall log
     /// </summary>
     public bool IncludeFirewallLog { get; set; } = true;
 }

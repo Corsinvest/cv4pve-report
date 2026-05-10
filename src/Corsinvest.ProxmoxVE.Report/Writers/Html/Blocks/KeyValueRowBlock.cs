@@ -12,7 +12,7 @@ internal sealed class KeyValueRowBlock(IReadOnlyList<(string Title, IDictionary<
     public string? Title => null;
     public string? AnchorId => null;
 
-    public void Render(StringBuilder sb, IDictionary<string, string> links)
+    public void Render(StringBuilder sb, Dictionary<string, string> links)
     {
         var inner = string.Concat(blocks.Select(RenderBlock));
 

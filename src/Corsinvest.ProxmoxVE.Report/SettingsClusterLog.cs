@@ -11,7 +11,7 @@ namespace Corsinvest.ProxmoxVE.Report;
 public class SettingsClusterLog
 {
     /// <summary>
-    /// Enable cluster log sheet
+    /// Enable cluster log
     /// </summary>
     public bool Enabled { get; set; }
 

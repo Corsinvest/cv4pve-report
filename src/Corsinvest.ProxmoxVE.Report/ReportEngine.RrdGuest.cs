@@ -60,7 +60,8 @@ public partial class ReportEngine
         var rows = results.OrderBy(r => r.item.Id).SelectMany(r => r.rows).ToList();
 
         using var sw = _writer.AddSection("RRD Guests");
-        sw.AddTable(null, rows,
+        sw.AddTable(null,
+                    rows,
                     new TableOptions<dynamic>()
                         .WithVmIdLink(r => r.VmId is long id ? id : (long?)null)
                         .WithNodeLink(r => (string?)r.Node));

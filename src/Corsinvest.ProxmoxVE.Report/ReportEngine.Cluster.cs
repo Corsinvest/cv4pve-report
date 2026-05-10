@@ -13,7 +13,7 @@ public partial class ReportEngine
 {
     private async Task<int> AddClusterDataAsync()
     {
-        if (!settings.Cluster.IncludeSheet) { return 0; }
+        if (!settings.Cluster.Include) { return 0; }
 
         using var sw = _writer.AddSection("Cluster");
 
@@ -220,26 +220,25 @@ public partial class ReportEngine
                     }));
 
         ReportGlobal("Cluster: Replication");
-        var replicationRows = replicationTask.Result.Select(a => new
-        {
-            a.Id,
-            a.Type,
-            a.Guest,
-            a.Source,
-            a.Target,
-            a.Schedule,
-            DisableFlag = ToX(a.Disable),
-            a.Rate,
-            a.Comment,
-            a.JobNum,
-            a.RemoveJob,
-        }).ToList();
-        sw.AddTable("Replication", replicationRows,
-                    new TableOptions<dynamic>().WithReplicationLinks(
-                        nodeSelector: r => null,                  // Replication has no Node column
-                        vmIdSelector: r => r.Guest is long g ? g : (long?)null,
-                        sourceSelector: r => (string?)r.Source,
-                        targetSelector: r => (string?)r.Target));
+        sw.AddTable("Replication",
+                    replicationTask.Result.Select(a => new
+                    {
+                        a.Id,
+                        a.Type,
+                        a.Guest,
+                        a.Source,
+                        a.Target,
+                        a.Schedule,
+                        DisableFlag = ToX(a.Disable),
+                        a.Rate,
+                        a.Comment,
+                        a.JobNum,
+                        a.RemoveJob,
+                    }).ToList(),
+                    new TableOptions<dynamic>().WithReplicationLinks(nodeSelector: r => null,                  // Replication has no Node column
+                                                                     vmIdSelector: r => r.Guest is long g ? g : (long?)null,
+                                                                     sourceSelector: r => (string?)r.Source,
+                                                                     targetSelector: r => (string?)r.Target));
 
         ReportGlobal("Cluster: Storages");
         sw.AddTable("Storages",

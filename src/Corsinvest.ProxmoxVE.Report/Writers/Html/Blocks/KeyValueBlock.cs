@@ -13,7 +13,7 @@ internal sealed class KeyValueBlock(string title, IDictionary<string, object?> i
     public string AnchorId { get; } = $"kv-{Guid.NewGuid():N}";
     string? IBlock.AnchorId => AnchorId;
 
-    public void Render(StringBuilder sb, IDictionary<string, string> links)
+    public void Render(StringBuilder sb, Dictionary<string, string> links)
     {
         var rows = string.Concat(items.Select(kv => $"""
                   <tr><th scope="row">{HtmlEncoder.Text(kv.Key)}</th><td>{HtmlEncoder.Text(FormatValue(kv.Value))}</td></tr>

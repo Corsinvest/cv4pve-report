@@ -24,24 +24,24 @@ public class SettingsGuest
     };
 
     /// <summary>
-    /// Per-VM/CT detail sheet settings
+    /// Per-VM/CT detail settings
     /// </summary>
     public SettingsGuestDetail Detail { get; set; } = new();
 
     /// <summary>
-    /// Include snapshots global sheet
+    /// Include snapshots
     /// </summary>
-    public bool IncludeSnapshotsSheet { get; set; } = true;
+    public bool IncludeSnapshots { get; set; } = true;
 
     /// <summary>
-    /// Include disks global sheet
+    /// Include disks
     /// </summary>
-    public bool IncludeDisksSheet { get; set; } = true;
+    public bool IncludeDisks { get; set; } = true;
 
     /// <summary>
-    /// Include partitions global sheet (requires IncludeQemuAgent)
+    /// Include partitions (requires IncludeQemuAgent)
     /// </summary>
-    public bool IncludePartitionsSheet { get; set; } = true;
+    public bool IncludePartitions { get; set; } = true;
 
     /// <summary>
     /// Include QEMU agent info (network interfaces and filesystem info) — only for running VMs with agent enabled

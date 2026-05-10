@@ -58,17 +58,17 @@ public class Settings
         },
         Guest = new()
         {
-            IncludeSnapshotsSheet = false,
-            IncludeDisksSheet = false,
-            IncludePartitionsSheet = false,
+            IncludeSnapshots = false,
+            IncludeDisks = false,
+            IncludePartitions = false,
             IncludeQemuAgent = false,
             Detail = new() { Enabled = false },
             RrdData = new() { Enabled = false },
         },
         Storage = new()
         {
-            IncludeContentSheet = false,
-            IncludeBackupsSheet = false,
+            IncludeContent = false,
+            IncludeBackups = false,
             RrdData = new() { Enabled = false },
         },
         Firewall = new() { Enabled = false },

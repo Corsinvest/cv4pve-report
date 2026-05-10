@@ -13,7 +13,7 @@ public partial class ReportEngine
 {
     private async Task<int> AddReplicationDataAsync()
     {
-        if (!settings.Node.IncludeReplicationSheet) { return 0; }
+        if (!settings.Node.IncludeReplication) { return 0; }
 
         var nodes = GetResources(ClusterResourceType.Node)
                               .Where(a => !a.IsUnknown)
@@ -57,7 +57,8 @@ public partial class ReportEngine
         var rows = results.OrderBy(r => r.Node).SelectMany(r => r.rows).ToList();
 
         using var sw = _writer.AddSection("Replication");
-        sw.AddTable(null, rows,
+        sw.AddTable(null,
+                    rows,
                     new TableOptions<dynamic>().WithReplicationLinks(
                         nodeSelector: r => (string?)r.Node,
                         vmIdSelector: r => long.TryParse((string?)r.VmId, out var id) ? id : (long?)null,

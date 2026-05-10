@@ -40,7 +40,8 @@ public partial class ReportEngine
         var rows = results.OrderBy(r => r.item.Id).SelectMany(r => r.rows).ToList();
 
         using var sw = _writer.AddSection("RRD Storage");
-        sw.AddTable(null, rows,
+        sw.AddTable(null,
+                    rows,
                     new TableOptions<dynamic>()
                         .WithNodeLink(r => (string?)r.Node)
                         .WithStorageLink(r => (string?)r.Storage));

@@ -12,7 +12,7 @@ public partial class ReportEngine
 {
     private async Task<int> AddStorageContentDataAsync()
     {
-        if (!settings.Storage.IncludeContentSheet && !settings.Storage.IncludeBackupsSheet) { return 0; }
+        if (!settings.Storage.IncludeContent && !settings.Storage.IncludeBackups) { return 0; }
 
         var filtered = _uniqueStorages.Where(a => !a.IsUnknown).OrderBy(a => a.Id).ToList();
         if (filtered.Count == 0) { return 0; }
@@ -39,7 +39,7 @@ public partial class ReportEngine
             var allContent = await client.Nodes[item.Node].Storage[item.Storage].Content.GetAsync();
             var storageSize = item.DiskSize;
 
-            var contentRows = settings.Storage.IncludeContentSheet
+            var contentRows = settings.Storage.IncludeContent
                                 ? allContent.Where(a => !string.Equals(a.Content, "backup", StringComparison.OrdinalIgnoreCase))
                                            .Select(a => new
                                            {
@@ -59,7 +59,7 @@ public partial class ReportEngine
                                            .ToList()
                                 : [];
 
-            var backupRows = settings.Storage.IncludeBackupsSheet
+            var backupRows = settings.Storage.IncludeBackups
                                 ? allContent.Where(a => string.Equals(a.Content, "backup", StringComparison.OrdinalIgnoreCase))
                                            .Select(a => new
                                            {
@@ -92,13 +92,13 @@ public partial class ReportEngine
             .WithStorageLink(r => (string?)r.Storage)
             .WithColumnLink("VmId", r => long.TryParse((string?)r.VmId, out var id) && id > 0 ? LinkKey.Vm(id) : null);
 
-        if (settings.Storage.IncludeContentSheet)
+        if (settings.Storage.IncludeContent)
         {
             using var sw = _writer.AddSection("Storage Content");
             sw.AddTable(null, ordered.SelectMany(r => r.contentRows).ToList(), ContentLinks());
         }
 
-        if (settings.Storage.IncludeBackupsSheet)
+        if (settings.Storage.IncludeBackups)
         {
             using var sw = _writer.AddSection("Backups");
             sw.AddTable(null, ordered.SelectMany(r => r.backupRows).ToList(), ContentLinks());

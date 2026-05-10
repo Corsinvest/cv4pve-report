@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Corsinvest Srl">
+  <title>Corsinvest Srl</title>
+  <rect width="200" height="200" rx="6" ry="6" fill="#163454"/>
+  <path fill="#ffffff" d="
+    M 78 22
+    Q 64 22 60 38
+    L 24 162
+    Q 20 178 36 178
+    L 110 178
+    Q 124 178 128 162
+    L 138 124
+    L 110 124
+    L 102 156
+    L 60 156
+    L 90 44
+    L 132 44
+    L 124 76
+    L 152 76
+    L 162 38
+    Q 166 22 152 22
+    Z" />
+</svg>

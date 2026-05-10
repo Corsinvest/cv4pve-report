@@ -17,7 +17,7 @@ Report Tool for Proxmox VE (Made in Italy)
 [![WinGet](https://img.shields.io/winget/v/Corsinvest.cv4pve.report?style=flat-square&logo=windows)](https://winstall.app/apps/Corsinvest.cv4pve.report)
 [![AUR](https://img.shields.io/aur/version/cv4pve-report?style=flat-square&logo=archlinux)](https://aur.archlinux.org/packages/cv4pve-report)
 
-> **The RVTools for Proxmox VE** — exports your entire Proxmox VE infrastructure as a single Excel workbook **or** a self-contained HTML site, plus a network topology diagram (SVG).
+> **The RVTools for Proxmox VE** — exports your entire Proxmox VE infrastructure as a single [Excel workbook](#excel-output---format-xlsx-default) **or** a [self-contained HTML site](#html-output---format-html), plus a network topology diagram (SVG).
 
 **Fully navigable** — every node, VM and storage in the overview tables is a hyperlink to its dedicated detail page. Click and you're there.
 
@@ -37,7 +37,7 @@ RVTools is a pure inventory tool for VMware — it exports infrastructure data t
 |---|---------|:-----------------:|:-----------:|
 | **Platform** | VMware vSphere | Proxmox VE | Proxmox VE |
 | **Purpose** | Inventory & reporting | **Inventory & reporting** | **Diagnostics & health checks** |
-| **Output** | Excel | Excel **or** static HTML site, plus SVG network diagram | Text / HTML / JSON / Markdown / Excel |
+| **Output** | Excel | [Excel](#excel-output---format-xlsx-default) **or** [static HTML site](#html-output---format-html), plus [SVG network diagram](docs/network-diagram.md) | Text / HTML / JSON / Markdown / Excel |
 
 ### Capabilities
 
@@ -96,28 +96,29 @@ Pick the output format that fits your workflow:
 ./cv4pve-report ... export --format Html    # HTML zipped site
 ```
 
-With `--output` / `-o` you choose the output path; the extension follows the format (`.xlsx` for Excel, `.zip` for HTML).
+With `--output` / `-o` you choose the output path. **All formats now produce a single `.zip`** — extract it to access the files inside (a `.xlsx` for Excel, an `index.html` plus assets for HTML). The network topology SVG (`network-diagram.svg`) is bundled in the same zip. If the path you pass doesn't end in `.zip`, the extension is appended automatically.
 
 ---
 
 ## Output Formats
 
-Both formats expose **the same data** (see [Report Contents](#report-contents)). Pick the one that matches what you need to do with the report.
+Both formats expose **the same data** using the same logical layout — one section per topic (Cluster, Nodes, VMs, Containers, Storages, …) plus per-resource detail (one per node, VM and container). Only the rendering differs: a sheet per section in Excel, a page per section in HTML. Pick the one that matches what you need to do with the report — each format has its own full reference under [`docs/`](docs/).
 
 ### Excel output `(--format Xlsx, default)`
 
 ```
-Report_20260506_120000.xlsx   ← single workbook with one sheet per section
-Report_20260506_120000.svg    ← network topology diagram (next to the .xlsx)
+Report_20260506_120000.zip    ← contains report.xlsx + network-diagram.svg
 ```
 
-For analysts and capacity planning. Open in Excel, LibreOffice Calc or any spreadsheet tool.
+For analysts and capacity planning. Extract the zip and open `report.xlsx` in Excel, LibreOffice Calc or any spreadsheet tool.
 
 - **One workbook**, one sheet per section (Cluster, Nodes, VMs, Containers, Storages, …) plus per-node and per-VM detail sheets at the end
 - **Hyperlinks everywhere** — click a node, VM or storage in any list to jump straight to its detail sheet; every detail sheet has a `← Back` link to its overview
 - **Per-sheet index** — every detail sheet starts with a clickable index of its tables so you can jump to the section you need
 - **Native filtering / sorting / pivot** — every table is a real Excel table; use built-in autofilter, sort, slicer or pivot the data without exporting elsewhere
-- **Network topology SVG** — written next to the `.xlsx`; open in any browser to see the full network map (NICs → bonds → bridges → VMs → storages) — [guide](docs/network-diagram.md)
+- **Network topology SVG** — bundled inside the zip as `network-diagram.svg`; open in any browser to see the full network map (NICs → bonds → bridges → VMs → storages) — [guide](docs/network-diagram.md)
+
+> Full reference: **[Excel format guide](docs/format-xlsx.md)** — sheet order, per-sheet contents, hyperlinks and Excel-specific behaviour.
 
 ### HTML output `(--format Html)`
 
@@ -134,6 +135,8 @@ For sharing on a wiki, ticket system or with non-technical stakeholders. Extract
 - **Built for large clusters** — sidebar groups (Nodes, VMs, Containers) load their entries on demand, so the report stays fast and the zip stays small even with thousands of guests; tested up to 2700+ VMs
 - **Print-friendly** — dedicated print stylesheet hides chrome and lays tables out for paper / PDF export from the browser
 - **Network topology SVG** — bundled inside the zip and accessible from the sidebar — [guide](docs/network-diagram.md)
+
+> Full reference: **[HTML format guide](docs/format-html.md)** — page layout, sidebar behaviour, theme, export button and lazy-loading for large clusters.
 
 ---
 
@@ -175,16 +178,18 @@ cv4pve-report --host=YOUR_HOST --api-token=user@realm!token=uuid export --fast  
 cv4pve-report --host=YOUR_HOST --api-token=user@realm!token=uuid export --full    # Full
 ```
 
+### Profiles comparison
+
 <details>
-<summary><strong>Profiles comparison</strong></summary>
+<summary>Click to expand the per-flag matrix</summary>
 
 | Setting | Fast | Standard | Full |
 |---------|:----:|:--------:|:----:|
 | **Cluster** | | | |
-| IncludeSheet | ✓ | ✓ | ✓ |
+| Include | ✓ | ✓ | ✓ |
 | Log.Enabled | | | ✓ |
 | Log.MaxCount | | — | 1000 |
-| IncludeTasksSheet | ✓ | ✓ | ✓ |
+| IncludeTasks | ✓ | ✓ | ✓ |
 | **Node** | | | |
 | Detail.Enabled | | ✓ | ✓ |
 | Detail.Disk.IncludeDiskDetail | | ✓ | ✓ |
@@ -192,7 +197,7 @@ cv4pve-report --host=YOUR_HOST --api-token=user@realm!token=uuid export --full  
 | Detail.IncludeApt | | ✓ | ✓ |
 | Detail.Tasks.Enabled | | ✓ | ✓ |
 | Detail.IncludeFirewallLog | | ✓ | ✓ |
-| IncludeReplicationSheet | ✓ | ✓ | ✓ |
+| IncludeReplication | ✓ | ✓ | ✓ |
 | Syslog.Enabled | | | ✓ |
 | Syslog.MaxCount | | — | 1000 |
 | Syslog.Since | | — | last 3 days |
@@ -202,15 +207,15 @@ cv4pve-report --host=YOUR_HOST --api-token=user@realm!token=uuid export --full  
 | Detail.Enabled | | ✓ | ✓ |
 | Detail.Tasks.Enabled | | ✓ | ✓ |
 | Detail.IncludeFirewallLog | | ✓ | ✓ |
-| IncludeSnapshotsSheet | | ✓ | ✓ |
-| IncludeDisksSheet | | ✓ | ✓ |
-| IncludePartitionsSheet | | ✓ | ✓ |
+| IncludeSnapshots | | ✓ | ✓ |
+| IncludeDisks | | ✓ | ✓ |
+| IncludePartitions | | ✓ | ✓ |
 | IncludeQemuAgent | | ✓ | ✓ |
 | RrdData.Enabled | | | ✓ |
 | RrdData.TimeFrame | | — | Week |
 | **Storage** | | | |
-| IncludeContentSheet | | ✓ | ✓ |
-| IncludeBackupsSheet | | ✓ | ✓ |
+| IncludeContent | | ✓ | ✓ |
+| IncludeBackups | | ✓ | ✓ |
 | RrdData.Enabled | | ✓ | ✓ |
 | RrdData.TimeFrame | | Day | Week |
 | **Firewall** | | | |
@@ -218,7 +223,7 @@ cv4pve-report --host=YOUR_HOST --api-token=user@realm!token=uuid export --full  
 | MaxCount | | 0 | 1000 |
 | Since | | — | last 3 days |
 
-> Fast profile skips all detail sheets, RRD data, firewall and storage content — designed for quick inventory on large clusters.
+> Fast profile skips all detail sections, RRD data, firewall and storage content — designed for quick inventory on large clusters.
 
 </details>
 
@@ -277,278 +282,16 @@ All binaries on the [Releases page](https://github.com/Corsinvest/cv4pve-report/
 
 ---
 
-## Report Contents
-
-### Sheet Order
-
-| # | Sheet | Description |
-|---|-------|-------------|
-| 1 | **Summary** | Report metadata, filters, hyperlinked table of contents |
-| 2 | **Cluster** | Cluster-wide configuration and security |
-| 3 | **Nodes** | Node overview table → links to node detail sheets |
-| 4 | **Vms** | VM overview table → links to VM detail sheets |
-| 5 | **Containers** | Container overview table → links to CT detail sheets |
-| 6 | **Disks** | Global physical disk inventory across all nodes |
-| 7 | **Partitions** | Guest disk partitions via QEMU agent |
-| 8 | **Snapshots** | Global snapshot inventory across all VMs/CTs |
-| 9 | **Network** | Global network inventory (node interfaces + VM/CT NICs) |
-| 10 | **Storages** | Storage overview |
-| 11 | **Storage Content** | All storage files/images with size and VM ID links *(if enabled)* |
-| 12 | **Backups** | All backup files across all storages *(if enabled)* |
-| 13 | **Firewall** | Global firewall rules, aliases and IP sets *(if enabled)* |
-| 14 | **Replication** | Global replication job status *(if enabled)* |
-| 15 | **RRD Nodes** | Historical metrics for all nodes *(if enabled)* |
-| 16 | **RRD Storage** | Historical metrics for all storages *(if enabled)* |
-| 17 | **RRD Guests** | Historical metrics for all VMs/CTs *(if enabled)* |
-| 18 | **Syslog** | Parsed systemd journal across all nodes *(if enabled)* |
-| 19 | **Cluster Log** | Cluster event log *(if enabled)* |
-| 20 | **Cluster Tasks** | All recent tasks across the cluster *(if enabled)* |
-| … | **Node `<name>`** | Per-node detail sheets (at end) |
-| … | **VM `<id>`** | Per-VM detail sheets (at end) |
-| … | **CT `<id>`** | Per-CT detail sheets (at end) |
-
-
-<details>
-<summary><strong>Sheet details</strong></summary>
-
-### Cluster Sheet
-
-| Table | Contents |
-|-------|----------|
-| Status | Nodes, quorum, IP addresses, versions, support level |
-| Users | User list with expiry dates |
-| API Tokens | Token list with expiry dates |
-| Two-Factor Authentication | TFA type per user |
-| Groups | Group membership |
-| Roles | Role privileges |
-| ACL | Access control entries |
-| Firewall Options | Global firewall policy |
-| Domains | Authentication realms |
-| Backup Jobs | Scheduled backup job configuration |
-| HA Resources / Groups / Status | High Availability configuration |
-| Metric Servers | External metric server configuration |
-| SDN Zones / VNets / Controllers | Software-defined networking |
-| Hardware Mappings | Directory, PCI and USB mappings |
-| Pools | Resource pools with member list |
-
-### Node Detail Sheet
-
-Per-node sheet (linked from Nodes list), with `← Back` to Nodes. Skipped entirely if `Node.Detail.Enabled = false`.
-
-| Table | Contents |
-|-------|----------|
-| Services | System service status |
-| Network | Interface configuration with IPv4/IPv6, bond, VLAN, OVS details |
-| /etc/hosts | Host name resolution entries |
-| Disks | Physical disk list *(if `Node.Detail.Disk.IncludeDiskDetail`)* |
-| SMART Data | SMART attributes per disk *(if `Node.Detail.Disk.IncludeSmartData`)* |
-| ZFS Pools / ZFS Pool Status | ZFS pool health, usage, vdev tree *(if `Node.Detail.Disk.IncludeDiskDetail`)* |
-| Directory | Filesystem mount points *(if `Node.Detail.Disk.IncludeDiskDetail`)* |
-| APT Repository / APT Update / Package Versions | APT info *(if `Node.Detail.IncludeApt`)* |
-| Firewall Logs | Node firewall log *(if `Firewall.Enabled`)* |
-| SSL Certificates | Certificate validity, expiry, fingerprint |
-| Tasks | Recent task history *(if `Node.Detail.Tasks.Enabled`)* |
-
-### VM / CT Detail Sheet
-
-Per-VM/CT sheet (linked from Vms/Containers list), with `← Back` to list. Skipped entirely if `Guest.Detail.Enabled = false`.
-
-| Table | Contents |
-|-------|----------|
-| Agent OS Info | OS name, kernel, version *(QEMU agent, running VMs only)* |
-| Agent Network | Network interfaces from QEMU agent |
-| Agent Disks | Filesystems from QEMU agent |
-| Network | Interface config from VM config |
-| Disks | Disk list with storage, size, cache |
-| Firewall Logs | VM/CT firewall log *(if `Firewall.Enabled`)* |
-| Tasks | Recent task history *(if `Guest.Detail.Tasks.Enabled`)* |
-
-### Global Sheets
-
-**Network** — one table for node interfaces, one for VM/CT NICs (MAC, bridge, VLAN, IPs, model)
-
-**Disks** — Storage Configuration (cluster-level), Storages (per-node usage), VM Disks (all VM/CT disks)
-
-**Partitions** — guest disk partitions read via QEMU agent (node, VM ID, mount point, filesystem, size, used)
-
-**Snapshots** — all snapshots across all VMs/CTs with RAM flag, size *(if available)*, date
-
-**Firewall** — three tables: Rules, Aliases, IP Sets — each row has ScopeType (cluster/node/qemu/lxc), Scope, ScopeName *(if enabled)*
-
-**Syslog** — one unified table, each row parsed: Node, Date, Time, Host, Service, PID, Message *(if enabled)*
-
-**Cluster Log** — cluster event log with TimeDate, Node, User, Service, Severity, Message *(if enabled)*
-
-**Cluster Tasks** — all recent tasks across the cluster with Node, Type, User, Status, StartTime, Duration *(if enabled)*
-
-**RRD Nodes / RRD Storage / RRD Guests** — single table per sheet with resource identifier columns + time-series metrics *(if enabled)*
-
-</details>
-
----
-
 ## Settings Reference
 
-Customize the report by creating and editing a `settings.json` file:
+Three built-in profiles (`--fast`, default, `--full`) cover the common cases — see the [profiles comparison](#profiles-comparison) above. For fine-grained control bring your own settings file:
 
 ```bash
-# Step 1 — generate a settings file (pick your starting profile)
-cv4pve-report create-settings          # Standard (default)
-cv4pve-report create-settings --fast   # Fast
-cv4pve-report create-settings --full   # Full
-
-# Step 2 — edit settings.json to your needs
-
-# Step 3 — run with your custom settings
-cv4pve-report --host=YOUR_HOST --api-token=user@realm!token=uuid export --settings-file=settings.json
+cv4pve-report create-settings --full > settings.json   # generate from a profile
+cv4pve-report ... export --settings-file=settings.json  # use it
 ```
 
-> **Tip:** setting `Enabled = false` or `Include*Sheet = false` on any section skips that sheet entirely — useful on large clusters to reduce file size and generation time.
->
-> Key flags:
-> - `Guest.Detail.Enabled = false` — skip all per-VM/CT detail sheets (one sheet per VM)
-> - `Node.Detail.Enabled = false` — skip all per-node detail sheets
-> - `Cluster.IncludeSheet = false` — skip the Cluster sheet
-> - `Guest.IncludeDisksSheet / IncludeSnapshotsSheet / IncludePartitionsSheet = false` — skip individual global sheets
-> - `Firewall.Enabled = false` — skip firewall sheet and firewall logs in all detail sheets
-
-<details>
-<summary><strong>Full settings.json with all defaults</strong></summary>
-
-```jsonc
-{
-  "MaxParallelRequests": 5,        // global parallel API requests (1 = sequential)
-  "ApiTimeout": 0,                 // HTTP timeout in seconds (0 = 100s)
-  "Cluster": {
-    "IncludeSheet": true,          // cluster overview sheet (users, roles, ACL, backup jobs)
-    "Log": {
-      "Enabled": false,            // cluster event log sheet
-      "MaxCount": 0                // 0 = unlimited
-    },
-    "IncludeTasksSheet": true      // cluster tasks sheet
-  },
-  "Node": {
-    "Names": "@all",               // @all | pve1 | pve1,pve2 | pve*
-    "Detail": {
-      "Enabled": true,             // per-node detail sheets (set false to skip all, useful on large clusters)
-      "Disk": {
-        "IncludeDiskDetail": true, // physical disks, ZFS, directory mount points
-        "IncludeSmartData": false  // SMART attributes per disk (one API call per disk — slow)
-      },
-      "Tasks": {
-        "Enabled": true,
-        "OnlyErrors": false,       // show only failed tasks
-        "MaxCount": 0,             // 0 = unlimited
-        "Source": "all"            // all | local | active
-      },
-      "IncludeApt": true,          // APT repositories, available updates, installed packages
-      "IncludeFirewallLog": true   // firewall log in node detail sheet (requires Firewall.Enabled)
-    },
-    "RrdData": {
-      "Enabled": true,
-      "TimeFrame": "Day",          // Hour | Day | Week | Month | Year
-      "Consolidation": "Average"   // Average | Maximum
-    },
-    "IncludeReplicationSheet": true, // replication jobs global sheet
-    "Syslog": {
-      "Enabled": false,
-      "MaxCount": 500,
-      "Since": null,               // DateOnly e.g. "2024-01-01"
-      "Until": null
-    }
-  },
-  "Guest": {
-    "Ids": "@all",                 // see VM/CT Selection Patterns below
-    "Detail": {
-      "Enabled": true,             // per-VM/CT detail sheets (set false to skip all, useful on large clusters)
-      "Tasks": {
-        "Enabled": true,
-        "OnlyErrors": false,
-        "MaxCount": 0,
-        "Source": "all"
-      },
-      "IncludeFirewallLog": true   // firewall log in VM/CT detail sheet (requires Firewall.Enabled)
-    },
-    "RrdData": {
-      "Enabled": false,            // disabled by default — can be large on big clusters
-      "TimeFrame": "Day",
-      "Consolidation": "Average"
-    },
-    "IncludeSnapshotsSheet": true, // global snapshots sheet
-    "IncludeDisksSheet": true,     // global disks sheet
-    "IncludePartitionsSheet": true, // guest disk partitions via QEMU agent
-    "IncludeQemuAgent": true,      // OS info, network, filesystems (running VMs with agent only)
-    "QemuAgentTimeout": 3          // seconds to wait for QEMU agent response before giving up
-  },
-  "Storage": {
-    "IncludeContentSheet": true,   // storage content (ISO, templates, disk images)
-    "IncludeBackupsSheet": true,   // backup files
-    "RrdData": {
-      "Enabled": true,
-      "TimeFrame": "Day",
-      "Consolidation": "Average"
-    }
-  },
-  "Firewall": {
-    "Enabled": true,               // global firewall sheet + firewall logs in detail sheets
-    "MaxCount": 0,                 // 0 = unlimited firewall log lines
-    "Since": null,                 // DateOnly e.g. "2024-01-01"
-    "Until": null
-  }
-}
-```
-
-</details>
-
----
-
-## Performance Tuning
-
-By default the report runs up to **5 parallel API requests** (`MaxParallelRequests = 5`). This works well for most clusters, but you can tune it to match your environment.
-
-### Speed up the report
-
-Increase `MaxParallelRequests` to fetch more data at the same time:
-
-```jsonc
-"MaxParallelRequests": 10
-```
-
-> **Don't go too high.** Each parallel request is a real HTTP call to Proxmox. Too many at once can slow down the API, increase memory usage on both sides, and make the report less stable. Values between 5 and 15 are a reasonable range.
-
-### Handle slow or high-latency clusters
-
-Parallelism means more simultaneous requests — if your cluster is slow or the network has high latency, some calls may time out. Increase `ApiTimeout` to give them more time:
-
-```jsonc
-"ApiTimeout": 300   // seconds (0 = 100s)
-```
-
-### Speed up QEMU agent calls
-
-Each running VM with the QEMU agent enabled requires an agent call to collect OS info, network interfaces and disk partitions. If the agent is slow to respond, the report waits up to `QemuAgentTimeout` seconds per VM before giving up:
-
-```jsonc
-"QemuAgentTimeout": 3   // default: 3 seconds
-```
-
-Lower this value if you have many VMs and the agent is unreliable. Set it to `1` for a quick scan, or raise it if agents are consistently slow.
-
-### Debug API calls
-
-Add `--debug` to see every API call with its duration in milliseconds — useful to identify which calls are slow:
-
-```bash
-cv4pve-report @config.rsp export --debug
-```
-
-### Summary
-
-| Setting | Effect | Default |
-|---------|--------|---------|
-| `MaxParallelRequests` ↑ | Faster, but more load on Proxmox and higher memory usage | 5 |
-| `ApiTimeout` ↑ | Avoids timeouts on slow/high-latency clusters | 100s |
-| `QemuAgentTimeout` ↓ | Less waiting per VM when agent is slow or absent | 3s |
+> Full reference: **[Settings guide](docs/settings.md)** — all properties, annotated JSON example, skip-heavy-section flags, and performance tuning (`MaxParallelRequests`, `ApiTimeout`, `QemuAgentTimeout`).
 
 ---
 

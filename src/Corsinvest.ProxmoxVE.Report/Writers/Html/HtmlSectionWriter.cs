@@ -14,11 +14,9 @@ internal sealed class HtmlSectionWriter(HtmlReportWriter parent, string name, st
     public string Name { get; } = name;
     public string DisplayName { get; } = displayName;
     public IReadOnlyList<IBlock> Blocks => _blocks;
-    /// <summary>HTML doesn't render breadcrumbs (the sidebar already shows context), so this is a no-op.</summary>
-    public void AddBackLink(string label, string linkKey) { }
 
-    public void AddKeyValue(string title, IDictionary<string, object?> items)
-        => _blocks.Add(new KeyValueBlock(title, items));
+    public void AddBackLink(string label, string linkKey) { }
+    public void AddKeyValue(string title, IDictionary<string, object?> items) => _blocks.Add(new KeyValueBlock(title, items));
 
     public void AddKeyValueRow(params (string Title, IDictionary<string, object?> Items)[] blocks)
     {

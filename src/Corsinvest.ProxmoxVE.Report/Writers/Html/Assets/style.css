@@ -1,52 +1,43 @@
-/* cv4pve-report — HTML report stylesheet
- *
- * Design tokens — Fluent UI inspired
- * ----------------------------------
- * Adopts the Fluent UI v9 colour ramps and depth tokens directly:
- *   - Brand:    Communication Blue (#0f6cbd primary, lifted to #2899f5 in dark)
- *   - Neutrals: Fluent neutral palette (#fafafa canvas → #292929 dark canvas)
- *   - Status:   Fluent semantic green/grey for flags
- *   - Shadows:  Fluent depth tokens (depth-2/4/8/16) for surface elevation
- *   - Radius:   Fluent radius-sm/md/lg
- *
- * No external Fluent libraries are used — the visual language is reproduced
- * with vanilla CSS variables so the report stays a single self-contained zip.
+/*
+ * SPDX-FileCopyrightText: Copyright Corsinvest Srl
+ * SPDX-License-Identifier: GPL-3.0-only
  */
+
+/* cv4pve-report — HTML report stylesheet.
+ * Design tokens reproduce Fluent UI v9 (Communication Blue brand, neutral palette,
+ * depth/radius tokens) with vanilla CSS variables — no external dependency. */
 
 :root {
   /* Brand — Fluent Communication Blue */
-  --color-primary:        #0f6cbd;
-  --color-primary-hover:  #115ea3;
-  --color-primary-soft:   #ebf3fc;       /* tinted background for hover/header */
-  --color-link:           #0f6cbd;
+  --color-primary: #0f6cbd;
+  --color-primary-hover: #115ea3;
+  --color-primary-soft: #ebf3fc; /* tinted background for hover/header */
+  --color-link: #0f6cbd;
 
-  /* Neutrals — Fluent neutral palette
-     Three-level surface ramp creates a clear visual hierarchy:
-     canvas (table content) is the brightest, body is one step down, sidebar is two. */
-  --color-text:           #242424;
-  --color-text-muted:     #616161;
-  --color-bg:             #fafafa;       /* main canvas (between body & tables) */
-  --color-bg-sidebar:     #efefef;       /* sidebar — distinctly darker so it stands as a panel */
-  --color-bg-table:       #ffffff;       /* tables / cards on top */
-  --color-border:         #e0e0e0;
+  /* Neutrals — three-level surface ramp: tables brightest, body one step down, sidebar two. */
+  --color-text: #242424;
+  --color-text-muted: #616161;
+  --color-bg: #fafafa; /* main canvas (between body & tables) */
+  --color-bg-sidebar: #efefef; /* sidebar — distinctly darker so it stands as a panel */
+  --color-bg-table: #ffffff; /* tables / cards on top */
+  --color-border: #e0e0e0;
 
   /* Tables */
-  --color-table-header:   #f0f0f0;       /* subtle, lets primary stand out */
-  --color-table-zebra:    #fafafa;
-  --color-table-hover:    var(--color-primary-soft);
+  --color-table-header: #f0f0f0; /* subtle, lets primary stand out */
+  --color-table-zebra: #fafafa;
+  --color-table-hover: var(--color-primary-soft);
 
-  /* Form inputs — slightly darker stroke than generic border so the field
-     edge stands out clearly against the canvas (Fluent stroke-1/stroke-2 ramp). */
-  --color-input-border:   #b8b8b8;
+  /* Form inputs — darker stroke than generic border so the field edge is visible on canvas. */
+  --color-input-border: #b8b8b8;
 
   /* Status — Fluent semantic */
-  --color-flag-yes:       #107c10;
-  --color-flag-no:        #c8c8c8;
+  --color-flag-yes: #107c10;
+  --color-flag-no: #c8c8c8;
 
   /* Depth tokens — Fluent shadow ramp */
-  --shadow-2:  0 0 2px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.14);
-  --shadow-4:  0 0 2px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.14);
-  --shadow-8:  0 0 2px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.14);
+  --shadow-2: 0 0 2px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.14);
+  --shadow-4: 0 0 2px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.14);
+  --shadow-8: 0 0 2px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.14);
   --shadow-16: 0 0 2px rgba(0, 0, 0, 0.12), 0 8px 16px rgba(0, 0, 0, 0.14);
 
   /* Radius tokens */
@@ -56,71 +47,76 @@
 
   /* Layout */
   --sidebar-width: 280px;
-  --font-stack: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+  --font-stack:
+    "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
 }
 
 /* Manual dark theme (set by the toggle button) — Fluent dark palette */
 [data-theme="dark"] {
-  --color-primary:        #2899f5;
-  --color-primary-hover:  #479ef5;
-  --color-primary-soft:   #082338;
-  --color-link:           #2899f5;
+  --color-primary: #2899f5;
+  --color-primary-hover: #479ef5;
+  --color-primary-soft: #082338;
+  --color-link: #2899f5;
 
-  --color-text:           #ffffff;
-  --color-text-muted:     #c7c7c7;
-  --color-bg:             #1f1f1f;
-  --color-bg-sidebar:     #292929;
-  --color-bg-table:       #292929;
-  --color-border:         #525252;
+  --color-text: #ffffff;
+  --color-text-muted: #c7c7c7;
+  --color-bg: #1f1f1f;
+  --color-bg-sidebar: #292929;
+  --color-bg-table: #292929;
+  --color-border: #525252;
 
-  --color-table-header:   #333333;
-  --color-table-zebra:    #2b2b2b;
-  --color-table-hover:    var(--color-primary-soft);
+  --color-table-header: #333333;
+  --color-table-zebra: #2b2b2b;
+  --color-table-hover: var(--color-primary-soft);
 
-  --color-input-border:   #6e6e6e;
+  --color-input-border: #6e6e6e;
 
-  --color-flag-yes:       #54b054;
-  --color-flag-no:        #5c5c5c;
+  --color-flag-yes: #54b054;
+  --color-flag-no: #5c5c5c;
 
   /* Stronger shadows on dark surfaces */
-  --shadow-2:  0 0 2px rgba(0, 0, 0, 0.36), 0 1px 2px rgba(0, 0, 0, 0.40);
-  --shadow-4:  0 0 2px rgba(0, 0, 0, 0.36), 0 2px 4px rgba(0, 0, 0, 0.40);
-  --shadow-8:  0 0 2px rgba(0, 0, 0, 0.36), 0 4px 8px rgba(0, 0, 0, 0.40);
-  --shadow-16: 0 0 2px rgba(0, 0, 0, 0.36), 0 8px 16px rgba(0, 0, 0, 0.40);
+  --shadow-2: 0 0 2px rgba(0, 0, 0, 0.36), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-4: 0 0 2px rgba(0, 0, 0, 0.36), 0 2px 4px rgba(0, 0, 0, 0.4);
+  --shadow-8: 0 0 2px rgba(0, 0, 0, 0.36), 0 4px 8px rgba(0, 0, 0, 0.4);
+  --shadow-16: 0 0 2px rgba(0, 0, 0, 0.36), 0 8px 16px rgba(0, 0, 0, 0.4);
 }
 
 /* Auto dark mode (no explicit user choice) follows OS preference. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --color-primary:        #2899f5;
-    --color-primary-hover:  #479ef5;
-    --color-primary-soft:   #082338;
-    --color-link:           #2899f5;
+    --color-primary: #2899f5;
+    --color-primary-hover: #479ef5;
+    --color-primary-soft: #082338;
+    --color-link: #2899f5;
 
-    --color-text:           #ffffff;
-    --color-text-muted:     #c7c7c7;
-    --color-bg:             #1f1f1f;
-    --color-bg-sidebar:     #292929;
-    --color-bg-table:       #292929;
-    --color-border:         #525252;
+    --color-text: #ffffff;
+    --color-text-muted: #c7c7c7;
+    --color-bg: #1f1f1f;
+    --color-bg-sidebar: #292929;
+    --color-bg-table: #292929;
+    --color-border: #525252;
 
-    --color-table-header:   #333333;
-    --color-table-zebra:    #2b2b2b;
-    --color-table-hover:    var(--color-primary-soft);
+    --color-table-header: #333333;
+    --color-table-zebra: #2b2b2b;
+    --color-table-hover: var(--color-primary-soft);
 
-    --color-input-border:   #6e6e6e;
+    --color-input-border: #6e6e6e;
 
-    --color-flag-yes:       #54b054;
-    --color-flag-no:        #5c5c5c;
+    --color-flag-yes: #54b054;
+    --color-flag-no: #5c5c5c;
 
-    --shadow-2:  0 0 2px rgba(0, 0, 0, 0.36), 0 1px 2px rgba(0, 0, 0, 0.40);
-    --shadow-4:  0 0 2px rgba(0, 0, 0, 0.36), 0 2px 4px rgba(0, 0, 0, 0.40);
-    --shadow-8:  0 0 2px rgba(0, 0, 0, 0.36), 0 4px 8px rgba(0, 0, 0, 0.40);
-    --shadow-16: 0 0 2px rgba(0, 0, 0, 0.36), 0 8px 16px rgba(0, 0, 0, 0.40);
+    --shadow-2: 0 0 2px rgba(0, 0, 0, 0.36), 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-4: 0 0 2px rgba(0, 0, 0, 0.36), 0 2px 4px rgba(0, 0, 0, 0.4);
+    --shadow-8: 0 0 2px rgba(0, 0, 0, 0.36), 0 4px 8px rgba(0, 0, 0, 0.4);
+    --shadow-16: 0 0 2px rgba(0, 0, 0, 0.36), 0 8px 16px rgba(0, 0, 0, 0.4);
   }
 }
 
-*, *::before, *::after { box-sizing: border-box; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
 html {
   font-family: var(--font-stack);
@@ -173,8 +169,12 @@ body {
   background: var(--color-bg);
 }
 
-a { color: var(--color-link); }
-a:hover { text-decoration: underline; }
+a {
+  color: var(--color-link);
+}
+a:hover {
+  text-decoration: underline;
+}
 
 .layout {
   display: grid;
@@ -248,7 +248,9 @@ a:hover { text-decoration: underline; }
   color: var(--color-text);
   font-size: 0.85rem;
   font-family: inherit;
-  transition: border-color 0.12s, box-shadow 0.12s;
+  transition:
+    border-color 0.12s,
+    box-shadow 0.12s;
 }
 
 .sidebar input[type="search"]:focus,
@@ -274,8 +276,12 @@ a:hover { text-decoration: underline; }
   list-style: none;
 }
 
-.sidebar nav summary::-webkit-details-marker { display: none; }
-.sidebar nav summary::marker { content: ""; }
+.sidebar nav summary::-webkit-details-marker {
+  display: none;
+}
+.sidebar nav summary::marker {
+  content: "";
+}
 
 /* Chevron icon — uses CSS mask so it inherits currentColor and stays crisp at any size. */
 .sidebar nav summary::before {
@@ -283,8 +289,10 @@ a:hover { text-decoration: underline; }
   width: 10px;
   height: 10px;
   background-color: var(--color-text-muted);
-  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M9 6l6 6-6 6' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/></svg>") center / contain no-repeat;
-  mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M9 6l6 6-6 6' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/></svg>") center / contain no-repeat;
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M9 6l6 6-6 6' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/></svg>")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M9 6l6 6-6 6' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/></svg>")
+    center / contain no-repeat;
   transition: transform 0.15s;
   flex-shrink: 0;
 }
@@ -293,7 +301,6 @@ a:hover { text-decoration: underline; }
   transform: rotate(90deg);
 }
 
-/* When the summary contains a hyperlink, let the link expand to fill the row. */
 .sidebar nav summary a {
   flex: 1;
   color: inherit;
@@ -311,7 +318,6 @@ a:hover { text-decoration: underline; }
   font-size: 0.75rem;
 }
 
-/* Indent children of an expanded group */
 .sidebar nav details > a {
   padding-left: 1.4rem;
 }
@@ -328,9 +334,11 @@ a:hover { text-decoration: underline; }
   text-overflow: ellipsis;
 }
 
-/* Hidden attribute set by the sidebar filter — must override `display: block` above. */
+/* `[hidden]` must beat the `display: block` set above. */
 .sidebar nav a[hidden],
-.sidebar nav details[hidden] { display: none; }
+.sidebar nav details[hidden] {
+  display: none;
+}
 
 .sidebar nav a:hover {
   background: var(--color-table-hover);
@@ -360,8 +368,7 @@ a:hover { text-decoration: underline; }
 
 /* ---------- Lazy sidebar groups (Nodes/VMs/Containers) ---------- */
 
-/* The lazy-injected children container; cap height so very long lists don't
-   push the rest of the sidebar off-screen — scroll inside the group instead. */
+/* Cap height so long lists scroll inside the group instead of pushing the sidebar off-screen. */
 .sidebar nav .group-children {
   max-height: 22rem;
   overflow-y: auto;
@@ -383,7 +390,10 @@ a:hover { text-decoration: underline; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s,
+    border-color 0.12s;
 }
 
 .theme-toggle:hover {
@@ -397,18 +407,29 @@ a:hover { text-decoration: underline; }
   outline-offset: 2px;
 }
 
-/* Show sun by default (= light mode is active, click to switch to dark).
-   Hide it and show moon when dark mode is active. */
-.theme-toggle .theme-icon-light { display: block; }
-.theme-toggle .theme-icon-dark { display: none; }
+/* Sun = light active (click to dark). Moon = dark active. */
+.theme-toggle .theme-icon-light {
+  display: block;
+}
+.theme-toggle .theme-icon-dark {
+  display: none;
+}
 
-[data-theme="dark"] .theme-icon-light { display: none; }
-[data-theme="dark"] .theme-icon-dark { display: block; }
+[data-theme="dark"] .theme-icon-light {
+  display: none;
+}
+[data-theme="dark"] .theme-icon-dark {
+  display: block;
+}
 
 /* Auto dark mode (no explicit user choice) follows system preference */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .theme-icon-light { display: none; }
-  :root:not([data-theme="light"]) .theme-icon-dark { display: block; }
+  :root:not([data-theme="light"]) .theme-icon-light {
+    display: none;
+  }
+  :root:not([data-theme="light"]) .theme-icon-dark {
+    display: block;
+  }
 }
 
 /* ---------- Main ---------- */
@@ -416,7 +437,7 @@ a:hover { text-decoration: underline; }
 main {
   padding: 1.5rem 2rem;
   max-width: 100%;
-  min-width: 0;       /* allow children to shrink so .table-scroll can scroll instead */
+  min-width: 0; /* allow children to shrink so .table-scroll can scroll instead */
 }
 
 main h1 {
@@ -435,8 +456,7 @@ main h2 {
   font-size: 0.85rem;
 }
 
-/* Page-level table of contents — mirrors the per-sheet Index used in Excel.
-   Renders as a small panel at the top of the page with anchor links to each section. */
+/* Page-level table of contents — small panel at the top, anchor links to each section. */
 .page-toc {
   background: var(--color-bg-table);
   border: 1px solid var(--color-border);
@@ -464,14 +484,19 @@ main h2 {
   column-gap: 2rem;
 }
 
-.page-toc li { padding: 0.1rem 0; break-inside: avoid; }
+.page-toc li {
+  padding: 0.1rem 0;
+  break-inside: avoid;
+}
 
 .page-toc a {
   color: var(--color-link);
   text-decoration: none;
 }
 
-.page-toc a:hover { text-decoration: underline; }
+.page-toc a:hover {
+  text-decoration: underline;
+}
 
 .back-link a {
   color: var(--color-text-muted);
@@ -484,8 +509,7 @@ main h2 {
 
 /* ---------- Tables ---------- */
 
-/* Horizontal scroll wrapper around wide data tables. Keeps the scroll on the
-   table itself instead of the whole <main>, so the sidebar/title stay fixed. */
+/* Wide tables scroll inside their wrapper, not the whole <main>, so sidebar/title stay fixed. */
 .table-scroll {
   overflow-x: auto;
   margin: 0.5rem 0 1.5rem 0;
@@ -508,11 +532,21 @@ table.data thead th {
   top: 0;
   background: var(--color-table-header);
   font-weight: 600;
-  text-align: left;
-  padding: 0.4rem 0.6rem;
+  padding: 0.4rem 2.2rem 0.4rem 0.6rem; /* room on the right for sort indicator + filter funnel */
   border-bottom: 2px solid var(--color-border);
   white-space: nowrap;
 }
+
+/* The .th-title span (around the column name) honours the column's text alignment;
+   sort indicator and filter toggle float to the right corner of the cell regardless. */
+table.data thead th .th-title {
+  display: block;
+  text-align: left;
+}
+
+table.data thead th[data-type="number"] .th-title { text-align: right; }
+table.data thead th[data-flag="true"]   .th-title { text-align: center; }
+
 
 table.data tbody td {
   padding: 0.3rem 0.6rem;
@@ -520,8 +554,7 @@ table.data tbody td {
   vertical-align: middle;
 }
 
-/* Sticky first column: keeps the row identifier (Node, VmId, Name, …) visible
-   while the user scrolls horizontally on wide tables. */
+/* Sticky first column — row identifier (Node, VmId, …) stays visible during horizontal scroll. */
 table.data thead th:first-child,
 table.data tbody td:first-child,
 table.data tfoot th:first-child {
@@ -536,23 +569,53 @@ table.data thead th:first-child {
   z-index: 2;
 }
 
-table.data tbody tr:nth-child(even) td:first-child { background: var(--color-table-zebra); }
-table.data tbody tr:hover td:first-child { background: var(--color-table-hover); }
-table.data tfoot th:first-child { background: var(--color-table-header); }
+table.data tbody tr:nth-child(even) td:first-child {
+  background: var(--color-table-zebra);
+}
+table.data tbody tr:hover td:first-child {
+  background: var(--color-table-hover);
+}
+table.data tfoot th:first-child {
+  background: var(--color-table-header);
+}
 
-table.data tbody tr:nth-child(even) { background: var(--color-table-zebra); }
-table.data tbody tr:hover { background: var(--color-table-hover); }
+table.data tbody tr:nth-child(even) {
+  background: var(--color-table-zebra);
+}
+table.data tbody tr:hover {
+  background: var(--color-table-hover);
+}
 
-table.data td.num,
-table.data th[data-type="number"] { text-align: right; font-variant-numeric: tabular-nums; }
+table.data td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
 
-table.data td.flag { text-align: center; font-weight: 600; }
-table.data td.flag .flag-yes { color: var(--color-flag-yes); font-size: 1.05em; }
-table.data td.flag .flag-no { color: var(--color-flag-no); }
+table.data thead th[data-type="number"] {
+  font-variant-numeric: tabular-nums;
+}
 
-table.data td.wrap { white-space: pre-wrap; max-width: 30em; }
+table.data td.flag {
+  text-align: center;
+  font-weight: 600;
+}
+table.data td.flag .flag-yes {
+  color: var(--color-flag-yes);
+  font-size: 1.05em;
+}
+table.data td.flag .flag-no {
+  color: var(--color-flag-no);
+}
 
-table.data td.date { white-space: nowrap; font-variant-numeric: tabular-nums; }
+table.data td.wrap {
+  white-space: pre-wrap;
+  max-width: 30em;
+}
+
+table.data td.date {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
 
 table.data tfoot th {
   padding: 0.4rem 0.6rem;
@@ -560,8 +623,7 @@ table.data tfoot th {
   border-top: 2px solid var(--color-border);
 }
 
-/* Per-table filter toolbar (injected via JS) — search input + matched row count
-   pushed to the right edge so the table title (above) keeps the visual lead. */
+/* Filter toolbar injected by JS — pushed right so the table title keeps the visual lead. */
 .table-toolbar {
   display: flex;
   align-items: center;
@@ -570,34 +632,125 @@ table.data tfoot th {
   margin: 0.5rem 0 0 0;
 }
 
-.table-filter {
-  width: 24rem;
-  max-width: 100%;
-  padding: 0.3rem 0.6rem;
-  border: 1px solid var(--color-input-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-bg-table);
-  color: var(--color-text);
-  font-family: inherit;
-  font-size: 0.85rem;
-  transition: border-color 0.12s, box-shadow 0.12s;
-}
-
-.table-filter:focus,
-.table-filter:focus-visible {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px var(--color-primary-soft);
-}
-
 .table-count {
   font-size: 0.8rem;
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
 }
 
+/* Wrapper around [mode-toggle | input]: looks like a single bordered field. */
+.filter-box {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-table);
+  transition:
+    border-color 0.12s,
+    box-shadow 0.12s;
+}
+
+.filter-box:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-soft);
+}
+
+.filter-mode {
+  width: 1.6rem;
+  padding: 0;
+  border: 0;
+  border-right: 1px solid var(--color-input-border);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: bold;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+}
+
+.filter-box.exact .filter-mode {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.table-filter,
+.col-filter {
+  flex: 1;
+  min-width: 0;
+  padding: 0.3rem 0.6rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+
+.table-filter {
+  width: 24rem;
+  max-width: 100%;
+}
+
+.table-filter:focus,
+.col-filter:focus {
+  outline: none;
+}
+
+/* Per-column filter funnel — absolute-positioned to the right of the cell, just left of the sort indicator. */
+.col-filter-toggle {
+  position: absolute;
+  right: 1.1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 0;
+  background: currentColor;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.12s,
+    color 0.12s;
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M3 4h18l-7 9v7l-4-2v-5z' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M3 4h18l-7 9v7l-4-2v-5z' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>")
+    center / contain no-repeat;
+}
+
+thead th:hover .col-filter-toggle,
+thead th.col-filtered .col-filter-toggle {
+  opacity: 1;
+}
+
+thead th.col-filtered .col-filter-toggle {
+  color: var(--color-primary);
+}
+
+.col-filter-row > td {
+  padding: 0.2rem 0.4rem;
+  background: var(--color-bg-table);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.col-filter-row .filter-box {
+  display: flex;
+}
+
+.col-filter-row .col-filter {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.4rem;
+}
+
 @media print {
-  .table-toolbar { display: none; }
+  .table-toolbar,
+  .col-filter-toggle,
+  .col-filter-row,
+  .page-toc {
+    display: none;
+  }
 }
 
 /* Sortable headers */
@@ -607,14 +760,25 @@ table.sortable thead th {
   user-select: none;
 }
 
+/* Sort indicator pinned to the right edge of the cell, regardless of title alignment. */
 table.sortable thead th::after {
-  content: " ↕";
+  content: "↕";
+  position: absolute;
+  right: 0.4rem;
+  top: 50%;
+  transform: translateY(-50%);
   opacity: 0.3;
   font-size: 0.75em;
 }
 
-table.sortable thead th[aria-sort="ascending"]::after { content: " ▲"; opacity: 0.9; }
-table.sortable thead th[aria-sort="descending"]::after { content: " ▼"; opacity: 0.9; }
+table.sortable thead th[aria-sort="ascending"]::after {
+  content: "▲";
+  opacity: 0.9;
+}
+table.sortable thead th[aria-sort="descending"]::after {
+  content: "▼";
+  opacity: 0.9;
+}
 
 /* ---------- Key/Value ---------- */
 
@@ -651,20 +815,26 @@ table.kv td {
 }
 
 table.kv tbody tr:last-child th,
-table.kv tbody tr:last-child td { border-bottom: none; }
+table.kv tbody tr:last-child td {
+  border-bottom: none;
+}
 
 .kv-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
   gap: 1.5rem;
   margin-bottom: 1.5rem;
 }
 
-.kv-row .kv-section { margin-bottom: 0; }
+.kv-row .kv-section {
+  margin-bottom: 0;
+}
 
 /* ---------- Cover ---------- */
 
-.cover-info, .cover-filters, .cover-contents {
+.cover-info,
+.cover-filters,
+.cover-contents {
   margin-bottom: 1.5rem;
 }
 
@@ -698,7 +868,9 @@ table.kv tbody tr:last-child td { border-bottom: none; }
 }
 
 @media print {
-  .print-footer { display: block; }
+  .print-footer {
+    display: block;
+  }
 }
 
 /* ---------- Network diagram wrapper page ---------- */
@@ -750,7 +922,10 @@ table.kv tbody tr:last-child td { border-bottom: none; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
 }
 
 .page-action:hover {
@@ -760,7 +935,9 @@ table.kv tbody tr:last-child td { border-bottom: none; }
 }
 
 @media print {
-  .page-actions { display: none; }
+  .page-actions {
+    display: none;
+  }
 }
 
 /* ---------- Back to top button ---------- */
@@ -783,7 +960,12 @@ table.kv tbody tr:last-child td { border-bottom: none; }
   opacity: 0;
   visibility: hidden;
   transform: translateY(8px);
-  transition: opacity 0.2s, transform 0.2s, visibility 0.2s, background 0.15s, box-shadow 0.15s;
+  transition:
+    opacity 0.2s,
+    transform 0.2s,
+    visibility 0.2s,
+    background 0.15s,
+    box-shadow 0.15s;
   z-index: 10;
   box-shadow: var(--shadow-4);
 }
@@ -813,11 +995,21 @@ table.kv tbody tr:last-child td { border-bottom: none; }
 }
 
 @media print {
-  .sidebar { display: none; }
-  .back-to-top { display: none; }
-  .table-toolbar { display: none; }
-  .layout { grid-template-columns: 1fr; }
-  main { padding: 0; }
+  .sidebar {
+    display: none;
+  }
+  .back-to-top {
+    display: none;
+  }
+  .table-toolbar {
+    display: none;
+  }
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  main {
+    padding: 0;
+  }
 
   /* Drop the screen-only horizontal scroll wrapper so all table content
      reaches the printer. The font-size + word-break below keep wide tables
@@ -830,21 +1022,42 @@ table.kv tbody tr:last-child td { border-bottom: none; }
   }
 
   /* Compact tables for paper */
-  table.data { font-size: 0.7rem; box-shadow: none; }
-  table.data td { white-space: normal; word-break: break-word; }
+  table.data {
+    font-size: 0.7rem;
+    box-shadow: none;
+  }
+  table.data td {
+    white-space: normal;
+    word-break: break-word;
+  }
 
   /* Sticky positioning is meaningless on paper */
   table.data thead th:first-child,
   table.data tbody td:first-child,
-  table.data tfoot th:first-child { position: static; }
+  table.data tfoot th:first-child {
+    position: static;
+  }
 
   /* Repeat thead on every printed page; avoid splitting rows mid-page */
-  thead { display: table-header-group; }
-  tr { page-break-inside: avoid; }
-  table { page-break-inside: auto; }
+  thead {
+    display: table-header-group;
+  }
+  tr {
+    page-break-inside: avoid;
+  }
+  table {
+    page-break-inside: auto;
+  }
 
   /* Drop interactive affordances */
-  a { color: inherit; text-decoration: none; }
-  table.sortable thead th { cursor: default; }
-  table.sortable thead th::after { content: ""; }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+  table.sortable thead th {
+    cursor: default;
+  }
+  table.sortable thead th::after {
+    content: "";
+  }
 }

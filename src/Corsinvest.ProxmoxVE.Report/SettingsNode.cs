@@ -16,7 +16,7 @@ public class SettingsNode
     public string Names { get; set; } = "@all";
 
     /// <summary>
-    /// Per-node detail sheet settings
+    /// Per-node detail settings
     /// </summary>
     public SettingsNodeDetail Detail { get; set; } = new();
 
@@ -26,9 +26,9 @@ public class SettingsNode
     public SettingsRrdData RrdData { get; set; } = new();
 
     /// <summary>
-    /// Include replication jobs global sheet
+    /// Include replication jobs
     /// </summary>
-    public bool IncludeReplicationSheet { get; set; } = true;
+    public bool IncludeReplication { get; set; } = true;
 
     /// <summary>
     /// Syslog settings
