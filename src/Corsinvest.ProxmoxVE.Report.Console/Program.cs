@@ -45,7 +45,7 @@ var cmdExport = app.AddCommand("export", "Generate report");
 var optExportFast = cmdExport.AddOption<bool>("--fast", "Use fast profile (structure only, no heavy data)");
 var optExportFull = cmdExport.AddOption<bool>("--full", "Use full profile (everything enabled, RRD on week timeframe)");
 var optExportFormat = cmdExport.AddOption<ReportFormat>("--format", "Output format (default: Xlsx)");
-var optOutput = cmdExport.AddOption<string>("--output|-o", "Output file path (default: Report_YYYYMMDD_HHmmss.<ext> in current directory)");
+var optOutput = cmdExport.AddOption<string>("--output|-o", "Output .zip file. Default: ./Report_YYYYMMDD_HHmmss.zip");
 cmdExport.SetAction(async (action) =>
 {
     var client = await app.ClientTryLoginAsync(loggerFactory);
@@ -80,27 +80,19 @@ cmdExport.SetAction(async (action) =>
     });
 
     var format = action.GetValue(optExportFormat);
-    var ext = ExtensionFor(format);
 
     var output = action.GetValue(optOutput);
-    var outputPath = !string.IsNullOrWhiteSpace(output)
-                         ? output
-                         : Path.Combine(".", $"Report_{DateTime.Now:yyyyMMdd_HHmmss}.{ext}");
+    var outputPath = string.IsNullOrWhiteSpace(output)
+                         ? Path.Combine(".", $"Report_{DateTime.Now:yyyyMMdd_HHmmss}.zip")
+                         : Path.GetExtension(output).Equals(".zip", StringComparison.OrdinalIgnoreCase)
+                             ? output
+                             : output + ".zip";
 
     await using var stream = await engine.GenerateAsync(format, progress);
     await using var file = File.Create(outputPath);
     await stream.CopyToAsync(file);
 
     if (!Console.IsOutputRedirected) { Console.Write("\r\x1b[2K"); }
-
-    // For XLSX the SVG is written next to the workbook; for HTML it's already
-    // bundled inside the .zip by the writer.
-    if (format == ReportFormat.Xlsx && engine.NetworkDiagramSvg is { } svg)
-    {
-        var svgPath = Path.ChangeExtension(outputPath, ".svg");
-        await File.WriteAllTextAsync(svgPath, svg);
-        Console.Out.WriteLine($"Network diagram SVG: {svgPath}");
-    }
 
     Console.Out.WriteLine($"Report generated: {outputPath}");
 });
@@ -109,10 +101,3 @@ return await app.ExecuteAppAsync(args, logger);
 
 static string PrintEnum(string title, Type typeEnum)
     => $"Values for {title}: {string.Join(", ", Enum.GetNames(typeEnum))}";
-
-static string ExtensionFor(ReportFormat format) => format switch
-{
-    ReportFormat.Xlsx => "xlsx",
-    ReportFormat.Html => "zip",
-    _ => throw new ArgumentOutOfRangeException(nameof(format), format, null),
-};
