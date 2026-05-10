@@ -53,7 +53,8 @@ public partial class ReportEngine
         var rows = results.OrderBy(r => r.item.Id).SelectMany(r => r.rows).ToList();
 
         using var sw = _writer.AddSection("Snapshots");
-        sw.AddTable(null, rows,
+        sw.AddTable(null,
+                    rows,
                     new TableOptions<dynamic>()
                         .WithNodeLink(r => (string?)r.Node)
                         .WithVmIdLink(r => r.VmId is long id ? id : (long?)null));

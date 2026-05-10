@@ -25,7 +25,6 @@ public partial class ReportEngine
                                       .ToDictionary(a => (a.Node, a.Storage));
 
         var count = _pendingDiskRows.Sum(e => e.Disks.Count());
-
         var rows = _pendingDiskRows.SelectMany(entry => entry.Disks.Select(a =>
         {
             storageLookup.TryGetValue((entry.Vm.Node, a.Storage), out var storageRes);
@@ -63,7 +62,8 @@ public partial class ReportEngine
         .ToList();
 
         using var sw = _writer.AddSection("Disks");
-        sw.AddTable(null, rows,
+        sw.AddTable(null,
+                    rows,
                     new TableOptions<dynamic>()
                         .WithNodeLink(r => (string?)r.Node)
                         .WithVmIdLink(r => r.VmId is long id ? id : (long?)null)

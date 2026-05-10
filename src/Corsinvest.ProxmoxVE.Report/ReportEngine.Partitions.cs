@@ -25,30 +25,29 @@ public partial class ReportEngine
 
         var count = _pendingPartitionRows.Sum(e => e.Partitions.Count());
 
-        var rows = _pendingPartitionRows.SelectMany(entry => entry.Partitions.Select(a => new
-        {
-            entry.Vm.Node,
-            entry.Vm.VmId,
-            VmName = entry.Vm.Name,
-            entry.Vm.VmType,
-            VmStatus = entry.Vm.Status,
-            a.MountPoint,
-            a.Type,
-            TotalGB = ToGB(a.TotalBytes),
-            UsedGB = ToGB(a.UsedBytes),
+        using var sw = _writer.AddSection("Partitions");
+        sw.AddTable(null,
+                    _pendingPartitionRows.SelectMany(entry => entry.Partitions.Select(a => new
+                    {
+                        entry.Vm.Node,
+                        entry.Vm.VmId,
+                        VmName = entry.Vm.Name,
+                        entry.Vm.VmType,
+                        VmStatus = entry.Vm.Status,
+                        a.MountPoint,
+                        a.Type,
+                        TotalGB = ToGB(a.TotalBytes),
+                        UsedGB = ToGB(a.UsedBytes),
 
-            UsedPct = a.TotalBytes > 0
+                        UsedPct = a.TotalBytes > 0
                         ? (double)a.UsedBytes / a.TotalBytes
                         : (double?)null,
 
-            ErrorWrap = a.Error?.ToString() ?? "",
-            a.Name,
-            DisksWrap = a.Disks.Select(d => $"{d.Dev} ({d.BusType}:{d.Bus}:{d.Target}:{d.Unit}) [{d.PciController?.Domain:X4}:{d.PciController?.Bus:X2}:{d.PciController?.Slot:X2}.{d.PciController?.Function}]")
-                                .JoinAsString(Environment.NewLine),
-        })).ToList();
-
-        using var sw = _writer.AddSection("Partitions");
-        sw.AddTable(null, rows,
+                        ErrorWrap = a.Error?.ToString() ?? "",
+                        a.Name,
+                        DisksWrap = a.Disks.Select(d => $"{d.Dev} ({d.BusType}:{d.Bus}:{d.Target}:{d.Unit}) [{d.PciController?.Domain:X4}:{d.PciController?.Bus:X2}:{d.PciController?.Slot:X2}.{d.PciController?.Function}]")
+                                           .JoinAsString(Environment.NewLine),
+                    })).ToList(),
                     new TableOptions<dynamic>()
                         .WithNodeLink(r => (string?)r.Node)
                         .WithVmIdLink(r => r.VmId is long id ? id : (long?)null));
