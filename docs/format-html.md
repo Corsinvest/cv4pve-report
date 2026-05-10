@@ -80,10 +80,13 @@ Light and dark themes are bundled. Click the sun/moon icon in the top-right of t
 
 ## Per-page features
 
-- **Sortable columns** — click any table header to sort ascending/descending.
-- **Per-table search** — tables with at least 5 rows get a search box that narrows visible rows (case-insensitive substring).
+- **Sortable columns** — click any table header to cycle through ascending → descending → original order. The "original order" step is the order the engine emitted (e.g. nodes by hostname, snapshots by date), so a third click always returns the table to its initial state.
+- **Global filter** — every table with at least 5 rows gets a `Filter rows…` box above it. Match defaults to **contains** (`~`); click the small toggle on the left of the box to switch to **exact** (`=`), which matches only rows where at least one cell equals the typed text — useful for short numeric ids like a VM id where `100` would otherwise also match `1014`, `260509100047` and so on.
+- **Per-column filter** — column headers backed by short text, flag, or hyperlinked values (e.g. `Node`, `VmId`, `Status`, `Type`) carry a small funnel icon, hidden until you hover. Click it to reveal a dedicated filter input under the header for that column. Each per-column filter has its own `~`/`=` toggle. Global filter and per-column filters combine with AND.
 - **Page-level Index** — the top of every detail page lists the tables on that page as anchor links.
-- **Print stylesheet** — `Ctrl+P` produces a clean printout: sidebar and interactive controls hidden, tables compacted with repeating headers.
+- **Print stylesheet** — `Ctrl+P` produces a clean printout: sidebar, filters and sort controls hidden, tables compacted with repeating headers.
+
+> Filters are intentionally minimal — `~`/`=` covers the day-to-day cases. For regex, multi-criteria, range filters or pivots, the `report.xlsx` shipped in the same `.zip` has Excel's full autofilter built-in.
 
 ---
 

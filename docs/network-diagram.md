@@ -1,6 +1,6 @@
 # Network Diagram (SVG)
 
-Every `export` produces a standalone SVG alongside the Excel file, showing the per-node network topology of the cluster. Open it in any browser — it's a plain SVG, no server needed.
+Every `export` bundles a standalone SVG inside the report `.zip`, showing the per-node network topology of the cluster. Extract the zip and open it in any browser — it's a plain SVG, no server needed.
 
 See [network-diagram.svg](network-diagram.svg) for a full example.
 
@@ -8,14 +8,13 @@ See [network-diagram.svg](network-diagram.svg) for a full example.
 
 ## What you get
 
-Two files side-by-side with the same basename:
+Whatever `--format` you pick, the report zip carries the diagram alongside the main payload:
 
 ```
-Report_YYYYMMDD_HHmmss.xlsx   ← full infrastructure inventory
-Report_YYYYMMDD_HHmmss.svg    ← network topology diagram
+Report_YYYYMMDD_HHmmss.zip
+├── report.xlsx | index.html | …    ← format-specific payload
+└── network-diagram.svg             ← network topology diagram
 ```
-
-With `--output` / `-o` the same basename is used for both, only the extension differs.
 
 ## Layout
 

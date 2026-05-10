@@ -17,7 +17,7 @@ Report Tool for Proxmox VE (Made in Italy)
 [![WinGet](https://img.shields.io/winget/v/Corsinvest.cv4pve.report?style=flat-square&logo=windows)](https://winstall.app/apps/Corsinvest.cv4pve.report)
 [![AUR](https://img.shields.io/aur/version/cv4pve-report?style=flat-square&logo=archlinux)](https://aur.archlinux.org/packages/cv4pve-report)
 
-> **The RVTools for Proxmox VE** — exports your entire Proxmox VE infrastructure as a single Excel workbook **or** a self-contained HTML site, plus a network topology diagram (SVG).
+> **The RVTools for Proxmox VE** — exports your entire Proxmox VE infrastructure as a single [Excel workbook](#excel-output---format-xlsx-default) **or** a [self-contained HTML site](#html-output---format-html), plus a network topology diagram (SVG).
 
 **Fully navigable** — every node, VM and storage in the overview tables is a hyperlink to its dedicated detail page. Click and you're there.
 
@@ -37,7 +37,7 @@ RVTools is a pure inventory tool for VMware — it exports infrastructure data t
 |---|---------|:-----------------:|:-----------:|
 | **Platform** | VMware vSphere | Proxmox VE | Proxmox VE |
 | **Purpose** | Inventory & reporting | **Inventory & reporting** | **Diagnostics & health checks** |
-| **Output** | Excel | Excel **or** static HTML site, plus SVG network diagram | Text / HTML / JSON / Markdown / Excel |
+| **Output** | Excel | [Excel](#excel-output---format-xlsx-default) **or** [static HTML site](#html-output---format-html), plus [SVG network diagram](docs/network-diagram.md) | Text / HTML / JSON / Markdown / Excel |
 
 ### Capabilities
 
@@ -96,7 +96,7 @@ Pick the output format that fits your workflow:
 ./cv4pve-report ... export --format Html    # HTML zipped site
 ```
 
-With `--output` / `-o` you choose the output path; the extension follows the format (`.xlsx` for Excel, `.zip` for HTML).
+With `--output` / `-o` you choose the output path. **All formats now produce a single `.zip`** — extract it to access the files inside (a `.xlsx` for Excel, an `index.html` plus assets for HTML). The network topology SVG (`network-diagram.svg`) is bundled in the same zip. If the path you pass doesn't end in `.zip`, the extension is appended automatically.
 
 ---
 
@@ -107,17 +107,16 @@ Both formats expose **the same data** using the same logical layout — one sect
 ### Excel output `(--format Xlsx, default)`
 
 ```
-Report_20260506_120000.xlsx   ← single workbook with one sheet per section
-Report_20260506_120000.svg    ← network topology diagram (next to the .xlsx)
+Report_20260506_120000.zip    ← contains report.xlsx + network-diagram.svg
 ```
 
-For analysts and capacity planning. Open in Excel, LibreOffice Calc or any spreadsheet tool.
+For analysts and capacity planning. Extract the zip and open `report.xlsx` in Excel, LibreOffice Calc or any spreadsheet tool.
 
 - **One workbook**, one sheet per section (Cluster, Nodes, VMs, Containers, Storages, …) plus per-node and per-VM detail sheets at the end
 - **Hyperlinks everywhere** — click a node, VM or storage in any list to jump straight to its detail sheet; every detail sheet has a `← Back` link to its overview
 - **Per-sheet index** — every detail sheet starts with a clickable index of its tables so you can jump to the section you need
 - **Native filtering / sorting / pivot** — every table is a real Excel table; use built-in autofilter, sort, slicer or pivot the data without exporting elsewhere
-- **Network topology SVG** — written next to the `.xlsx`; open in any browser to see the full network map (NICs → bonds → bridges → VMs → storages) — [guide](docs/network-diagram.md)
+- **Network topology SVG** — bundled inside the zip as `network-diagram.svg`; open in any browser to see the full network map (NICs → bonds → bridges → VMs → storages) — [guide](docs/network-diagram.md)
 
 > Full reference: **[Excel format guide](docs/format-xlsx.md)** — sheet order, per-sheet contents, hyperlinks and Excel-specific behaviour.
 

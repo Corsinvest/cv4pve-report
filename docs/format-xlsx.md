@@ -1,13 +1,14 @@
 # Excel format reference (`--format Xlsx`)
 
-`--format Xlsx` (the default) produces a single `.xlsx` workbook with one sheet per section, plus per-resource detail sheets at the end. The network topology diagram is written next to the workbook as a separate `.svg`.
+`--format Xlsx` (the default) produces a `.zip` containing a workbook with one sheet per section (plus per-resource detail sheets at the end) and the network topology diagram as a separate `.svg`.
 
 ```
-Report_20260506_120000.xlsx   ← single workbook with one sheet per section
-Report_20260506_120000.svg    ← network topology diagram (next to the .xlsx)
+Report_20260506_120000.zip
+├── report.xlsx              ← single workbook with one sheet per section
+└── network-diagram.svg      ← network topology diagram
 ```
 
-Open the `.xlsx` in Excel, LibreOffice Calc or any spreadsheet tool. Open the `.svg` in any browser.
+Extract the zip and open `report.xlsx` in Excel, LibreOffice Calc or any spreadsheet tool. Open `network-diagram.svg` in any browser.
 
 ---
 
