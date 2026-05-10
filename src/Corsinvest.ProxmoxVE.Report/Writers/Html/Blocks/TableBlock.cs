@@ -58,6 +58,7 @@ internal sealed class TableBlock<T> : IBlock
             """);
     }
 
+    // All columns expose a per-column filter; the funnel toggle hides until hover.
     private static string RenderHeader(ColumnInfo col)
     {
         var dataType = col.Kind switch
@@ -66,7 +67,8 @@ internal sealed class TableBlock<T> : IBlock
             ColumnKind.DateTime or ColumnKind.DateOnly => " data-type=\"date\"",
             _ => "",
         };
-        return $"<th{dataType}>{HtmlEncoder.Text(col.DisplayName)}</th>";
+        var flag = col.Kind == ColumnKind.Flag ? " data-flag=\"true\"" : "";
+        return $"<th{dataType}{flag} data-filterable=\"true\"><span class=\"th-title\">{HtmlEncoder.Text(col.DisplayName)}</span></th>";
     }
 
     private string RenderRow(T row, Dictionary<string, string> links)
