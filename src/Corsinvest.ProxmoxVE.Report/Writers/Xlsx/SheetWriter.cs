@@ -1,15 +1,13 @@
 /*
-using DocumentFormat.OpenXml.Spreadsheet;
  * SPDX-FileCopyrightText: Copyright Corsinvest Srl
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
 using ClosedXML.Excel;
-using Corsinvest.ProxmoxVE.Report.Writers;
 
-namespace Corsinvest.ProxmoxVE.Report;
+namespace Corsinvest.ProxmoxVE.Report.Writers.Xlsx;
 
-internal class SheetWriter(IXLWorksheet ws, Dictionary<string, string> sheetLinks)
+internal sealed class SheetWriter(IXLWorksheet ws, Dictionary<string, string> sheetLinks)
 {
     private readonly List<(string Title, int Row)> _tableIndex = [];
     private int _indexStartRow;
@@ -30,7 +28,6 @@ internal class SheetWriter(IXLWorksheet ws, Dictionary<string, string> sheetLink
         cell.Style.Font.SetItalic(true);
     }
 
-    /// <summary>Writes a key-value block starting at current Row/Col and advances Row.</summary>
     public void WriteKeyValue(string title, Dictionary<string, object?> items)
     {
         var startRow = Row;
@@ -69,10 +66,9 @@ internal class SheetWriter(IXLWorksheet ws, Dictionary<string, string> sheetLink
         border.Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
         border.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
 
-        Row++; // empty row
+        Row++;
     }
 
-    /// <summary>Reserves rows for the 2-column index (saved internally) and advances Row.</summary>
     public void ReserveIndexRows(int tableCount)
     {
         if (tableCount == 0) { return; }
@@ -80,10 +76,8 @@ internal class SheetWriter(IXLWorksheet ws, Dictionary<string, string> sheetLink
         Row += IndexRowsFor(tableCount);
     }
 
-    /// <summary>Reserved-rows count matching the 2-column index layout in <see cref="WriteIndex"/>.</summary>
     public static int IndexRowsFor(int tableCount) => tableCount == 0 ? 0 : ((tableCount + 1) / 2) + 2;
 
-    /// <summary>Writes the index at the previously reserved rows. Layout: header on row r, then entries in 2 columns (A and C).</summary>
     public void WriteIndex()
     {
         if (_indexStartRow == 0 || _tableIndex.Count == 0) { return; }
@@ -120,7 +114,6 @@ internal class SheetWriter(IXLWorksheet ws, Dictionary<string, string> sheetLink
         }
     }
 
-    /// <summary>Creates a table at current Row/Col, registers it in the index, and advances Row.</summary>
     public IXLTable CreateTable<T>(string? title, IEnumerable<T> data, Action<IXLTable>? configure = null)
     {
         if (title != null)
@@ -171,7 +164,6 @@ internal class SheetWriter(IXLWorksheet ws, Dictionary<string, string> sheetLink
         return table;
     }
 
-    /// <summary>Appends data to an existing table. Column formats are inherited; only booleans need fixing.</summary>
     public void AppendData<T>(IXLTable table, IEnumerable<T> data, Action<IXLTable>? configure = null)
     {
         var beforeCount = table.RowCount();
@@ -192,11 +184,9 @@ internal class SheetWriter(IXLWorksheet ws, Dictionary<string, string> sheetLink
         cell.SetHyperlink(new XLHyperlink(href));
     }
 
-    /// <summary>Registers a hyperlink target pointing at a specific row of this sheet by absolute row number.</summary>
     public void RegisterDirectLink(string linkKey, int rowNumber)
         => sheetLinks[linkKey] = $"{ws.Name}!A{rowNumber}";
 
-    /// <summary>Registers per-row links for each cell in a column so other sheets can link directly to that row.</summary>
     public void RegisterRowLinks(IXLTable table, string colName, Func<IXLCell, string?> getKey)
     {
         var col = table.Fields.FirstOrDefault(f =>
