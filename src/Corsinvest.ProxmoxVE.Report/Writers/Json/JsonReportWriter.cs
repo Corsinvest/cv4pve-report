@@ -41,6 +41,11 @@ internal sealed partial class JsonReportWriter(ReportInfo info) : IReportWriter
     public ISectionWriter AddSection(SectionId id)
     {
         Links[id.Key] = id.Key;
+
+        // Auto-register the canonical section:* key so cross-section references resolve
+        // (mirrors the Xlsx/Html writers).
+        if (LinkKey.ForSection(id.Key) is { } sectionKey) { Links[sectionKey] = id.Key; }
+
         var section = new JsonSectionWriter(id.Key);
         _sections.Add(section);
         return section;

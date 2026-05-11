@@ -58,9 +58,9 @@ internal sealed class JsonSectionWriter(string name) : ISectionWriter
 
         foreach (var p in props)
         {
-            var (suffix, _) = ColumnNameSuffix.Parse(p.Name);
+            var (kind, _) = ColumnConvention.Parse(p);
             var raw = p.GetValue(row);
-            var (key, value) = TransformByConvention(p.Name, raw, suffix);
+            var (key, value) = TransformByConvention(p.Name, raw, kind);
             result[JsonKey.FromPropertyName(key)] = value;
         }
 
@@ -82,14 +82,14 @@ internal sealed class JsonSectionWriter(string name) : ISectionWriter
         return result;
     }
 
-    private static (string Key, object? Value) TransformByConvention(string name, object? raw, ColumnSuffix suffix)
-        => suffix switch
+    private static (string Key, object? Value) TransformByConvention(string name, object? raw, ColumnKind kind)
+        => kind switch
         {
             // Flag columns are pre-formatted by the engine as "X" / "" strings — turn them back into booleans.
-            ColumnSuffix.Flag => (name[..^4], raw is string s ? s.Length > 0 : raw is bool b && b),
+            ColumnKind.Flag => (name[..^4], raw is string s ? s.Length > 0 : raw is bool b && b),
             // Wrap columns are just text with multi-line content — keep value, strip the suffix from the key.
-            ColumnSuffix.Wrap => (name[..^4], raw),
-            // GB / MB / Pct / Date / None: keep the raw value as the engine produced it.
+            ColumnKind.Wrap => (name[..^4], raw),
+            // GB / MB / Percentage / DateOnly / Text: keep the raw value as the engine produced it.
             _ => (name, raw),
         };
 }
