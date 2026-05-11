@@ -13,15 +13,8 @@ namespace Corsinvest.ProxmoxVE.Report.Writers;
 /// </summary>
 internal abstract record SectionId(string Key)
 {
-    /// <summary>Plain top-level section (Cluster, Nodes, VMs, Storages, Network, …).</summary>
     public sealed record Plain(string Name) : SectionId(Name);
-
-    /// <summary>Per-node detail section.</summary>
     public sealed record Node(string Hostname) : SectionId($"Node {Hostname}");
-
-    /// <summary>Per-VM (QEMU) detail section.</summary>
     public sealed record Vm(long Id, string DisplayLabel) : SectionId($"VM {Id}");
-
-    /// <summary>Per-CT (LXC) detail section.</summary>
     public sealed record Container(long Id, string DisplayLabel) : SectionId($"CT {Id}");
 }

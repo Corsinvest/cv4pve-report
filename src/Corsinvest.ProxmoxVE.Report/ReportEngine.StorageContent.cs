@@ -41,44 +41,44 @@ public partial class ReportEngine
 
             var contentRows = settings.Storage.IncludeContent
                                 ? allContent.Where(a => !string.Equals(a.Content, "backup", StringComparison.OrdinalIgnoreCase))
-                                           .Select(a => new
-                                           {
-                                               Node = StorageNode(item),
-                                               item.Storage,
-                                               a.Content,
-                                               a.FileName,
-                                               a.Format,
-                                               SizeGB = ToGB(a.Size),
-                                               StorageUsagePct = StorageUsagePct(a.Size, storageSize),
-                                               VmId = FormatVmId(a.VmId),
-                                               GuestName = GuestName(a.VmId),
-                                               a.CreationDate,
-                                               NotesWrap = a.Notes,
-                                               a.Parent,
-                                           })
-                                           .ToList()
+                                            .Select(a => new
+                                            {
+                                                Node = StorageNode(item),
+                                                item.Storage,
+                                                a.Content,
+                                                a.FileName,
+                                                a.Format,
+                                                SizeGB = ToGB(a.Size),
+                                                StorageUsagePct = StorageUsagePct(a.Size, storageSize),
+                                                VmId = FormatVmId(a.VmId),
+                                                GuestName = GuestName(a.VmId),
+                                                a.CreationDate,
+                                                NotesWrap = a.Notes,
+                                                a.Parent,
+                                            })
+                                            .ToList()
                                 : [];
 
             var backupRows = settings.Storage.IncludeBackups
                                 ? allContent.Where(a => string.Equals(a.Content, "backup", StringComparison.OrdinalIgnoreCase))
-                                           .Select(a => new
-                                           {
-                                               Node = StorageNode(item),
-                                               item.Storage,
-                                               a.FileName,
-                                               a.Format,
-                                               SizeGB = ToGB(a.Size),
-                                               StorageUsagePct = StorageUsagePct(a.Size, storageSize),
-                                               VmId = FormatVmId(a.VmId),
-                                               GuestName = GuestName(a.VmId),
-                                               a.CreationDate,
-                                               NotesWrap = a.Notes,
-                                               ProtectedFlag = ToX(a.Protected),
-                                               EncryptedFlag = ToX(a.Encrypted),
-                                               VerifiedFlag = ToX(a.Verified),
-                                               a.Parent,
-                                           })
-                                           .ToList()
+                                            .Select(a => new
+                                            {
+                                                Node = StorageNode(item),
+                                                item.Storage,
+                                                a.FileName,
+                                                a.Format,
+                                                SizeGB = ToGB(a.Size),
+                                                StorageUsagePct = StorageUsagePct(a.Size, storageSize),
+                                                VmId = FormatVmId(a.VmId),
+                                                GuestName = GuestName(a.VmId),
+                                                a.CreationDate,
+                                                NotesWrap = a.Notes,
+                                                ProtectedFlag = ToX(a.Protected),
+                                                EncryptedFlag = ToX(a.Encrypted),
+                                                VerifiedFlag = ToX(a.Verified),
+                                                a.Parent,
+                                            })
+                                            .ToList()
                                 : [];
 
             return (item, contentRows, backupRows);

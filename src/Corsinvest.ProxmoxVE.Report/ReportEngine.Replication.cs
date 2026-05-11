@@ -36,8 +36,8 @@ public partial class ReportEngine
                             VmId = a.Guest,
                             GuestName = long.TryParse(a.Guest, out var guestId)
                                             && _resourcesByVmId.TryGetValue(guestId, out var guestRes)
-                                        ? guestRes.Name ?? ""
-                                        : "",
+                                            ? guestRes.Name ?? ""
+                                            : "",
                             a.Source,
                             a.Target,
                             a.Schedule,
@@ -61,7 +61,7 @@ public partial class ReportEngine
                     rows,
                     new TableOptions<dynamic>().WithReplicationLinks(
                         nodeSelector: r => (string?)r.Node,
-                        vmIdSelector: r => long.TryParse((string?)r.VmId, out var id) ? id : (long?)null,
+                        vmIdSelector: r => long.TryParse((string?)r.VmId, out var id) ? id : null,
                         sourceSelector: r => (string?)r.Source,
                         targetSelector: r => (string?)r.Target));
 

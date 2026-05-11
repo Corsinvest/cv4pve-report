@@ -198,11 +198,18 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
 
     internal static string? LabeledValue(string label, string? value)
         => string.IsNullOrWhiteSpace(value)
-            ? null :
-            $"{label}: {value}";
+            ? null
+            : $"{label}: {value}";
 
-    internal static string VmTypeLabel(VmType type) => type == VmType.Qemu ? "VM" : "CT";
-    internal static string VmTypeLabel(string? type) => string.Equals(type, "qemu", StringComparison.OrdinalIgnoreCase) ? "VM" : "CT";
+    internal static string VmTypeLabel(VmType type)
+        => type == VmType.Qemu
+            ? "VM"
+            : "CT";
+
+    internal static string VmTypeLabel(string? type)
+        => string.Equals(type, "qemu", StringComparison.OrdinalIgnoreCase)
+            ? "VM"
+            : "CT";
 
     private Task<TResult[]> RunParallelAsync<T, TResult>(IEnumerable<T> source, Func<T, Task<TResult>> func)
     {

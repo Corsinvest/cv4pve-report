@@ -17,5 +17,7 @@ internal static class TaskExtensions
     // successfully (faulted or cancelled). Pair with WhenAllSafe to consume parallel calls
     // where individual failures must not abort the rest.
     public static T? ResultOrDefault<T>(this Task<T> task)
-        => task.IsCompletedSuccessfully ? task.Result : default;
+        => task.IsCompletedSuccessfully
+            ? task.Result
+            : default;
 }

@@ -40,8 +40,8 @@ public partial class ReportEngine
                         UsedGB = ToGB(a.UsedBytes),
 
                         UsedPct = a.TotalBytes > 0
-                        ? (double)a.UsedBytes / a.TotalBytes
-                        : (double?)null,
+                                    ? (double)a.UsedBytes / a.TotalBytes
+                                    : (double?)null,
 
                         ErrorWrap = a.Error?.ToString() ?? "",
                         a.Name,
@@ -50,7 +50,7 @@ public partial class ReportEngine
                     })).ToList(),
                     new TableOptions<dynamic>()
                         .WithNodeLink(r => (string?)r.Node)
-                        .WithVmIdLink(r => r.VmId is long id ? id : (long?)null));
+                        .WithVmIdLink(r => r.VmId is long id ? id : null));
 
         _pendingPartitionRows.Clear();
 
