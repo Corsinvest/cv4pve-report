@@ -19,7 +19,7 @@ internal static class TableOptionsExtensions
         => options.WithColumnLink("VmId", row => vmIdSelector(row) is long id and > 0 ? LinkKey.Vm(id) : null);
 
     public static TableOptions<T> WithStorageLink<T>(this TableOptions<T> options, Func<T, string?> storageSelector)
-        => options.WithColumnLink("Storage", row => string.IsNullOrWhiteSpace(storageSelector(row)) ? null : LinkKey.Storage());
+        => options.WithColumnLink("Storage", row => string.IsNullOrWhiteSpace(storageSelector(row)) ? null : LinkKey.Storages);
 
     /// <summary>Replication tables link Node, VmId, Source (node) and Target (node) in one go.</summary>
     public static TableOptions<T> WithReplicationLinks<T>(this TableOptions<T> options,

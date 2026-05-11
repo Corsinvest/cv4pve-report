@@ -86,22 +86,23 @@ public partial class ReportEngine
         }
 
         ReportGlobal("Firewall: Cluster");
-        var clusterRulesTask = client.Cluster.Firewall.Rules.GetAsync();
-        var clusterAliasesTask = client.Cluster.Firewall.Aliases.GetAsync();
-        var clusterIpSetsTask = client.Cluster.Firewall.Ipset.GetAsync();
-        await TaskExtensions.WhenAllSafe(clusterRulesTask, clusterAliasesTask, clusterIpSetsTask);
+        var clusterRulesTask = client.Cluster.Firewall.Rules.GetAsync().ToSafeEnum(_issues, "Firewall", LinkKey.Firewall);
+        var clusterAliasesTask = client.Cluster.Firewall.Aliases.GetAsync().ToSafeEnum(_issues, "Firewall", LinkKey.Firewall);
+        var clusterIpSetsTask = client.Cluster.Firewall.Ipset.GetAsync().ToSafeEnum(_issues, "Firewall", LinkKey.Firewall);
+        await Task.WhenAll(clusterRulesTask, clusterAliasesTask, clusterIpSetsTask);
 
-        AppendRules("cluster", "cluster", "", clusterRulesTask.ResultOrDefault() ?? []);
-        AppendAliases("cluster", "cluster", "", clusterAliasesTask.ResultOrDefault() ?? []);
-        AppendIpSets("cluster", "cluster", "", clusterIpSetsTask.ResultOrDefault() ?? []);
+        AppendRules("cluster", "cluster", "", clusterRulesTask.Result);
+        AppendAliases("cluster", "cluster", "", clusterAliasesTask.Result);
+        AppendIpSets("cluster", "cluster", "", clusterIpSetsTask.Result);
 
         var nodeFirewallResults = await RunParallelAsync(
             GetResources(ClusterResourceType.Node).Where(a => !a.IsUnknown),
             async item =>
             {
                 ReportGlobal($"Firewall: Node {item.Node}");
-                return (scope: item.Node,
-                        rules: await client.Nodes[item.Node].Firewall.Rules.GetAsync());
+                var rules = await client.Nodes[item.Node].Firewall.Rules.GetAsync()
+                                        .ToSafeEnum(_issues, "Firewall", LinkKey.Node(item.Node));
+                return (scope: item.Node, rules);
             });
 
         foreach (var (scope, rules) in nodeFirewallResults.OrderBy(r => r.scope))
@@ -115,33 +116,28 @@ public partial class ReportEngine
             {
                 ReportGlobal($"Firewall: {item.VmType} {item.VmId}");
 
-                Task<IEnumerable<FirewallRule>> rulesTask;
-                Task<IEnumerable<FirewallAlias>> aliasesTask;
-                Task<IEnumerable<FirewallIpSet>> ipSetsTask;
+                var vmFw = client.Nodes[item.Node].Qemu[item.VmId].Firewall;
+                var ctFw = client.Nodes[item.Node].Lxc[item.VmId].Firewall;
 
-                if (item.VmType == VmType.Qemu)
+                var (rulesRaw, aliasesRaw, ipSetsRaw) = item.VmType switch
                 {
-                    var vmFw = client.Nodes[item.Node].Qemu[item.VmId].Firewall;
-                    rulesTask = vmFw.Rules.GetAsync();
-                    aliasesTask = vmFw.Aliases.GetAsync();
-                    ipSetsTask = vmFw.Ipset.GetAsync();
-                }
-                else
-                {
-                    var ctFw = client.Nodes[item.Node].Lxc[item.VmId].Firewall;
-                    rulesTask = ctFw.Rules.GetAsync();
-                    aliasesTask = ctFw.Aliases.GetAsync();
-                    ipSetsTask = ctFw.Ipset.GetAsync();
-                }
+                    VmType.Qemu => (vmFw.Rules.GetAsync(), vmFw.Aliases.GetAsync(), vmFw.Ipset.GetAsync()),
+                    VmType.Lxc => (ctFw.Rules.GetAsync(), ctFw.Aliases.GetAsync(), ctFw.Ipset.GetAsync()),
+                    _ => throw new InvalidOperationException($"unexpected VM type {item.VmType}"),
+                };
 
-                await TaskExtensions.WhenAllSafe(rulesTask, aliasesTask, ipSetsTask);
+                var vmLink = LinkKey.Vm(item.VmId);
+                var rulesTask = rulesRaw.ToSafeEnum(_issues, "Firewall", vmLink);
+                var aliasesTask = aliasesRaw.ToSafeEnum(_issues, "Firewall", vmLink);
+                var ipSetsTask = ipSetsRaw.ToSafeEnum(_issues, "Firewall", vmLink);
+                await Task.WhenAll(rulesTask, aliasesTask, ipSetsTask);
 
                 return (scopeType: item.Type,
                         scope: item.VmId.ToString(),
                         scopeName: item.Name,
-                        rules: rulesTask.ResultOrDefault() ?? [],
-                        aliases: aliasesTask.ResultOrDefault() ?? [],
-                        ipSets: ipSetsTask.ResultOrDefault() ?? []);
+                        rules: rulesTask.Result,
+                        aliases: aliasesTask.Result,
+                        ipSets: ipSetsTask.Result);
             });
 
         foreach (var (scopeType, scope, scopeName, rules, aliases, ipSets) in guestFirewallResults.OrderBy(r => r.scope))

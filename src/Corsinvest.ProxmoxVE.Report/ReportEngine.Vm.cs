@@ -31,19 +31,10 @@ public partial class ReportEngine
         pt.Next(item);
 
         pt.Step("Config");
-        VmConfigQemu? config;
-        try
-        {
-            config = item.IsUnknown
+        var config = item.IsUnknown
                         ? null
-                        : await client.Nodes[item.Node].Qemu[item.VmId].Config.GetAsync();
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException(
-                $"Failed to read config for VM {item.VmId} on node '{item.Node}' (name: '{item.Name}'). See inner exception for details.",
-                ex);
-        }
+                        : await client.Nodes[item.Node].Qemu[item.VmId].Config.GetAsync()
+                                      .ToSafeSingle(_issues, "VM", LinkKey.Vm(item.VmId));
 
         VmQemuAgentOsInfo? agentOsInfo = null;
         var hostname = "";
@@ -135,6 +126,7 @@ public partial class ReportEngine
                     // Include short exception detail so issues like timeouts, auth errors, or
                     // agent-returned errors can be diagnosed without re-running with a debugger.
                     var msg = ex.InnerException?.Message ?? ex.Message;
+                    _issues.Warning("VM Detail", msg, LinkKey.Vm(item.VmId));
                     hostname = $"Agent not running! ({msg})";
                 }
             }
@@ -276,7 +268,7 @@ public partial class ReportEngine
     {
         var config = d.Config!;
         using var sw = _writer.AddSection(new SectionId.Vm(d.Item.VmId, d.Item.Name ?? ""));
-        sw.AddBackLink("VMs", LinkKey.ListVms());
+        sw.AddBackLink("VMs", LinkKey.ListVms);
 
         var mainKv = new Dictionary<string, object?>
         {
@@ -365,15 +357,12 @@ public partial class ReportEngine
         if (settings.Firewall.Enabled && settings.Guest.Detail.IncludeFirewallLog)
         {
             pt.Step("Firewall Logs");
-            AddLogs(sw,
-                    "Firewall Logs",
-                    await client.Nodes[d.Item.Node]
-                                .Qemu[d.Item.VmId]
-                                .Firewall
-                                .Log
-                                .GetAsync(limit: settings.Firewall.Limit,
-                                          since: settings.Firewall.SinceUnix,
-                                          until: settings.Firewall.UntilUnix));
+            var fwLogs = await client.Nodes[d.Item.Node].Qemu[d.Item.VmId].Firewall.Log
+                                     .GetAsync(limit: settings.Firewall.Limit,
+                                               since: settings.Firewall.SinceUnix,
+                                               until: settings.Firewall.UntilUnix)
+                                     .ToSafeEnum(_issues, "Firewall Log", LinkKey.Vm(d.Item.VmId));
+            AddLogs(sw, "Firewall Logs", fwLogs);
         }
 
         await AddGuestTasksTableAsync(sw, pt, d.Item.Node, d.Item.VmId);

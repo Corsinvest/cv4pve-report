@@ -14,13 +14,14 @@ public partial class ReportEngine
     {
         if (!settings.Cluster.Log.Enabled) { return 0; }
 
-        var logs = (await client.Cluster.Log.GetAsync(max: settings.Cluster.Log.MaxCount > 0
+        var logs = await client.Cluster.Log.GetAsync(max: settings.Cluster.Log.MaxCount > 0
                                                             ? settings.Cluster.Log.MaxCount
-                                                            : null)).ToList();
+                                                            : null)
+                               .ToSafeEnum(_issues, "Cluster Log", LinkKey.ClusterLog);
 
         using var sw = _writer.AddSection("Cluster Log");
         sw.AddTable(null,
-                    logs.ConvertAll(a => new
+                    logs.Select(a => new
                     {
                         a.TimeDate,
                         a.Node,

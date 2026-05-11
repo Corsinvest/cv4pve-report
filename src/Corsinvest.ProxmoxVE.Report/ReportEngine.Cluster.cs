@@ -4,6 +4,7 @@
  */
 
 using Corsinvest.ProxmoxVE.Api.Extension;
+using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Api.Shared.Utils;
 using Corsinvest.ProxmoxVE.Report.Writers;
 
@@ -53,62 +54,55 @@ public partial class ReportEngine
 
         ReportGlobal("Cluster: Fetching data");
 
-        var optionsTask = client.Cluster.Options.GetAsync();
-        var usersTask = client.Access.Users.GetAsync(full: true);
-        var tfaTask = client.Access.Tfa.GetAsync();
-        var groupsTask = client.Access.Groups.GetAsync();
-        var rolesTask = client.Access.Roles.GetAsync();
-        var aclTask = client.Access.Acl.GetAsync();
-        var domainsTask = client.Access.Domains.GetAsync();
-        var backupJobsTask = client.Cluster.Backup.GetAsync();
-        var replicationTask = client.Cluster.Replication.GetAsync();
-        var metricServersTask = client.Cluster.Metrics.Server.GetAsync();
-        var sdnZonesTask = client.Cluster.Sdn.Zones.GetAsync();
-        var vnetsTask = client.Cluster.Sdn.Vnets.GetAsync();
-        var sdnControllersTask = client.Cluster.Sdn.Controllers.GetAsync();
-        var sdnIpamsTask = client.Cluster.Sdn.Ipams.GetAsync();
-
-        var mappingDirTask = client.Cluster.Mapping.Dir.Index()
-                                                       .ToModelEnumerableSafeAsync<Api.Shared.Models.Cluster.ClusterMappingDir>();
-
-        var mappingPciTask = client.Cluster.Mapping.Pci.GetAsync();
-        var mappingUsbTask = client.Cluster.Mapping.Usb.GetAsync();
-        var poolsTask = client.Pools.GetAsync();
-        var haResourcesTask = client.Cluster.Ha.Resources.GetAsync();
-        var haStatusTask = client.Cluster.Ha.Status.Current.GetAsync();
+        var optionsTask = client.Cluster.Options.GetAsync().ToSafeSingle(_issues, "Cluster", LinkKey.Cluster);
+        var usersTask = client.Access.Users.GetAsync(full: true).ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
+        var tfaTask = client.Access.Tfa.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
+        var groupsTask = client.Access.Groups.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
+        var rolesTask = client.Access.Roles.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
+        var aclTask = client.Access.Acl.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
+        var domainsTask = client.Access.Domains.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
+        var backupJobsTask = client.Cluster.Backup.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
+        var replicationTask = client.Cluster.Replication.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
+        var metricServersTask = client.Cluster.Metrics.Server.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
+        var sdnZonesTask = client.Cluster.Sdn.Zones.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
+        var vnetsTask = client.Cluster.Sdn.Vnets.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
+        var sdnControllersTask = client.Cluster.Sdn.Controllers.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
+        var sdnIpamsTask = client.Cluster.Sdn.Ipams.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
+        var mappingDirTask = client.Cluster.Mapping.Dir.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
+        var mappingPciTask = client.Cluster.Mapping.Pci.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
+        var mappingUsbTask = client.Cluster.Mapping.Usb.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
+        var poolsTask = client.Pools.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
+        var haResourcesTask = client.Cluster.Ha.Resources.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
+        var haStatusTask = client.Cluster.Ha.Status.Current.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
 
         var fwOptionsTask = settings.Firewall.Enabled
-                                ? client.Cluster.Firewall.Options.GetAsync()
-                                : null;
+                                ? client.Cluster.Firewall.Options.GetAsync().ToSafeSingle(_issues, "Cluster", LinkKey.Cluster)
+                                : Task.FromResult<ClusterFirewallOptions?>(null);
 
         var haGroupsTask = haGroupsSupported
-                            ? client.Cluster.Ha.Groups.GetAsync()
-                            : null;
+                            ? client.Cluster.Ha.Groups.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster)
+                            : Task.FromResult<IReadOnlyList<ClusterHaGroup>>([]);
 
-        var waitTasks = new List<Task>
-        {
+        await Task.WhenAll(
             optionsTask, usersTask, tfaTask, groupsTask, rolesTask, aclTask, domainsTask,
             backupJobsTask, replicationTask, metricServersTask,
             sdnZonesTask, vnetsTask, sdnControllersTask, sdnIpamsTask,
             mappingDirTask, mappingPciTask, mappingUsbTask,
             poolsTask, haResourcesTask, haStatusTask,
-        };
-        if (fwOptionsTask != null) { waitTasks.Add(fwOptionsTask); }
-        if (haGroupsTask != null) { waitTasks.Add(haGroupsTask); }
-
-        await Task.WhenAll(waitTasks);
+            fwOptionsTask, haGroupsTask);
 
         ReportGlobal("Cluster: Options");
+        var options = optionsTask.Result ?? new ClusterOptions();
         sw.AddTable("Options",
                     [new
                     {
-                        optionsTask.Result.Console,
-                        optionsTask.Result.Keyboard,
-                        optionsTask.Result.MacPrefix,
-                        DescriptionWrap = optionsTask.Result.Description,
-                        AllowedTags = ToNewLine(string.Join(",", optionsTask.Result.AllowedTags ?? [])),
-                        MigrationType = optionsTask.Result.Migration?.Type,
-                        MigrationNetwork = optionsTask.Result.Migration?.Network,
+                        options.Console,
+                        options.Keyboard,
+                        options.MacPrefix,
+                        DescriptionWrap = options.Description,
+                        AllowedTags = ToNewLine(string.Join(",", options.AllowedTags ?? [])),
+                        MigrationType = options.Migration?.Type,
+                        MigrationNetwork = options.Migration?.Network,
                     }]);
 
         ReportGlobal("Cluster: Security");
@@ -129,7 +123,7 @@ public partial class ReportEngine
                     }));
 
         sw.AddTable("API Tokens",
-                    usersTask.Result.SelectMany(a => a.Tokens.Select(t => new
+                    usersTask.Result.SelectMany(a => (a.Tokens ?? []).Select(t => new
                     {
                         User = a.Id,
                         TokenId = t.Id,
@@ -181,10 +175,10 @@ public partial class ReportEngine
                         a.Comment
                     }));
 
-        if (settings.Firewall.Enabled && fwOptionsTask != null)
+        if (settings.Firewall.Enabled)
         {
             ReportGlobal("Cluster: Firewall Options");
-            var fwOptions = fwOptionsTask.Result;
+            var fwOptions = fwOptionsTask.Result ?? new ClusterFirewallOptions();
             sw.AddTable("Firewall Options",
                         [new
                         {
@@ -235,7 +229,7 @@ public partial class ReportEngine
                         a.JobNum,
                         a.RemoveJob,
                     }).ToList(),
-                    new TableOptions<dynamic>().WithReplicationLinks(nodeSelector: r => null,                  // Replication has no Node column
+                    new TableOptions<dynamic>().WithReplicationLinks(nodeSelector: _ => null,                  // Replication has no Node column
                                                                      vmIdSelector: r => r.Guest is long g ? g : null,
                                                                      sourceSelector: r => (string?)r.Source,
                                                                      targetSelector: r => (string?)r.Target));
@@ -322,7 +316,8 @@ public partial class ReportEngine
 
         var subnetResults = await RunParallelAsync(vnetsTask.Result,
                                                    async vnet => (vnet,
-                                                                  subs: await client.Cluster.Sdn.Vnets[vnet.Vnet].Subnets.GetAsync()));
+                                                                  subs: await client.Cluster.Sdn.Vnets[vnet.Vnet].Subnets.GetAsync()
+                                                                                    .ToSafeEnum(_issues, "Cluster", LinkKey.Cluster)));
         sw.AddTable("SDN Subnets",
                     subnetResults.SelectMany(r => r.subs.Select(subnet => new
                     {
@@ -362,8 +357,13 @@ public partial class ReportEngine
 
         ReportGlobal("Cluster: Pools");
         var poolResults = await RunParallelAsync(poolsTask.Result,
-                                                 async pool => { var detail = await client.Pools[pool.Id].GetAsync(); return (pool, detail.Members); });
-        var poolRows = poolResults.SelectMany(r => r.Members.Select(member => new
+                                                 async pool =>
+                                                 {
+                                                     var detail = await client.Pools[pool.Id].GetAsync()
+                                                                              .ToSafeSingle(_issues, "Cluster", LinkKey.Cluster);
+                                                     return (pool, members: detail?.Members ?? []);
+                                                 });
+        var poolRows = poolResults.SelectMany(r => r.members.Select(member => new
         {
             Pool = r.pool.Id,
             member.Type,
@@ -394,7 +394,7 @@ public partial class ReportEngine
                         a.Comment
                     }));
 
-        if (haGroupsSupported && haGroupsTask != null)
+        if (haGroupsSupported)
         {
             sw.AddTable("HA Groups",
                         haGroupsTask.Result.Select(a => new

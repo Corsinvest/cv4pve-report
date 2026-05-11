@@ -23,6 +23,8 @@ Report Tool for Proxmox VE (Made in Italy)
 
 **Network Diagram** — each export also produces an SVG showing the full network topology per node (physical NICs → bonds → bridges → gateway VMs → internal bridges → leaf VMs) plus a dedicated strip for network-backed storage. Open it in any browser — see the [guide](docs/network-diagram.md) and [sample](docs/network-diagram.svg).
 
+**Resilient by design** — a single broken endpoint (a storage with a corrupt RRD file, a node returning 500, missing permissions on a sub-resource) no longer aborts the report. Failed calls are collected into a dedicated **Issues** page that lists severity, section, the full Proxmox error message and the API endpoint that failed — each row is hyperlinked to the relevant detail page (VM, node, cluster, …). 501 *Not Implemented* on endpoints missing in older PVE versions is silent, everything else surfaces as a `Warning` you can act on. The Issues page only appears when there is something to report.
+
 <p align="center">
   <a href="docs/network-diagram.svg"><img src="docs/network-diagram.png" alt="Network Diagram preview" width="75%"></a>
 </p>
@@ -68,6 +70,7 @@ RVTools is a pure inventory tool for VMware — it exports infrastructure data t
 | APT packages / updates | | ✓ | |
 | Syslog (all nodes, parsed into columns) | | ✓ | |
 | Cluster log & cluster tasks | | ✓ | |
+| Resilient collection (skip & report broken endpoints) | | ✓ | |
 | Health checks & diagnostics | | | ✓ |
 
 > **cv4pve-report** shows you *what* is in your infrastructure.
@@ -237,6 +240,7 @@ What's collected:
 - **Nodes** — services, network, disks, SMART, ZFS, APT, SSL certificates, replication, syslog, firewall logs, tasks
 - **VMs/CTs** — config, network, disks, snapshots, firewall logs, tasks, QEMU agent info
 - **Global sections** — Firewall (rules/aliases/ipsets), RRD Nodes/Storage/Guests, Syslog, Cluster Log, Cluster Tasks, Replication, Network, Disks, Partitions, Snapshots, Storage Content, Backups
+- **Issues** — diagnostic page that aggregates any per-resource failure encountered while collecting data; appears only when there is at least one issue and is linked from the Summary/cover and the sidebar so it's the first thing you see when something didn't work
 - **Network topology** — auto-generated SVG diagram of physical NICs, bonds, bridges, gateway VMs and network-backed storage — [guide](docs/network-diagram.md)
 
 How you can shape it:

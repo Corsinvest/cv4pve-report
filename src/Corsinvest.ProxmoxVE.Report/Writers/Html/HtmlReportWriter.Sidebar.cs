@@ -45,6 +45,11 @@ internal sealed partial class HtmlReportWriter
         sb.AppendLine("""      <nav id="sidebar-nav">""");
         sb.AppendLine("""        <a href="index.html" class="overview">Home</a>""");
 
+        if (sectionNames.Contains("Issues"))
+        {
+            sb.AppendLine("""        <a href="issues.html" class="overview">Issues</a>""");
+        }
+
         if (_networkDiagramSvg is { Length: > 0 })
         {
             sb.AppendLine("""        <a href="network-diagram.html" class="overview">Network Diagram</a>""");

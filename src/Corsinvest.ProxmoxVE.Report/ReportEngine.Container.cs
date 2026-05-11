@@ -25,19 +25,10 @@ public partial class ReportEngine
         pt.Next(item);
 
         pt.Step("Config");
-        VmConfigLxc? config;
-        try
-        {
-            config = item.IsUnknown
+        var config = item.IsUnknown
                         ? null
-                        : await client.Nodes[item.Node].Lxc[item.VmId].Config.GetAsync();
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException(
-                $"Failed to read config for CT {item.VmId} on node '{item.Node}' (name: '{item.Name}'). See inner exception for details.",
-                ex);
-        }
+                        : await client.Nodes[item.Node].Lxc[item.VmId].Config.GetAsync()
+                                      .ToSafeSingle(_issues, "Container", LinkKey.Vm(item.VmId));
 
         var networks = new List<VmNetworkRow>();
         if (config != null)
@@ -154,7 +145,7 @@ public partial class ReportEngine
         var config = d.Config!;
         using var sw = _writer.AddSection(new SectionId.Container(d.Item.VmId, d.Item.Name ?? ""));
 
-        sw.AddBackLink("Containers", LinkKey.ListContainers());
+        sw.AddBackLink("Containers", LinkKey.ListContainers);
 
         var mainKv = new Dictionary<string, object?>
         {
@@ -205,15 +196,12 @@ public partial class ReportEngine
         if (settings.Firewall.Enabled && settings.Guest.Detail.IncludeFirewallLog)
         {
             pt.Step("Firewall Logs");
-            AddLogs(sw,
-                    "Firewall Logs",
-                    await client.Nodes[d.Item.Node]
-                                .Lxc[d.Item.VmId]
-                                .Firewall
-                                .Log
-                                .GetAsync(limit: settings.Firewall.Limit,
-                                          since: settings.Firewall.SinceUnix,
-                                          until: settings.Firewall.UntilUnix));
+            var fwLogs = await client.Nodes[d.Item.Node].Lxc[d.Item.VmId].Firewall.Log
+                                     .GetAsync(limit: settings.Firewall.Limit,
+                                               since: settings.Firewall.SinceUnix,
+                                               until: settings.Firewall.UntilUnix)
+                                     .ToSafeEnum(_issues, "Firewall Log", LinkKey.Vm(d.Item.VmId));
+            AddLogs(sw, "Firewall Logs", fwLogs);
         }
 
         await AddGuestTasksTableAsync(sw, pt, d.Item.Node, d.Item.VmId);

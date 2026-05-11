@@ -25,33 +25,35 @@ public partial class ReportEngine
         var results = await RunParallelAsync(nodes, async item =>
         {
             ReportGlobal($"Replication: {item.Node}");
+            var data = await client.Nodes[item.Node].Replication
+                                   .GetAsync()
+                                   .ToSafeEnum(_issues, "Replication", LinkKey.Node(item.Node));
             return (item.Node,
-                    rows: (await client.Nodes[item.Node].Replication.GetAsync())
-                        .Select(a => new
-                        {
-                            item.Node,
-                            a.Id,
-                            a.Type,
-                            a.VmType,
-                            VmId = a.Guest,
-                            GuestName = long.TryParse(a.Guest, out var guestId)
+                    rows: data.Select(a => new
+                    {
+                        item.Node,
+                        a.Id,
+                        a.Type,
+                        a.VmType,
+                        VmId = a.Guest,
+                        GuestName = long.TryParse(a.Guest, out var guestId)
                                             && _resourcesByVmId.TryGetValue(guestId, out var guestRes)
                                             ? guestRes.Name ?? ""
                                             : "",
-                            a.Source,
-                            a.Target,
-                            a.Schedule,
-                            a.Disable,
-                            a.FailCount,
-                            a.Error,
-                            a.Duration,
-                            a.Rate,
-                            LastSync = FromUnixTime(a.LastSync),
-                            NextSync = FromUnixTime(a.NextSync),
-                            LastTry = FromUnixTime(a.LastTry),
-                            a.JobNum,
-                            CommentWrap = a.Comment,
-                        }).ToList());
+                        a.Source,
+                        a.Target,
+                        a.Schedule,
+                        a.Disable,
+                        a.FailCount,
+                        a.Error,
+                        a.Duration,
+                        a.Rate,
+                        LastSync = FromUnixTime(a.LastSync),
+                        NextSync = FromUnixTime(a.NextSync),
+                        LastTry = FromUnixTime(a.LastTry),
+                        a.JobNum,
+                        CommentWrap = a.Comment,
+                    }).ToList());
         });
 
         var rows = results.OrderBy(r => r.Node).SelectMany(r => r.rows).ToList();

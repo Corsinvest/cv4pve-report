@@ -65,12 +65,14 @@ public partial class ReportEngine
         {
             ReportGlobal($"Syslog: {item.Node}");
 
-            var rows = (await client.Nodes[item.Node]
+            var lines = await client.Nodes[item.Node]
                                     .Journal
                                     .GetAsync(lastentries: settings.Node.Syslog.Limit,
                                               since: settings.Node.Syslog.SinceUnix,
-                                              until: settings.Node.Syslog.UntilUnix))
-                            .Select(a => ParseSyslogLine(item.Node, a)).ToList();
+                                              until: settings.Node.Syslog.UntilUnix)
+                                    .ToSafeEnum(_issues, "Syslog", LinkKey.Node(item.Node));
+
+            var rows = lines.Select(a => ParseSyslogLine(item.Node, a)).ToList();
 
             if (table == null)
             {

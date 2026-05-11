@@ -252,7 +252,7 @@ internal sealed class SheetWriter(IXLWorksheet ws, Dictionary<string, string> sh
                             "Storage",
                             cell => string.IsNullOrWhiteSpace(cell.Value.ToString())
                                     ? null
-                                    : LinkKey.Storage());
+                                    : LinkKey.Storages);
 
     public void RegisterNetworkLinks(IXLTable table, string node)
         => RegisterRowLinks(table, "Interface", cell => LinkKey.NodeNetwork(node, cell.Value.ToString()));

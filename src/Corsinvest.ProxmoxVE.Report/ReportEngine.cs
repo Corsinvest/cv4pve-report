@@ -36,6 +36,7 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
     private readonly List<(ClusterResource Vm, IEnumerable<VmDisk> Disks)> _pendingDiskRows = [];
     private readonly List<(ClusterResource Vm, IEnumerable<VmQemuAgentGetFsInfo.ResultInfo> Partitions)> _pendingPartitionRows = [];
     private HashSet<long> _vmIds = [];
+    private readonly IssueTracker _issues = new();
     private IReportWriter _writer = null!;
 
     private record VmNetworkRow(long VmId,
@@ -85,10 +86,10 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
 
         _storageConfigs = await client.Storage.GetAsync();
 
-        _writer.Links[LinkKey.Storage()] = "Storages";
-        _writer.Links[LinkKey.ListNodes()] = "Nodes";
-        _writer.Links[LinkKey.ListVms()] = "VMs";
-        _writer.Links[LinkKey.ListContainers()] = "Containers";
+        _writer.Links[LinkKey.Storages] = "Storages";
+        _writer.Links[LinkKey.ListNodes] = "Nodes";
+        _writer.Links[LinkKey.ListVms] = "VMs";
+        _writer.Links[LinkKey.ListContainers] = "Containers";
 
         foreach (var item in _resources)
         {
@@ -144,36 +145,40 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
 
         await LoadResourcesAsync();
 
-        var sections = new Dictionary<string, Func<Task<int>>>
+        var sections = new Section[]
         {
-            ["Cluster"] = () => AddClusterDataAsync(),
-            ["Storages"] = () => AddStoragesDataAsync(),
-            ["Nodes"] = () => AddNodesDataAsync(),
-            ["VMs"] = () => AddVmsDataAsync(),
-            ["Containers"] = () => AddContainersDataAsync(),
-            ["Network"] = () => Task.FromResult(WriteNetworkData()),
-            ["Storage Content"] = () => AddStorageContentDataAsync(),
-            ["Disks"] = () => Task.FromResult(WriteDiskData()),
-            ["Partitions"] = () => Task.FromResult(WritePartitionData()),
-            ["Snapshots"] = () => AddSnapshotsDataAsync(),
-            ["Firewall"] = () => AddFirewallDataAsync(),
-            ["Replication"] = () => AddReplicationDataAsync(),
-            ["RRD Nodes"] = () => AddRrdNodeDataAsync(),
-            ["RRD Storage"] = () => AddRrdStorageDataAsync(),
-            ["RRD Guests"] = () => AddRrdGuestDataAsync(),
-            ["Syslog"] = () => AddSyslogDataAsync(),
-            ["Cluster Log"] = () => AddClusterLogDataAsync(),
-            ["Cluster Tasks"] = () => AddClusterTasksDataAsync(),
+            new("Cluster", "Cluster overview, users, roles, ACL, firewall, backup jobs", AddClusterDataAsync),
+            new("Storages", "Storage list with size, usage and type", AddStoragesDataAsync),
+            new("Nodes", "Node list with hardware, subscription, DNS, kernel details", AddNodesDataAsync),
+            new("VMs", "Virtual machines (QEMU) with agent info, OS name/version/kernel, bios, cpu, memory and disk details", AddVmsDataAsync),
+            new("Containers", "LXC containers with hostname, swap, nameserver and privilege details", AddContainersDataAsync),
+            new("Network", "Global network overview: node interfaces and VM/CT network inventory", () => Task.FromResult(WriteNetworkData())),
+            new("Storage Content", "Storage content inventory (ISO, templates, disk images — excludes backups)", AddStorageContentDataAsync),
+            new("Disks", "Global disk inventory: VM/CT disk configuration", () => Task.FromResult(WriteDiskData())),
+            new("Partitions", "Guest filesystem partitions with used/total space from QEMU agent", () => Task.FromResult(WritePartitionData())),
+            new("Snapshots", "Global snapshot inventory across all VMs and containers", AddSnapshotsDataAsync),
+            new("Firewall", "Global firewall rules, aliases and IPSets across cluster, nodes, VMs and containers", AddFirewallDataAsync),
+            new("Replication", "Global replication status across all nodes: last sync, next sync, errors and duration", AddReplicationDataAsync),
+            new("RRD Nodes", "Historical performance data (CPU, memory, swap, disk, network) for all nodes", AddRrdNodeDataAsync),
+            new("RRD Storage", "Historical performance data (size, used, usage%) for all storages", AddRrdStorageDataAsync),
+            new("RRD Guests", "Historical performance data (CPU, memory, disk, network) for all VMs and containers", AddRrdGuestDataAsync),
+            new("Syslog", "Systemd journal per node parsed into date, time, host, service, pid and message", AddSyslogDataAsync),
+            new("Cluster Log", "Cluster log with user, node, service and message", AddClusterLogDataAsync),
+            new("Cluster Tasks", "All recent tasks across the cluster with status, duration and node", AddClusterTasksDataAsync),
         };
 
         var stats = new List<SectionStat>();
         var sw = Stopwatch.StartNew();
-        foreach (var (name, action) in sections)
+        foreach (var s in sections)
         {
-            ReportGlobal(name);
+            ReportGlobal(s.Name);
             sw.Restart();
-            stats.Add(new(name, await action(), sw.Elapsed));
+            stats.Add(new(s.Name, s.Description, await s.Action(), sw.Elapsed));
         }
+
+        // Issues is generated last (so it sees every section's failures) and surfaced as the
+        // second cover entry (right after Cluster) when non-empty.
+        AddIssuesSection(stats, sw);
 
         ReportGlobal("Network Diagram");
         BuildAndStoreNetworkDiagramSvg();
@@ -283,8 +288,9 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
 
         pt.Step("Tasks");
         var rows = (await client.Nodes[node].Tasks.GetAsync(errors: TrueOrNull(settings.Guest.Detail.Tasks.OnlyErrors),
-                                                            limit: IntOrNull(settings.Guest.Detail.Tasks.MaxCount),
-                                                            vmid: (int)vmId))
+                                                             limit: IntOrNull(settings.Guest.Detail.Tasks.MaxCount),
+                                                             vmid: (int)vmId)
+                                .ToSafeEnum(_issues, "Guest Tasks", LinkKey.Vm(vmId)))
                        .Select(a => new
                        {
                            a.UniqueTaskId,

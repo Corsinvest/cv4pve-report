@@ -14,11 +14,12 @@ public partial class ReportEngine
     {
         if (!settings.Cluster.IncludeTasks) { return 0; }
 
-        var tasks = (await client.Cluster.Tasks.GetAsync()).ToList();
+        var tasks = await client.Cluster.Tasks.GetAsync()
+                                .ToSafeEnum(_issues, "Cluster Tasks", LinkKey.ClusterTasks);
 
         using var sw = _writer.AddSection("Cluster Tasks");
         sw.AddTable(null,
-                    tasks.ConvertAll(a => new
+                    tasks.Select(a => new
                     {
                         a.Node,
                         a.UniqueTaskId,
