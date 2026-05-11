@@ -95,7 +95,10 @@ internal sealed partial class HtmlReportWriter
         sb.AppendLine($"""          <a href="{HtmlEncoder.PageHref(parent)}">Overview</a>""");
         foreach (var child in visibleChildren)
         {
-            var text = displayNames.TryGetValue(child, out var dn) ? dn : child;
+            var text = displayNames.TryGetValue(child, out var dn)
+                        ? dn
+                        : child;
+
             sb.AppendLine($"""          <a href="{HtmlEncoder.PageHref(child)}">{HtmlEncoder.Text(text)}</a>""");
         }
         sb.AppendLine("        </details>");
@@ -122,7 +125,6 @@ internal sealed partial class HtmlReportWriter
         sb.AppendLine("        </details>");
     }
 
-    /// <summary>Single-page section rendered as a flat link (no expand/collapse).</summary>
     private static void AppendFlat(StringBuilder sb, HashSet<string> known, string name)
     {
         if (!known.Contains(name)) { return; }

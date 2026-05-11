@@ -236,7 +236,7 @@ public partial class ReportEngine
                         a.RemoveJob,
                     }).ToList(),
                     new TableOptions<dynamic>().WithReplicationLinks(nodeSelector: r => null,                  // Replication has no Node column
-                                                                     vmIdSelector: r => r.Guest is long g ? g : (long?)null,
+                                                                     vmIdSelector: r => r.Guest is long g ? g : null,
                                                                      sourceSelector: r => (string?)r.Source,
                                                                      targetSelector: r => (string?)r.Target));
 
@@ -377,7 +377,7 @@ public partial class ReportEngine
         sw.AddTable("Pools", poolRows,
                     new TableOptions<dynamic>()
                         .WithNodeLink(r => (string?)r.Node)
-                        .WithVmIdLink(r => r.VmId is long id ? id : (long?)null)
+                        .WithVmIdLink(r => r.VmId is long id ? id : null)
                         .WithStorageLink(r => (string?)r.Storage));
 
         ReportGlobal("Cluster: HA");

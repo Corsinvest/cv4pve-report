@@ -36,13 +36,18 @@ internal sealed class TableBlock<T> : IBlock
 
     public string? Title { get; }
     public string AnchorId { get; } = $"table-{Guid.NewGuid():N}";
-    string? IBlock.AnchorId => Title == null ? null : AnchorId;
+    string? IBlock.AnchorId
+        => Title == null
+            ? null
+            : AnchorId;
 
     public void Render(StringBuilder sb, Dictionary<string, string> links)
     {
         var headers = string.Concat(_columns.Select(RenderHeader));
         var body = string.Concat(_rows.Select(r => RenderRow(r, links)));
-        var titleHtml = Title != null ? $"<h2>{HtmlEncoder.Text(Title)}</h2>\n  " : "";
+        var titleHtml = Title != null
+                            ? $"<h2>{HtmlEncoder.Text(Title)}</h2>\n  "
+                            : "";
 
         sb.Append($"""
             <section class="table-section" id="{AnchorId}">
@@ -58,16 +63,18 @@ internal sealed class TableBlock<T> : IBlock
             """);
     }
 
-    // All columns expose a per-column filter; the funnel toggle hides until hover.
     private static string RenderHeader(ColumnInfo col)
     {
         var dataType = col.Kind switch
         {
-            ColumnKind.Number or ColumnKind.Percentage => " data-type=\"number\"",
+            ColumnKind.Number or ColumnKind.Percentage or ColumnKind.GB or ColumnKind.MB => " data-type=\"number\"",
             ColumnKind.DateTime or ColumnKind.DateOnly => " data-type=\"date\"",
             _ => "",
         };
-        var flag = col.Kind == ColumnKind.Flag ? " data-flag=\"true\"" : "";
+        var flag = col.Kind == ColumnKind.Flag
+                    ? " data-flag=\"true\""
+                    : "";
+
         return $"<th{dataType}{flag} data-filterable=\"true\"><span class=\"th-title\">{HtmlEncoder.Text(col.DisplayName)}</span></th>";
     }
 
@@ -87,7 +94,9 @@ internal sealed class TableBlock<T> : IBlock
         if (col.Kind == ColumnKind.Flag)
         {
             var truthy = value is string s && s.Length > 0;
-            var glyph = truthy ? "<span class=\"flag-yes\">✓</span>" : "<span class=\"flag-no\">·</span>";
+            var glyph = truthy
+                            ? "<span class=\"flag-yes\">✓</span>"
+                            : "<span class=\"flag-no\">·</span>";
             return $"<td{classAttr}>{glyph}</td>";
         }
 
@@ -107,25 +116,22 @@ internal sealed class TableBlock<T> : IBlock
     private static string ClassFor(ColumnKind kind)
         => kind switch
         {
-            ColumnKind.Number or ColumnKind.Percentage => " class=\"num\"",
+            ColumnKind.Number or ColumnKind.Percentage or ColumnKind.GB or ColumnKind.MB => " class=\"num\"",
             ColumnKind.Flag => " class=\"flag\"",
             ColumnKind.Wrap => " class=\"wrap\"",
             ColumnKind.DateTime or ColumnKind.DateOnly => " class=\"date\"",
             _ => "",
         };
 
+    // Column-aware overrides (date-only stripping, percentage as "0.00 %", DateTimeOffset);
+    // for everything else fall back to the shared BlockFormat helper.
     private static string FormatCell(object? value, ColumnKind kind) => value switch
     {
-        null => "",
-        bool b => b ? "Yes" : "No",
-        DateTime d when kind == ColumnKind.DateOnly => d.ToString("yyyy-MM-dd"),
-        DateTime d => d.ToString("yyyy-MM-dd HH:mm:ss"),
-        DateTimeOffset dto => dto.ToString("yyyy-MM-dd HH:mm:ss"),
+        DateTime d when kind == ColumnKind.DateOnly => d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+        DateTimeOffset dto => dto.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
         double dbl when kind == ColumnKind.Percentage => (dbl * 100).ToString("0.00", CultureInfo.InvariantCulture) + "%",
         float fl when kind == ColumnKind.Percentage => (fl * 100).ToString("0.00", CultureInfo.InvariantCulture) + "%",
-        double dbl => dbl.ToString("0.##", CultureInfo.InvariantCulture),
-        float fl => fl.ToString("0.##", CultureInfo.InvariantCulture),
-        _ => value.ToString() ?? "",
+        _ => BlockFormat.FormatValue(value),
     };
 
     private static ColumnInfo[] BuildColumns(Type rowType)
@@ -133,37 +139,9 @@ internal sealed class TableBlock<T> : IBlock
 
     private static ColumnInfo BuildColumn(PropertyInfo p)
     {
-        var (suffix, displayName) = ColumnNameSuffix.Parse(p.Name);
-
-        var kind = suffix switch
-        {
-            ColumnSuffix.Pct => ColumnKind.Percentage,
-            ColumnSuffix.GB or ColumnSuffix.MB => ColumnKind.Number,
-            ColumnSuffix.Wrap => ColumnKind.Wrap,
-            ColumnSuffix.Flag => ColumnKind.Flag,
-            ColumnSuffix.DateOnly => ColumnKind.DateOnly,
-            _ => IsNumeric(p.PropertyType) ? ColumnKind.Number
-               : IsDate(p.PropertyType) ? ColumnKind.DateTime
-               : ColumnKind.Text,
-        };
-
+        var (kind, displayName) = ColumnConvention.Parse(p);
         return new ColumnInfo(p, p.Name, displayName, kind);
     }
 
-    private static bool IsNumeric(Type t)
-    {
-        t = Nullable.GetUnderlyingType(t) ?? t;
-        return t == typeof(int) || t == typeof(long) || t == typeof(double)
-            || t == typeof(float) || t == typeof(decimal) || t == typeof(short)
-            || t == typeof(uint) || t == typeof(ulong) || t == typeof(ushort);
-    }
-
-    private static bool IsDate(Type t)
-    {
-        t = Nullable.GetUnderlyingType(t) ?? t;
-        return t == typeof(DateTime) || t == typeof(DateTimeOffset);
-    }
-
-    private enum ColumnKind { Text, Number, Percentage, DateTime, DateOnly, Wrap, Flag }
     private sealed record ColumnInfo(PropertyInfo Property, string Name, string DisplayName, ColumnKind Kind);
 }
