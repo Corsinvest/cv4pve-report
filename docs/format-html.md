@@ -11,7 +11,7 @@ Report_20260506_120000.zip    ← static website (extract and open index.html)
 ## File layout inside the zip
 
 ```
-report.zip
+Report_20260506_120000.zip
 ├── index.html                 ← cover / home page
 ├── network-diagram.html       ← network topology page
 ├── network-diagram.svg        ← raw SVG (embedded by network-diagram.html)
