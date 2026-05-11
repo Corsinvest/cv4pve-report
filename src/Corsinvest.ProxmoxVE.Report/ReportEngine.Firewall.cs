@@ -122,8 +122,8 @@ public partial class ReportEngine
                 var (rulesRaw, aliasesRaw, ipSetsRaw) = item.VmType switch
                 {
                     VmType.Qemu => (vmFw.Rules.GetAsync(), vmFw.Aliases.GetAsync(), vmFw.Ipset.GetAsync()),
-                    VmType.Lxc  => (ctFw.Rules.GetAsync(), ctFw.Aliases.GetAsync(), ctFw.Ipset.GetAsync()),
-                    _           => throw new InvalidOperationException($"unexpected VM type {item.VmType}"),
+                    VmType.Lxc => (ctFw.Rules.GetAsync(), ctFw.Aliases.GetAsync(), ctFw.Ipset.GetAsync()),
+                    _ => throw new InvalidOperationException($"unexpected VM type {item.VmType}"),
                 };
 
                 var vmLink = LinkKey.Vm(item.VmId);
