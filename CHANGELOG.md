@@ -2,6 +2,16 @@
 
 ---
 
+## [2.2.0] — 2026-05-11
+
+### What's new
+
+- **Resilient collection — broken endpoints no longer abort the report.** A single failing Proxmox API call (a storage with a corrupt RRD file, a node returning `500`, missing permissions on a sub-resource) used to terminate the whole report. Failures are now collected into a dedicated **Issues** page that lists every problem with severity, section, the full Proxmox error message and the API endpoint that returned it. `501 Not Implemented` (endpoint missing in older PVE versions) stays silent — everything else surfaces as a `Warning` you can act on. Thanks @janrenard for the report (#33).
+- **Issues page — second tab after Summary / second link after Home.** The Issues page only appears when there is something to report: a dedicated sheet in Excel positioned right after `Summary`, and the second sidebar link after `Home` in HTML. Issue rows are hyperlinked back to the relevant detail page (the failing VM, node, storage, or the global section) so you can jump straight to the context where the failure happened.
+- **Cover/Summary now shows a Description column.** Both formats list every section in the Contents table with a one-line description of what's inside — consistent between Excel and HTML. Issue counts and per-section durations are unchanged.
+
+---
+
 ## [2.1.0] — 2026-05-10
 
 ### Breaking changes

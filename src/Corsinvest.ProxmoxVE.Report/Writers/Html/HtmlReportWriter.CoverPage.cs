@@ -15,6 +15,7 @@ internal sealed partial class HtmlReportWriter
         var rows = string.Concat(statsList.Select(s => $"""
                   <tr>
                     <td><a href="{HtmlEncoder.PageHref(s.Name)}">{HtmlEncoder.Text(s.Name)}</a></td>
+                    <td>{HtmlEncoder.Text(s.Description)}</td>
                     <td class="num">{s.Count}</td>
                     <td class="num">{FormatDuration(s.Duration)}</td>
                   </tr>
@@ -49,11 +50,11 @@ internal sealed partial class HtmlReportWriter
                     <h2>Contents</h2>
                     <div class="table-scroll">
                       <table class="data">
-                        <thead><tr><th>Section</th><th>Rows</th><th>Duration</th></tr></thead>
+                        <thead><tr><th>Section</th><th>Description</th><th>Rows</th><th>Duration</th></tr></thead>
                         <tbody>
             {{rows}}      </tbody>
                         <tfoot>
-                          <tr><th>Total</th><th class="num"></th><th class="num">{{FormatDuration(totalDuration)}}</th></tr>
+                          <tr><th>Total</th><th></th><th class="num"></th><th class="num">{{FormatDuration(totalDuration)}}</th></tr>
                         </tfoot>
                       </table>
                     </div>

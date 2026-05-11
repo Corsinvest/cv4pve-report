@@ -66,85 +66,6 @@ internal sealed partial class XlsxReportWriter
 
         AddHeader("Contents");
 
-        var sections = new List<(string, string)>();
-
-        if (settings.Cluster.Include)
-        {
-            sections.Add(("Cluster", "Cluster overview, users, roles, ACL, firewall, backup jobs"));
-        }
-
-        sections.Add(("Nodes", "Node list with hardware, subscription, DNS, kernel details"));
-        sections.Add(("VMs", "Virtual machines (QEMU) with agent info, OS name/version/kernel, bios, cpu, memory and disk details"));
-        sections.Add(("Containers", "LXC containers with hostname, swap, nameserver and privilege details"));
-
-        if (settings.Guest.IncludeDisks)
-        {
-            sections.Add(("Disks", "Global disk inventory: VM/CT disk configuration"));
-        }
-
-        if (settings.Guest.IncludePartitions && settings.Guest.IncludeQemuAgent)
-        {
-            sections.Add(("Partitions", "Guest filesystem partitions with used/total space from QEMU agent"));
-        }
-
-        if (settings.Guest.IncludeSnapshots)
-        {
-            sections.Add(("Snapshots", "Global snapshot inventory across all VMs and containers"));
-        }
-
-        sections.Add(("Network", "Global network overview: node interfaces and VM/CT network inventory"));
-        sections.Add(("Storages", "Storage list with size, usage and type"));
-
-        if (settings.Storage.IncludeContent)
-        {
-            sections.Add(("Storage Content", "Storage content inventory (ISO, templates, disk images — excludes backups)"));
-        }
-
-        if (settings.Storage.IncludeBackups)
-        {
-            sections.Add(("Backups", "Backup inventory across all storages with protection, encryption and verification status"));
-        }
-
-        if (settings.Firewall.Enabled)
-        {
-            sections.Add(("Firewall", "Global firewall rules, aliases and IPSets across cluster, nodes, VMs and containers"));
-        }
-
-        if (settings.Node.IncludeReplication)
-        {
-            sections.Add(("Replication", "Global replication status across all nodes: last sync, next sync, errors and duration"));
-        }
-
-        if (settings.Node.RrdData.Enabled)
-        {
-            sections.Add(("RRD Nodes", "Historical performance data (CPU, memory, swap, disk, network) for all nodes"));
-        }
-
-        if (settings.Storage.RrdData.Enabled)
-        {
-            sections.Add(("RRD Storage", "Historical performance data (size, used, usage%) for all storages"));
-        }
-
-        if (settings.Guest.RrdData.Enabled)
-        {
-            sections.Add(("RRD Guests", "Historical performance data (CPU, memory, disk, network) for all VMs and containers"));
-        }
-
-        if (settings.Node.Syslog.Enabled)
-        {
-            sections.Add(("Syslog", "Systemd journal per node parsed into date, time, host, service, pid and message"));
-        }
-
-        if (settings.Cluster.Log.Enabled)
-        {
-            sections.Add(("Cluster Log", "Cluster log with user, node, service and message"));
-        }
-
-        if (settings.Cluster.IncludeTasks)
-        {
-            sections.Add(("Cluster Tasks", "All recent tasks across the cluster with status, duration and node"));
-        }
-
         ws.Cell(row, 1).Value = "Sheet";
         ws.Cell(row, 2).Value = "Description";
         ws.Cell(row, 3).Value = "Count";
@@ -158,24 +79,19 @@ internal sealed partial class XlsxReportWriter
 
         var statsList = stats.ToList();
 
-        foreach (var (sheetName, description) in sections)
+        foreach (var stat in statsList)
         {
-            ws.Cell(row, 1).Value = sheetName;
+            ws.Cell(row, 1).Value = stat.Name;
             ws.Cell(row, 1).Style.Font.SetUnderline(XLFontUnderlineValues.Single);
             ws.Cell(row, 1).Style.Font.SetFontColor(XLColor.Blue);
 
-            var actualSheet = _workbook.Worksheets.FirstOrDefault(s => s.Name.StartsWith(sheetName[..Math.Min(sheetName.Length, MaxSheetNameLength)]))?.Name ?? sheetName;
+            var actualSheet = _workbook.Worksheets.FirstOrDefault(s => s.Name.StartsWith(stat.Name[..Math.Min(stat.Name.Length, MaxSheetNameLength)]))?.Name ?? stat.Name;
             ws.Cell(row, 1).SetHyperlink(new XLHyperlink($"'{actualSheet}'!A1"));
-            ws.Cell(row, 2).Value = description;
-
-            var stat = statsList.FirstOrDefault(s => string.Equals(s.Name, sheetName, StringComparison.OrdinalIgnoreCase));
-            if (stat != null)
-            {
-                ws.Cell(row, 3).Value = stat.Count;
-                ws.Cell(row, 4).Value = stat.Duration.TotalSeconds < 60
-                    ? $"{stat.Duration.TotalSeconds:F1}s"
-                    : $"{stat.Duration.TotalMinutes:F1}m";
-            }
+            ws.Cell(row, 2).Value = stat.Description;
+            ws.Cell(row, 3).Value = stat.Count;
+            ws.Cell(row, 4).Value = stat.Duration.TotalSeconds < 60
+                ? $"{stat.Duration.TotalSeconds:F1}s"
+                : $"{stat.Duration.TotalMinutes:F1}m";
 
             row++;
         }

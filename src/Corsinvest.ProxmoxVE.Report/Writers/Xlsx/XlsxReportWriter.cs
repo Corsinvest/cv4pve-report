@@ -54,6 +54,11 @@ internal sealed partial class XlsxReportWriter : IReportWriter
 
         var ws = _workbook.Worksheets.Add(safeName);
         var sheet = new SheetWriter(ws, Links);
+
+        // Auto-register the canonical section:* key so tables in other sheets
+        // can hyperlink to this page via LinkKey.ForSection(name).
+        if (LinkKey.ForSection(id.Key) is { } sectionKey) { Links[sectionKey] = safeName; }
+
         return new XlsxSectionWriter(sheet);
     }
 
@@ -109,6 +114,7 @@ internal sealed partial class XlsxReportWriter : IReportWriter
                           .OrderBy(w => int.TryParse(w.Name[(prefix.Length + 1)..], out var n) ? n : int.MaxValue));
 
         PlaceByPrefix("Summary");
+        PlaceByPrefix("Issues");
         PlaceByPrefix("Cluster");
         PlaceByPrefix("Nodes");
         PlaceByPrefix("VMs");

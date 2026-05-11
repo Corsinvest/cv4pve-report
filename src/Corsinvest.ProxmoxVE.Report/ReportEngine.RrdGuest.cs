@@ -24,37 +24,38 @@ public partial class ReportEngine
         var results = await RunParallelAsync(guests, async item =>
         {
             ReportGlobal($"RRD Guest: {item.VmId} {item.Name}");
+            var data = await client.GetVmRrdDataAsync(item.Node,
+                                                     item.VmType,
+                                                     item.VmId,
+                                                     settings.Guest.RrdData.TimeFrame,
+                                                     settings.Guest.RrdData.Consolidation)
+                                   .ToSafeEnum(_issues, "RRD Guests", LinkKey.Vm(item.VmId));
             return (item,
-                    rows: (await client.GetVmRrdDataAsync(item.Node,
-                                                         item.VmType,
-                                                         item.VmId,
-                                                         settings.Guest.RrdData.TimeFrame,
-                                                         settings.Guest.RrdData.Consolidation))
-                            .Select(a => new
-                            {
-                                item.Node,
-                                Type = item.VmType.ToString(),
-                                item.VmId,
-                                item.Name,
-                                a.TimeDate,
-                                CpuUsagePct = a.CpuUsagePercentage,
-                                MemorySizeGB = ToGB(a.MemorySize),
-                                MemoryUsageGB = ToGB(a.MemoryUsage),
-                                MemoryUsagePct = a.MemoryUsagePercentage,
-                                NetInMB = ToMB(a.NetIn),
-                                NetOutMB = ToMB(a.NetOut),
-                                DiskReadMB = ToMB(a.DiskRead),
-                                DiskWriteMB = ToMB(a.DiskWrite),
-                                DiskSizeGB = ToGB(a.DiskSize),
-                                DiskUsageGB = ToGB(a.DiskUsage),
-                                DiskUsagePct = a.DiskUsagePercentage,
-                                PsiCpuSomePct = a.PressureCpuSome,
-                                PsiCpuFullPct = a.PressureCpuFull,
-                                PsiIoSomePct = a.PressureIoSome,
-                                PsiIoFullPct = a.PressureIoFull,
-                                PsiMemSomePct = a.PressureMemorySome,
-                                PsiMemFullPct = a.PressureMemoryFull,
-                            }).ToList());
+                    rows: data.Select(a => new
+                    {
+                        item.Node,
+                        Type = item.VmType.ToString(),
+                        item.VmId,
+                        item.Name,
+                        a.TimeDate,
+                        CpuUsagePct = a.CpuUsagePercentage,
+                        MemorySizeGB = ToGB(a.MemorySize),
+                        MemoryUsageGB = ToGB(a.MemoryUsage),
+                        MemoryUsagePct = a.MemoryUsagePercentage,
+                        NetInMB = ToMB(a.NetIn),
+                        NetOutMB = ToMB(a.NetOut),
+                        DiskReadMB = ToMB(a.DiskRead),
+                        DiskWriteMB = ToMB(a.DiskWrite),
+                        DiskSizeGB = ToGB(a.DiskSize),
+                        DiskUsageGB = ToGB(a.DiskUsage),
+                        DiskUsagePct = a.DiskUsagePercentage,
+                        PsiCpuSomePct = a.PressureCpuSome,
+                        PsiCpuFullPct = a.PressureCpuFull,
+                        PsiIoSomePct = a.PressureIoSome,
+                        PsiIoFullPct = a.PressureIoFull,
+                        PsiMemSomePct = a.PressureMemorySome,
+                        PsiMemFullPct = a.PressureMemoryFull,
+                    }).ToList());
         });
 
         var rows = results.OrderBy(r => r.item.Id).SelectMany(r => r.rows).ToList();

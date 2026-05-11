@@ -5,7 +5,6 @@
 
 using Corsinvest.ProxmoxVE.Api.Extension;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
-using Corsinvest.ProxmoxVE.Api.Shared.Models.Common;
 using Corsinvest.ProxmoxVE.Report.Writers;
 
 namespace Corsinvest.ProxmoxVE.Report;
@@ -23,36 +22,35 @@ public partial class ReportEngine
 
         if (nodes.Count == 0) { return 0; }
 
-        var rrdTimeFrame = settings.Node.RrdData.TimeFrame.GetValue();
-        var rrdConsolidation = settings.Node.RrdData.Consolidation.GetValue();
-
         var results = await RunParallelAsync(nodes, async item =>
         {
             ReportGlobal($"RRD Nodes: {item.Node}");
+            var data = await client.Nodes[item.Node].Rrddata
+                                   .GetAsync(settings.Node.RrdData.TimeFrame, settings.Node.RrdData.Consolidation)
+                                   .ToSafeEnum(_issues, "RRD Nodes", LinkKey.Node(item.Node));
             return (item,
-                    rows: (await client.Nodes[item.Node].Rrddata.GetAsync(rrdTimeFrame, rrdConsolidation))
-                            .Select(a => new
-                            {
-                                item.Node,
-                                a.TimeDate,
-                                CpuUsagePct = a.CpuUsagePercentage,
-                                a.IoWait,
-                                a.Loadavg,
-                                MemorySizeGB = ToGB(a.MemorySize),
-                                MemoryUsageGB = ToGB(a.MemoryUsage),
-                                MemoryUsagePct = a.MemoryUsagePercentage,
-                                SwapSizeGB = ToGB(a.SwapSize),
-                                SwapUsageGB = ToGB(a.SwapUsage),
-                                RootSizeGB = ToGB(a.RootSize),
-                                RootUsageGB = ToGB(a.RootUsage),
-                                NetInMB = ToMB(a.NetIn),
-                                NetOutMB = ToMB(a.NetOut),
-                                PsiCpuSomePct = a.PressureCpuSome,
-                                PsiIoSomePct = a.PressureIoSome,
-                                PsiIoFullPct = a.PressureIoFull,
-                                PsiMemSomePct = a.PressureMemorySome,
-                                PsiMemFullPct = a.PressureMemoryFull,
-                            }).ToList());
+                    rows: data.Select(a => new
+                    {
+                        item.Node,
+                        a.TimeDate,
+                        CpuUsagePct = a.CpuUsagePercentage,
+                        a.IoWait,
+                        a.Loadavg,
+                        MemorySizeGB = ToGB(a.MemorySize),
+                        MemoryUsageGB = ToGB(a.MemoryUsage),
+                        MemoryUsagePct = a.MemoryUsagePercentage,
+                        SwapSizeGB = ToGB(a.SwapSize),
+                        SwapUsageGB = ToGB(a.SwapUsage),
+                        RootSizeGB = ToGB(a.RootSize),
+                        RootUsageGB = ToGB(a.RootUsage),
+                        NetInMB = ToMB(a.NetIn),
+                        NetOutMB = ToMB(a.NetOut),
+                        PsiCpuSomePct = a.PressureCpuSome,
+                        PsiIoSomePct = a.PressureIoSome,
+                        PsiIoFullPct = a.PressureIoFull,
+                        PsiMemSomePct = a.PressureMemorySome,
+                        PsiMemFullPct = a.PressureMemoryFull,
+                    }).ToList());
         });
 
         var rows = results.OrderBy(r => r.item.Id).SelectMany(r => r.rows).ToList();

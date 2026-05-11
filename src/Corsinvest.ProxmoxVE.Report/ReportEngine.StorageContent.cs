@@ -36,7 +36,9 @@ public partial class ReportEngine
         {
             ReportGlobal($"Storage Content: {item.Node} {item.Storage}");
 
-            var allContent = await client.Nodes[item.Node].Storage[item.Storage].Content.GetAsync();
+            var allContent = await client.Nodes[item.Node].Storage[item.Storage].Content
+                                         .GetAsync()
+                                         .ToSafeEnum(_issues, "Storage Content", LinkKey.Node(item.Node));
             var storageSize = item.DiskSize;
 
             var contentRows = settings.Storage.IncludeContent

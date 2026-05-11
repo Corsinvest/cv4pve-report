@@ -24,6 +24,10 @@ internal sealed partial class HtmlReportWriter(ReportInfo info) : IReportWriter
     {
         Links[id.Key] = id.Key;
 
+        // Auto-register the canonical section:* key so tables in other pages
+        // can hyperlink to this page via LinkKey.ForSection(name).
+        if (LinkKey.ForSection(id.Key) is { } sectionKey) { Links[sectionKey] = id.Key; }
+
         var displayName = id switch
         {
             SectionId.Vm v => string.IsNullOrWhiteSpace(v.DisplayLabel)

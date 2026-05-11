@@ -5,6 +5,7 @@
 
 using Corsinvest.ProxmoxVE.Api.Extension.Utils;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
+using Corsinvest.ProxmoxVE.Api.Shared.Models.Vm;
 using Corsinvest.ProxmoxVE.Report.Writers;
 
 namespace Corsinvest.ProxmoxVE.Report;
@@ -27,7 +28,15 @@ public partial class ReportEngine
             ReportGlobal($"Snapshots: {item.Node} {item.VmId}");
 
             var rows = new List<dynamic>();
-            foreach (var snapshot in await SnapshotHelper.GetSnapshotsAsync(client, item.Node, item.VmType, item.VmId))
+            IEnumerable<VmSnapshot> snapshots;
+            try { snapshots = await SnapshotHelper.GetSnapshotsAsync(client, item.Node, item.VmType, item.VmId); }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _issues.Warning("Snapshots", ex.Message, LinkKey.Vm(item.VmId));
+                return (item, rows);
+            }
+
+            foreach (var snapshot in snapshots)
             {
                 rows.Add(new
                 {

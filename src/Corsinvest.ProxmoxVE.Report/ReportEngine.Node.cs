@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
-using Corsinvest.ProxmoxVE.Api;
 using Corsinvest.ProxmoxVE.Api.Extension;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Node;
@@ -33,23 +32,24 @@ public partial class ReportEngine
 
         pt.Step("Status/Version/Subscription/DNS/Time/Network");
         var node = client.Nodes[item.Node];
-        var statusTask = node.Status.GetAsync();
-        var versionTask = node.Version.GetAsync();
-        var subscriptionTask = node.Subscription.GetAsync();
-        var dnsTask = node.Dns.GetAsync();
-        var timeTask = node.Time.GetAsync();
-        var networksTask = node.Network.GetAsync();
-        await TaskExtensions.WhenAllSafe(statusTask, versionTask, subscriptionTask, dnsTask, timeTask, networksTask);
+        var nodeLink = LinkKey.Node(item.Node);
+        var statusTask = node.Status.GetAsync().ToSafeSingle(_issues, "Node", nodeLink);
+        var versionTask = node.Version.GetAsync().ToSafeSingle(_issues, "Node", nodeLink);
+        var subscriptionTask = node.Subscription.GetAsync().ToSafeSingle(_issues, "Node", nodeLink);
+        var dnsTask = node.Dns.GetAsync().ToSafeSingle(_issues, "Node", nodeLink);
+        var timeTask = node.Time.GetAsync().ToSafeSingle(_issues, "Node", nodeLink);
+        var networksTask = node.Network.GetAsync().ToSafeEnum(_issues, "Node", nodeLink);
+        await Task.WhenAll(statusTask, versionTask, subscriptionTask, dnsTask, timeTask, networksTask);
 
         return new()
         {
             Item = item,
-            Status = statusTask.ResultOrDefault(),
-            Version = versionTask.ResultOrDefault(),
-            Subscription = subscriptionTask.ResultOrDefault(),
-            Dns = dnsTask.ResultOrDefault(),
-            Time = timeTask.ResultOrDefault(),
-            Networks = networksTask.ResultOrDefault() ?? [],
+            Status = statusTask.Result,
+            Version = versionTask.Result,
+            Subscription = subscriptionTask.Result,
+            Dns = dnsTask.Result,
+            Time = timeTask.Result,
+            Networks = networksTask.Result,
         };
     }
 
@@ -138,7 +138,7 @@ public partial class ReportEngine
     {
         var node = data.Item.Node;
         using var sw = _writer.AddSection(new SectionId.Node(node));
-        sw.AddBackLink("Nodes", LinkKey.ListNodes());
+        sw.AddBackLink("Nodes", LinkKey.ListNodes);
 
         sw.AddKeyValue(node,
                        new Dictionary<string, object?>
@@ -170,22 +170,22 @@ public partial class ReportEngine
                        });
 
         pt.Step("Services/SSL Certificates/Hosts");
-        var servicesTask = client.Nodes[node].Services.GetAsync();
-        var certificatesTask = client.Nodes[node].Certificates.Info.GetAsync();
-        var hostsTask = client.Nodes[node].Hosts.GetEtcHosts();
+        var servicesTask = client.Nodes[node].Services.GetAsync().ToSafeEnum(_issues, "Node", LinkKey.Node(node));
+        var certificatesTask = client.Nodes[node].Certificates.Info.GetAsync().ToSafeEnum(_issues, "Node", LinkKey.Node(node));
+        var hostsTextTask = client.Nodes[node].Hosts.GetEtcHosts().ToSafeText(_issues, "Node", LinkKey.Node(node));
 
-        await TaskExtensions.WhenAllSafe(servicesTask, certificatesTask, hostsTask);
+        await Task.WhenAll(servicesTask, certificatesTask, hostsTextTask);
 
         sw.AddTable("Services",
-                       (servicesTask.ResultOrDefault() ?? []).Select(a => new
-                       {
-                           a.Name,
-                           a.Service,
-                           a.State,
-                           a.ActiveState,
-                           a.UnitState,
-                           DescriptionWrap = a.Description,
-                       }));
+                    servicesTask.Result.Select(a => new
+                    {
+                        a.Name,
+                        a.Service,
+                        a.State,
+                        a.ActiveState,
+                        a.UnitState,
+                        DescriptionWrap = a.Description,
+                    }));
 
         sw.AddTable("Network",
                     data.Networks.Select(a => new
@@ -234,9 +234,8 @@ public partial class ReportEngine
                     }).ToList(),
                     new TableOptions<dynamic>().WithRowKeys(r => [LinkKey.NodeNetwork(node, (string)r.Interface)]));
 
-        var hostsResult = hostsTask.ResultOrDefault();
         sw.AddTable("/etc/hosts",
-                       (hostsResult is null ? "" : (string)hostsResult.ToData().data)
+                    hostsTextTask.Result
                                 .Split('\n')
                                 .Select(a => a.Trim())
                                 .Where(a => a.Length > 0 && !a.StartsWith('#'))
@@ -253,7 +252,8 @@ public partial class ReportEngine
 
         if (settings.Node.Detail.Disk.IncludeDiskDetail || settings.Node.Detail.Disk.IncludeSmartData)
         {
-            var disksData = await client.Nodes[node].Disks.List.GetAsync(include_partitions: true);
+            var disksData = await client.Nodes[node].Disks.List.GetAsync(include_partitions: true)
+                                        .ToSafeEnum(_issues, "Node", LinkKey.Node(node));
 
             if (settings.Node.Detail.Disk.IncludeDiskDetail)
             {
@@ -310,12 +310,12 @@ public partial class ReportEngine
             if (settings.Node.Detail.Disk.IncludeDiskDetail)
             {
                 pt.Step("Directory/ZFS Pools");
-                var directoryTask = client.Nodes[node].Disks.Directory.GetAsync();
-                var zfsPoolsListTask = client.Nodes[node].Disks.Zfs.GetAsync();
-                await TaskExtensions.WhenAllSafe(directoryTask, zfsPoolsListTask);
+                var directoryTask = client.Nodes[node].Disks.Directory.GetAsync().ToSafeEnum(_issues, "Node", LinkKey.Node(node));
+                var zfsPoolsListTask = client.Nodes[node].Disks.Zfs.GetAsync().ToSafeEnum(_issues, "Node", LinkKey.Node(node));
+                await Task.WhenAll(directoryTask, zfsPoolsListTask);
 
                 sw.AddTable("Directory",
-                            (directoryTask.ResultOrDefault() ?? []).Select(a => new
+                            directoryTask.Result.Select(a => new
                             {
                                 a.Device,
                                 a.Path,
@@ -324,8 +324,11 @@ public partial class ReportEngine
                                 a.UnitFile
                             }));
 
-                var zfsPoolList = (zfsPoolsListTask.ResultOrDefault() ?? []).ToList();
-                var zfsPoolDetails = await RunParallelAsync(zfsPoolList, p => client.Nodes[node].Disks.Zfs[p.Name].GetAsync());
+                var zfsPoolList = zfsPoolsListTask.Result.ToList();
+                var zfsPoolDetails = await RunParallelAsync(zfsPoolList,
+                    async p => await client.Nodes[node].Disks.Zfs[p.Name].GetAsync()
+                                           .ToSafeSingle(_issues, "Node", LinkKey.Node(node))
+                               ?? new NodeDiskZfsDetail());
 
                 sw.AddTable("ZFS Pools",
                             zfsPoolList.Zip(zfsPoolDetails, (pool, poolData) => new
@@ -354,12 +357,12 @@ public partial class ReportEngine
         if (settings.Node.Detail.IncludeApt)
         {
             pt.Step("Apt Repository/Updates/Versions");
-            var aptRepositoriesTask = client.Nodes[node].Apt.Repositories.GetAsync();
-            var aptUpdatesTask = client.Nodes[node].Apt.Update.GetAsync();
-            var aptVersionsTask = client.Nodes[node].Apt.Versions.GetAsync();
-            await TaskExtensions.WhenAllSafe(aptRepositoriesTask, aptUpdatesTask, aptVersionsTask);
+            var aptRepositoriesTask = client.Nodes[node].Apt.Repositories.GetAsync().ToSafeSingle(_issues, "Node", LinkKey.Node(node));
+            var aptUpdatesTask = client.Nodes[node].Apt.Update.GetAsync().ToSafeEnum(_issues, "Node", LinkKey.Node(node));
+            var aptVersionsTask = client.Nodes[node].Apt.Versions.GetAsync().ToSafeEnum(_issues, "Node", LinkKey.Node(node));
+            await Task.WhenAll(aptRepositoriesTask, aptUpdatesTask, aptVersionsTask);
 
-            var aptRepositories = aptRepositoriesTask.ResultOrDefault();
+            var aptRepositories = aptRepositoriesTask.Result;
             sw.AddTable("Apt Repository",
                         (aptRepositories?.Files ?? []).SelectMany(a => a.Repositories, (file, repo) => new
                         {
@@ -374,7 +377,7 @@ public partial class ReportEngine
                         }));
 
             sw.AddTable("Apt Update",
-                        (aptUpdatesTask.ResultOrDefault() ?? []).Select(a => new
+                        aptUpdatesTask.Result.Select(a => new
                         {
                             a.Package,
                             a.Version,
@@ -388,7 +391,7 @@ public partial class ReportEngine
                         }));
 
             sw.AddTable("Package Version",
-                        (aptVersionsTask.ResultOrDefault() ?? []).Select(a => new
+                        aptVersionsTask.Result.Select(a => new
                         {
                             a.Package,
                             a.Version,
@@ -406,15 +409,15 @@ public partial class ReportEngine
         if (settings.Firewall.Enabled && settings.Node.Detail.IncludeFirewallLog)
         {
             pt.Step("Firewall Logs");
-            AddLogs(sw,
-                    "Firewall Logs",
-                    await client.Nodes[node].Firewall.Log.GetAsync(limit: settings.Firewall.Limit,
-                                                                   since: settings.Firewall.SinceUnix,
-                                                                   until: settings.Firewall.UntilUnix));
+            var fwLogs = await client.Nodes[node].Firewall.Log.GetAsync(limit: settings.Firewall.Limit,
+                                                                        since: settings.Firewall.SinceUnix,
+                                                                        until: settings.Firewall.UntilUnix)
+                                     .ToSafeEnum(_issues, "Firewall Log", LinkKey.Node(node));
+            AddLogs(sw, "Firewall Logs", fwLogs);
         }
 
         sw.AddTable("SSL Certificates",
-                    (certificatesTask.ResultOrDefault() ?? []).Select(cert => new
+                    certificatesTask.Result.Select(cert => new
                     {
                         cert.FileName,
                         cert.Subject,
@@ -438,7 +441,7 @@ public partial class ReportEngine
                                 errors: taskSettings.OnlyErrors ? true : null,
                                 limit: taskSettings.MaxCount > 0 ? taskSettings.MaxCount : null,
                                 source: taskSettings.Source == "all" ? null : taskSettings.Source
-                            )).Select(a => new
+                            ).ToSafeEnum(_issues, "Node", LinkKey.Node(node))).Select(a => new
                             {
                                 a.UniqueTaskId,
                                 a.Type,

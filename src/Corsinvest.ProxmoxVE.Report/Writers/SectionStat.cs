@@ -5,4 +5,4 @@
 
 namespace Corsinvest.ProxmoxVE.Report.Writers;
 
-internal sealed record SectionStat(string Name, int Count, TimeSpan Duration);
+internal sealed record SectionStat(string Name, string Description, int Count, TimeSpan Duration);
