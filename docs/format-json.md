@@ -11,7 +11,7 @@ Report_20260506_120000.zip    ← multi-file JSON dataset
 ## File layout inside the zip
 
 ```
-report.zip
+Report_20260506_120000.zip
 ├── metadata.json              ← report-wide info (schema version, timestamp, filters, generation stats)
 ├── network-diagram.svg        ← network topology diagram (raw SVG)
 │
@@ -113,14 +113,21 @@ Each top-level key is a *block*; the value is either an object (key/value pairs)
 
 ## Naming conventions
 
-- **Property keys** are **camelCase** (`vmId`, `memoryUsageGB`, `cpuUsagePct`).
-- **Common acronyms** keep their casing (`vmID`, `memoryGB`, `osType`, `agentOSInfo`).
-- **Timestamps** are ISO-8601 in UTC (`"2026-05-08T17:28:51Z"`).
-- **`null`** is used for genuinely missing values; null-valued keys are omitted from the JSON to keep the files compact.
-- **Suffix conventions** mirror the Excel column suffixes:
-  - `…Pct` → percentage as a float (e.g. `0.45` for 45 %)
-  - `…GB` / `…MB` → numeric size in the named unit
-  - `…Date` → date or datetime ISO-8601 string
+- **Property keys** are **camelCase** (`vmId`, `memorySizeGB`, `cpuUsagePct`).
+- **Common acronyms** keep their casing (`vmID`, `osType`, `agentOSInfo`, `sslCertificates`).
+- **`null`** values are omitted from the JSON to keep files compact.
+
+### Value types
+
+| Kind | Key example | Value example | Notes |
+|---|---|---|---|
+| Text | `name`, `node`, `status` | `"vm01"` | Plain string. |
+| Boolean | `isTemplate`, `enabled` | `true` / `false` | Real JSON booleans, not `"X"` / `""`. |
+| Number — count | `cpu`, `cores`, `count` | `8` | Integer or float, unit-less. |
+| Number — size | `memorySizeGB`, `rootFsMB` | `16.5` | The **unit is in the key suffix** (`GB` / `MB`); no auto-conversion. |
+| Number — percentage | `cpuUsagePct`, `memoryUsagePct` | `0.45` | Float **0–1**. Multiply by 100 if you want the "%" form. |
+| Datetime | `lastSync`, `startTime` | `"2026-05-10T14:30:00Z"` | ISO-8601, UTC. |
+| Date only | `expiry`, `validUntil` | `"2026-05-10"` | ISO-8601 date. |
 
 ---
 
