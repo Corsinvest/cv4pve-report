@@ -276,6 +276,7 @@ a:hover {
   list-style: none;
 }
 
+/* WebKit fallback: older Safari/Chromium ignore ::marker on <summary> and need this. */
 .sidebar nav summary::-webkit-details-marker {
   display: none;
 }
@@ -451,11 +452,6 @@ main h2 {
   font-size: 1.1rem;
 }
 
-.back-link {
-  margin: 0 0 1rem 0;
-  font-size: 0.85rem;
-}
-
 /* Page-level table of contents — small panel at the top, anchor links to each section. */
 .page-toc {
   background: var(--color-bg-table);
@@ -496,15 +492,6 @@ main h2 {
 
 .page-toc a:hover {
   text-decoration: underline;
-}
-
-.back-link a {
-  color: var(--color-text-muted);
-  text-decoration: none;
-}
-
-.back-link a:hover {
-  color: var(--color-link);
 }
 
 /* ---------- Tables ---------- */
@@ -836,41 +823,6 @@ table.kv tbody tr:last-child td {
 .cover-filters,
 .cover-contents {
   margin-bottom: 1.5rem;
-}
-
-/* Print-only footer (hidden on screen, shown only on printed pages). */
-.print-footer {
-  font-style: italic;
-  color: var(--color-text-muted);
-  line-height: 1.5;
-}
-
-.print-footer a {
-  color: inherit;
-  text-decoration: underline;
-}
-
-.print-footer a:hover {
-  color: var(--color-link);
-}
-
-.print-footer .generated-at {
-  font-style: normal;
-  font-variant-numeric: tabular-nums;
-}
-
-.print-footer {
-  display: none;
-  margin-top: 2rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--color-border);
-  font-size: 0.8rem;
-}
-
-@media print {
-  .print-footer {
-    display: block;
-  }
 }
 
 /* ---------- Network diagram wrapper page ---------- */
