@@ -4,7 +4,6 @@
  */
 
 using System.IO.Compression;
-using System.Text;
 using System.Text.Json;
 
 namespace Corsinvest.ProxmoxVE.Report.Writers.Html;
@@ -44,13 +43,13 @@ internal sealed partial class HtmlReportWriter(ReportInfo info) : IReportWriter
         return section;
     }
 
-    public Task SaveAsync(Stream stream)
+    public async Task SaveAsync(Stream stream)
     {
         using var zip = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true);
 
         var sidebarHtml = RenderSidebar();
 
-        WriteEntry(zip, "index.html", RenderPage("Home", sidebarHtml, _coverHtml, depth: 0));
+        await ZipHelpers.WriteTextEntryAsync(zip, "index.html", RenderPage("Home", sidebarHtml, _coverHtml, depth: 0));
 
         // Detail pages are routed under sub-directories (vms/, nodes/, containers/) — see HtmlEncoder.PageFileName.
         foreach (var section in _sections)
@@ -58,63 +57,34 @@ internal sealed partial class HtmlReportWriter(ReportInfo info) : IReportWriter
             var fileName = HtmlEncoder.PageFileName(section.Name);
             var depth = HtmlEncoder.PageDepth(section.Name);
             var body = section.RenderBody(fileName);
-            WriteEntry(zip, fileName, RenderPage(section.DisplayName, sidebarHtml, body, depth));
+            await ZipHelpers.WriteTextEntryAsync(zip, fileName, RenderPage(section.DisplayName, sidebarHtml, body, depth));
         }
 
-        WriteEmbeddedAsset(zip, "assets/style.css", "Corsinvest.ProxmoxVE.Report.Writers.Html.Assets.style.css");
-        WriteEmbeddedAsset(zip, "assets/app.js", "Corsinvest.ProxmoxVE.Report.Writers.Html.Assets.app.js");
-        WriteEmbeddedAsset(zip, "assets/table.js", "Corsinvest.ProxmoxVE.Report.Writers.Html.Assets.table.js");
-        WriteEntry(zip, "assets/sidebar-data.js", RenderSidebarData());
-        WriteEntry(zip, "assets/export-data.js", RenderExportData());
+        var asm = typeof(HtmlReportWriter).Assembly;
+        await ZipHelpers.WriteEmbeddedAssetAsync(zip, "assets/style.css", asm, "Corsinvest.ProxmoxVE.Report.Writers.Html.Assets.style.css");
+        await ZipHelpers.WriteEmbeddedAssetAsync(zip, "assets/app.js", asm, "Corsinvest.ProxmoxVE.Report.Writers.Html.Assets.app.js");
+        await ZipHelpers.WriteEmbeddedAssetAsync(zip, "assets/table.js", asm, "Corsinvest.ProxmoxVE.Report.Writers.Html.Assets.table.js");
+        await ZipHelpers.WriteTextEntryAsync(zip, "assets/sidebar-data.js", RenderSidebarData());
+        await ZipHelpers.WriteTextEntryAsync(zip, "assets/export-data.js", RenderExportData());
 
-        // Network topology SVG (if present), bundled inside the zip alongside a
-        // small HTML wrapper so it can be opened inside the main pane (with the
-        // sidebar still visible) instead of replacing the whole page.
+        // HTML wraps the SVG in a small page so it opens inside <main> with the sidebar visible.
         if (_networkDiagramSvg is { Length: > 0 } svg)
         {
-            WriteEntry(zip, "network-diagram.svg", svg);
-            WriteEntry(zip, "network-diagram.html",
-                       RenderPage("Network Diagram",
-                                  sidebarHtml,
-                                  body: """
-                                          <a href="network-diagram.svg" target="_blank" title="Open SVG in new tab"><img src="network-diagram.svg" alt="Network topology diagram" class="diagram-frame"></a>
+            await ZipHelpers.WriteTextEntryAsync(zip, "network-diagram.svg", svg);
+            await ZipHelpers.WriteTextEntryAsync(zip,
+                                                 "network-diagram.html",
+                                                 RenderPage("Network Diagram",
+                                                            sidebarHtml,
+                                                            body: """
+                                                                    <a href="network-diagram.svg" target="_blank" title="Open SVG in new tab"><img src="network-diagram.svg" alt="Network topology diagram" class="diagram-frame"></a>
 
-                                  """,
-                                  depth: 0,
-                                  showExport: false));
+                                                            """,
+                                                            depth: 0,
+                                                            showExport: false));
         }
-
-        return Task.CompletedTask;
     }
 
     public void Dispose() { }
-
-    private static void WriteEntry(ZipArchive zip, string path, string content)
-    {
-        var entry = zip.CreateEntry(path, CompressionLevel.Optimal);
-        using var entryStream = entry.Open();
-        using var writer = new StreamWriter(entryStream, new UTF8Encoding(false));
-        writer.Write(content);
-    }
-
-    private static void WriteEmbeddedAsset(ZipArchive zip, string path, string resourceName)
-    {
-        var asm = typeof(HtmlReportWriter).Assembly;
-        using var src = asm.GetManifestResourceStream(resourceName)
-                          ?? throw new InvalidOperationException($"Embedded asset not found: {resourceName}");
-        var entry = zip.CreateEntry(path, CompressionLevel.Optimal);
-        using var dst = entry.Open();
-        src.CopyTo(dst);
-    }
-
-    private static string ReadEmbeddedString(string resourceName)
-    {
-        var asm = typeof(HtmlReportWriter).Assembly;
-        using var src = asm.GetManifestResourceStream(resourceName)
-                          ?? throw new InvalidOperationException($"Embedded asset not found: {resourceName}");
-        using var reader = new StreamReader(src);
-        return reader.ReadToEnd();
-    }
 
     /// <summary>
     /// Builds the lazy-loaded export data file: declares <c>window.__REPORT_CSS__</c>
@@ -124,15 +94,13 @@ internal sealed partial class HtmlReportWriter(ReportInfo info) : IReportWriter
     /// </summary>
     private static string RenderExportData()
     {
-        var css = ReadEmbeddedString("Corsinvest.ProxmoxVE.Report.Writers.Html.Assets.style.css");
-        var tableJs = ReadEmbeddedString("Corsinvest.ProxmoxVE.Report.Writers.Html.Assets.table.js");
-
-        var cssLiteral = JsonSerializer.Serialize(css);
-        var tableJsLiteral = JsonSerializer.Serialize(tableJs);
+        var asm = typeof(HtmlReportWriter).Assembly;
+        var css = ZipHelpers.ReadEmbeddedString(asm, "Corsinvest.ProxmoxVE.Report.Writers.Html.Assets.style.css");
+        var tableJs = ZipHelpers.ReadEmbeddedString(asm, "Corsinvest.ProxmoxVE.Report.Writers.Html.Assets.table.js");
 
         return $"""
-            window.__REPORT_CSS__ = {cssLiteral};
-            window.__REPORT_TABLE_JS__ = {tableJsLiteral};
+            window.__REPORT_CSS__ = {JsonSerializer.Serialize(css)};
+            window.__REPORT_TABLE_JS__ = {JsonSerializer.Serialize(tableJs)};
             """;
     }
 
@@ -189,7 +157,10 @@ internal sealed partial class HtmlReportWriter(ReportInfo info) : IReportWriter
     internal string RenderGeneratedBy()
     {
         var name = HtmlEncoder.Text(_info.ApplicationName);
-        var version = string.IsNullOrEmpty(_info.ApplicationVersion) ? "" : $" v{HtmlEncoder.Text(_info.ApplicationVersion)}";
+        var version = string.IsNullOrEmpty(_info.ApplicationVersion)
+                         ? ""
+                         : $" v{HtmlEncoder.Text(_info.ApplicationVersion)}";
+
         var url = HtmlEncoder.Attr(_info.ApplicationUrl);
         var ts = _generatedAt.ToString("yyyy-MM-dd HH:mm:ss");
         return $"""Generated by <a href="{url}" target="_blank">{name}</a>{version} — <a href="https://www.corsinvest.it" target="_blank">Corsinvest Srl</a> — <span class="generated-at">{ts}</span>""";
@@ -200,7 +171,9 @@ internal sealed partial class HtmlReportWriter(ReportInfo info) : IReportWriter
     /// &lt;meta name="generator"&gt; tags.</summary>
     private string GeneratorMeta()
     {
-        var version = string.IsNullOrEmpty(_info.ApplicationVersion) ? "" : $" v{_info.ApplicationVersion}";
+        var version = string.IsNullOrEmpty(_info.ApplicationVersion)
+                         ? ""
+                         : $" v{_info.ApplicationVersion}";
         return $"{_info.ApplicationName}{version} — generated {_generatedAt:yyyy-MM-dd HH:mm:ss}";
     }
 }

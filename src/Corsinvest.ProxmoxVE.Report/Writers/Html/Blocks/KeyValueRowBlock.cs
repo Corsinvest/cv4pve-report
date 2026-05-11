@@ -26,7 +26,7 @@ internal sealed class KeyValueRowBlock(IReadOnlyList<(string Title, IDictionary<
     private static string RenderBlock((string Title, IDictionary<string, object?> Items) block)
     {
         var rows = string.Concat(block.Items.Select(kv => $"""
-                    <tr><th scope="row">{HtmlEncoder.Text(kv.Key)}</th><td>{HtmlEncoder.Text(FormatValue(kv.Value))}</td></tr>
+                    <tr><th scope="row">{HtmlEncoder.Text(kv.Key)}</th><td>{HtmlEncoder.Text(BlockFormat.FormatValue(kv.Value))}</td></tr>
 
             """));
 
@@ -41,14 +41,4 @@ internal sealed class KeyValueRowBlock(IReadOnlyList<(string Title, IDictionary<
 
             """;
     }
-
-    private static string FormatValue(object? value) => value switch
-    {
-        null => "",
-        bool b => b ? "Yes" : "No",
-        DateTime d => d.ToString("yyyy-MM-dd HH:mm:ss"),
-        double d => d.ToString("0.##"),
-        float f => f.ToString("0.##"),
-        _ => value.ToString() ?? "",
-    };
 }

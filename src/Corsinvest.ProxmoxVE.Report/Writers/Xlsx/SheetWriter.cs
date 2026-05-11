@@ -130,32 +130,35 @@ internal sealed class SheetWriter(IXLWorksheet ws, Dictionary<string, string> sh
         foreach (var col in table.Fields)
         {
             var dataCol = table.DataRange.Column(col.Index + 1);
-            var (suffix, displayName) = ColumnNameSuffix.Parse(col.Name);
+            var (kind, displayName) = ColumnConvention.Parse(col.Name);
             col.HeaderCell.Value = displayName;
 
-            switch (suffix)
+            switch (kind)
             {
-                case ColumnSuffix.Pct:
+                case ColumnKind.Percentage:
                     dataCol.Style.NumberFormat.Format = "0.00%";
                     break;
-                case ColumnSuffix.GB:
-                case ColumnSuffix.MB:
+
+                case ColumnKind.GB:
+                case ColumnKind.MB:
                     dataCol.Style.NumberFormat.Format = "#,##0.00";
                     break;
-                case ColumnSuffix.Wrap:
+
+                case ColumnKind.Wrap:
                     table.Worksheet.Column(dataCol.FirstCell().Address.ColumnNumber).Width = 40;
                     dataCol.Style.Alignment.WrapText = true;
                     break;
-                case ColumnSuffix.Flag:
+
+                case ColumnKind.Flag:
                     dataCol.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                     break;
             }
 
             if (dataCol.FirstCell().Value.IsDateTime)
             {
-                dataCol.Style.NumberFormat.Format = suffix == ColumnSuffix.DateOnly
-                    ? "dd/MM/yyyy"
-                    : "dd/MM/yyyy HH:mm:ss";
+                dataCol.Style.NumberFormat.Format = kind == ColumnKind.DateOnly
+                                                        ? "dd/MM/yyyy"
+                                                        : "dd/MM/yyyy HH:mm:ss";
             }
         }
 
@@ -207,7 +210,7 @@ internal sealed class SheetWriter(IXLWorksheet ws, Dictionary<string, string> sh
     {
         var col = table.Fields.FirstOrDefault(f => f.Name.Equals(colName, StringComparison.OrdinalIgnoreCase)
                                                     || f.HeaderCell.Value.ToString().Equals(colName, StringComparison.OrdinalIgnoreCase)
-                                                    || f.HeaderCell.Value.ToString().Equals(ColumnNameSuffix.PascalCaseToWords(colName), StringComparison.OrdinalIgnoreCase));
+                                                    || f.HeaderCell.Value.ToString().Equals(ColumnConvention.PascalCaseToWords(colName), StringComparison.OrdinalIgnoreCase));
         if (col == null) { return; }
 
         foreach (var cell in table.DataRange.Column(col.Index + 1).Cells())
@@ -228,10 +231,8 @@ internal sealed class SheetWriter(IXLWorksheet ws, Dictionary<string, string> sh
                     : long.TryParse(cell.Value.ToString(), out var sid)
                         ? sid
                         : 0;
-            if (id > 0)
-            {
-                cell.Value = id;
-            }
+
+            if (id > 0) { cell.Value = id; }
 
             return id > 0
                     ? LinkKey.Vm(id)

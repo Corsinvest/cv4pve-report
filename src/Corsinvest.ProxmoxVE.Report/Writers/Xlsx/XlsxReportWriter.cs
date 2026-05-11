@@ -4,7 +4,6 @@
  */
 
 using System.IO.Compression;
-using System.Text;
 using ClosedXML.Excel;
 
 namespace Corsinvest.ProxmoxVE.Report.Writers.Xlsx;
@@ -70,15 +69,7 @@ internal sealed partial class XlsxReportWriter : IReportWriter
             _workbook.SaveAs(xlsxStream);
         }
 
-        if (_networkDiagramSvg is { Length: > 0 })
-        {
-            var svgEntry = zip.CreateEntry("network-diagram.svg", CompressionLevel.Optimal);
-            await using var svgStream = svgEntry.Open();
-            await using var writer = new StreamWriter(svgStream, new UTF8Encoding(false));
-            writer.Write(_networkDiagramSvg);
-        }
-
-        await Task.CompletedTask;
+        await ZipHelpers.WriteNetworkDiagramAsync(zip, _networkDiagramSvg);
     }
 
     public void Dispose() => _workbook.Dispose();
