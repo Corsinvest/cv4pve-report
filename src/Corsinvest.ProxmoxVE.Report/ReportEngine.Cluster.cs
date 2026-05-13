@@ -64,8 +64,6 @@ public partial class ReportEngine
         var backupJobsTask = client.Cluster.Backup.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
         var replicationTask = client.Cluster.Replication.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
         var metricServersTask = client.Cluster.Metrics.Server.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
-        var sdnZonesTask = client.Cluster.Sdn.Zones.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
-        var vnetsTask = client.Cluster.Sdn.Vnets.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
         var sdnControllersTask = client.Cluster.Sdn.Controllers.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
         var sdnIpamsTask = client.Cluster.Sdn.Ipams.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
         var mappingDirTask = client.Cluster.Mapping.Dir.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
@@ -86,7 +84,7 @@ public partial class ReportEngine
         await Task.WhenAll(
             optionsTask, usersTask, tfaTask, groupsTask, rolesTask, aclTask, domainsTask,
             backupJobsTask, replicationTask, metricServersTask,
-            sdnZonesTask, vnetsTask, sdnControllersTask, sdnIpamsTask,
+            sdnControllersTask, sdnIpamsTask,
             mappingDirTask, mappingPciTask, mappingUsbTask,
             poolsTask, haResourcesTask, haStatusTask,
             fwOptionsTask, haGroupsTask);
@@ -271,7 +269,7 @@ public partial class ReportEngine
 
         ReportGlobal("Cluster: SDN");
         sw.AddTable("SDN Zones",
-                    sdnZonesTask.Result.Select(a => new
+                    _sdnZones.Select(a => new
                     {
                         a.Zone,
                         a.Type,
@@ -285,7 +283,7 @@ public partial class ReportEngine
                     }));
 
         sw.AddTable("SDN Vnets",
-                    vnetsTask.Result.Select(a => new
+                    _sdnVnets.Select(a => new
                     {
                         a.Vnet,
                         a.Zone,
@@ -314,7 +312,7 @@ public partial class ReportEngine
                         a.Type,
                     }));
 
-        var subnetResults = await RunParallelAsync(vnetsTask.Result,
+        var subnetResults = await RunParallelAsync(_sdnVnets,
                                                    async vnet => (vnet,
                                                                   subs: await client.Cluster.Sdn.Vnets[vnet.Vnet].Subnets.GetAsync()
                                                                                     .ToSafeEnum(_issues, "Cluster", LinkKey.Cluster)));

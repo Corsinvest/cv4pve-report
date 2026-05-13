@@ -64,6 +64,18 @@ public partial class ReportEngine
         using var sw = _writer.AddSection("Network");
         CreateNodeNetworkTable(sw, "Nodes Networks", _pendingNodeNetworkRows);
 
+        sw.AddTable("SDN Vnets",
+                    _sdnRows.Select(a => new
+                    {
+                        a.Vnet,
+                        a.Zone,
+                        a.ZoneType,
+                        a.ZoneBridge,
+                        a.Tag,
+                        a.Alias,
+                        Nodes = string.Join(", ", a.Nodes),
+                    }));
+
         sw.AddTable("VM Networks",
                     _pendingNetworkRows.ConvertAll(row => new
                     {
