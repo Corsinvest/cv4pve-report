@@ -2,6 +2,19 @@
 
 ---
 
+## [2.2.1] — 2026-05-13
+
+### Fixes
+
+- **EFI disk and TPM state now listed in the Disks sheet.** `efidisk0` and `tpmstate0` were missing from the per-VM disk inventory because the underlying SDK consumed them into dedicated typed properties instead of leaving them in the generic disk dictionary. They now appear alongside `scsi0`, `virtio0`, etc. with the same columns (storage, format, size). Thanks @shaundeeb for the report (#37).
+- **SDN vnets no longer make VMs disappear from the network diagram.** When a VM was attached to an SDN vnet that wasn't materialised in the node's `/etc/network/interfaces` (typical of zones whose apply hasn't been propagated, Simple/EVPN zones, or datacenter-only vnets), the diagram had no bridge to draw the VM on and the VM was silently dropped. The diagram now learns about SDN vnets from the cluster-wide config and injects the missing bridges as synthetic boxes on every node where the zone is active. Thanks @janrenard for the report (#36).
+
+### What's new
+
+- **Network sheet now includes an SDN Vnets table.** Between *Nodes Networks* and *VM Networks* there is now a third table listing every SDN vnet with its zone, zone type, parent bridge, VLAN tag, alias and the nodes where it's active. Same data was already available in the *Cluster* sheet but it lives natively here too now, so the network view is self-contained.
+
+---
+
 ## [2.2.0] — 2026-05-11
 
 ### What's new

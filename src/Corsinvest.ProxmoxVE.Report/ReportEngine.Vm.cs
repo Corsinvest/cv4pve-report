@@ -316,7 +316,6 @@ public partial class ReportEngine
             ["Vga"] = config.Vga,
             ["Agent"] = config.AgentEnabled,
             ["Agent Running"] = d.AgentRunning,
-            ["TPM State"] = config.Tpmstate0,
             ["Watchdog"] = config.Watchdog,
             ["Rng0"] = config.Rng0,
             ["Start Up"] = config.StartUp,

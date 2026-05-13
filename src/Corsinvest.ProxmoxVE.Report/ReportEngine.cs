@@ -33,6 +33,9 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
     private readonly List<VmNetworkRow> _pendingNetworkRows = [];
     private readonly List<(string Node, NodeNetwork Network)> _pendingNodeNetworkRows = [];
     private IEnumerable<StorageItem> _storageConfigs = [];
+    private IReadOnlyList<ClusterSdnVnet> _sdnVnets = [];
+    private IReadOnlyList<ClusterSdnZone> _sdnZones = [];
+    private IReadOnlyList<NetworkDiagramBuilder.SdnVnetRow> _sdnRows = [];
     private readonly List<(ClusterResource Vm, IEnumerable<VmDisk> Disks)> _pendingDiskRows = [];
     private readonly List<(ClusterResource Vm, IEnumerable<VmQemuAgentGetFsInfo.ResultInfo> Partitions)> _pendingPartitionRows = [];
     private HashSet<long> _vmIds = [];
@@ -84,7 +87,31 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
 
         _vmIds = [.. (await client.GetVmsAsync(settings.Guest.Ids)).Select(a => a.VmId)];
 
-        _storageConfigs = await client.Storage.GetAsync();
+        // Cluster-wide bootstrap data, consumed by multiple sections (Cluster sheet, Network
+        // sheet) and the SVG diagram. Loaded once in parallel.
+        var storageTask = client.Storage.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
+        var sdnVnetsTask = client.Cluster.Sdn.Vnets.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
+        var sdnZonesTask = client.Cluster.Sdn.Zones.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
+        await Task.WhenAll(storageTask, sdnVnetsTask, sdnZonesTask);
+
+        _storageConfigs = storageTask.Result;
+        _sdnVnets = sdnVnetsTask.Result;
+        _sdnZones = sdnZonesTask.Result;
+        _sdnRows = [.. _sdnVnets.Select(v =>
+        {
+            var zone = _sdnZones.FirstOrDefault(z => z.Zone == v.Zone);
+            var nodes = string.IsNullOrEmpty(zone?.Nodes)
+                            ? (IReadOnlyList<string>)[.. _resources.Where(r => r.ResourceType == ClusterResourceType.Node).Select(r => r.Node)]
+                            : [.. zone.Nodes.Split(',').Select(s => s.Trim())];
+            return new NetworkDiagramBuilder.SdnVnetRow(
+                Vnet: v.Vnet ?? "",
+                Zone: v.Zone ?? "",
+                ZoneType: zone?.Type ?? "simple",
+                ZoneBridge: zone?.Bridge,
+                Tag: v.Tag,
+                Alias: v.Alias,
+                Nodes: nodes);
+        })];
 
         _writer.Links[LinkKey.Storages] = "Storages";
         _writer.Links[LinkKey.ListNodes] = "Nodes";
@@ -309,6 +336,7 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
     {
         NetworkDiagramSvg = NetworkDiagramBuilder.BuildSvg(
             _pendingNodeNetworkRows.Select(r => new NetworkDiagramBuilder.NodeNetworkRow(r.Node, r.Network)),
+            _sdnRows,
             _pendingNetworkRows.Select(r => new NetworkDiagramBuilder.VmNetworkRow(r.VmId, r.Name, r.Node, r.Type, r.Status, r.Hostname, r.Network, r.IsInternal)),
             _storageConfigs,
             new NetworkDiagramBuilder.DiagramInfo(info.ApplicationName, info.ApplicationUrl, info.ApplicationVersion));
