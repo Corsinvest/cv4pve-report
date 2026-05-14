@@ -11,13 +11,6 @@ using System.Text.Json.Serialization;
 
 namespace Corsinvest.ProxmoxVE.Report.Writers.Json;
 
-/// <summary>
-/// JSON report writer. Captures every section the engine emits and materialises
-/// the report as a multi-file zip with one file per section plus per-resource
-/// detail files for nodes / VMs / containers — see docs/json-format.md for the
-/// schema. Each section is serialised straight into its zip entry (no intermediate
-/// string), so the peak memory footprint stays bounded even on very large clusters.
-/// </summary>
 internal sealed partial class JsonReportWriter(ReportInfo info) : IReportWriter
 {
     private static readonly JsonSerializerOptions JsonOpts = new()
@@ -25,6 +18,7 @@ internal sealed partial class JsonReportWriter(ReportInfo info) : IReportWriter
         WriteIndented = true,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        Converters = { new JsonStringEnumConverter() },
     };
 
     private readonly List<JsonSectionWriter> _sections = [];
@@ -41,9 +35,6 @@ internal sealed partial class JsonReportWriter(ReportInfo info) : IReportWriter
     public ISectionWriter AddSection(SectionId id)
     {
         Links[id.Key] = id.Key;
-
-        // Auto-register the canonical section:* key so cross-section references resolve
-        // (mirrors the Xlsx/Html writers).
         if (LinkKey.ForSection(id.Key) is { } sectionKey) { Links[sectionKey] = id.Key; }
 
         var section = new JsonSectionWriter(id.Key);
@@ -70,10 +61,7 @@ internal sealed partial class JsonReportWriter(ReportInfo info) : IReportWriter
             await WriteJsonEntryAsync(zip, path, payload);
         }
 
-        if (_networkDiagramSvg is { Length: > 0 })
-        {
-            WriteTextEntry(zip, "network-diagram.svg", _networkDiagramSvg);
-        }
+        await ZipHelpers.WriteNetworkDiagramAsync(zip, _networkDiagramSvg);
     }
 
     public void Dispose() { }
@@ -118,12 +106,6 @@ internal sealed partial class JsonReportWriter(ReportInfo info) : IReportWriter
         return sb.ToString();
     }
 
-    /// <summary>
-    /// Build the payload for a section. A section that contains a single Table block
-    /// (e.g. "Nodes" overview) collapses to the array directly. A section with multiple
-    /// blocks (e.g. "Cluster" with users / tokens / groups / …, or a per-VM detail with
-    /// keyValue + table mixes) is emitted as an object keyed by block title.
-    /// </summary>
     private static object? SectionPayload(JsonSectionWriter section)
     {
         if (section.Blocks.Count == 0) { return new Dictionary<string, object?>(); }
@@ -135,12 +117,19 @@ internal sealed partial class JsonReportWriter(ReportInfo info) : IReportWriter
         }
 
         var result = new Dictionary<string, object?>();
-        foreach (var block in section.Blocks)
+        for (var i = 0; i < section.Blocks.Count; i++)
         {
+            var block = section.Blocks[i];
             switch (block)
             {
                 case JsonBlock.KeyValue kv:
-                    result[JsonKey.FromDisplay(kv.Title)] = kv.Items;
+                    // The first KeyValue of a multi-block section is the page header
+                    // (display label = VM id+name, node hostname, "Cluster", …). Its
+                    // title is unstable and duplicates the file path; expose it under
+                    // the fixed "info" key so consumers can navigate predictably.
+                    result[i == 0
+                            ? "info"
+                            : JsonKey.FromDisplay(kv.Title)] = kv.Items;
                     break;
 
                 case JsonBlock.Table tbl:
@@ -151,24 +140,10 @@ internal sealed partial class JsonReportWriter(ReportInfo info) : IReportWriter
         return result;
     }
 
-    /// <summary>
-    /// Serialise <paramref name="payload"/> straight into a new zip entry,
-    /// without buffering the JSON as an intermediate string. This keeps the
-    /// peak memory bounded even when a single section serialises to tens of MB
-    /// (e.g. RRD data on large clusters).
-    /// </summary>
     private static async Task WriteJsonEntryAsync(ZipArchive zip, string path, object? payload)
     {
         var entry = zip.CreateEntry(path, CompressionLevel.Optimal);
-        using var stream = entry.Open();
+        await using var stream = entry.Open();
         await JsonSerializer.SerializeAsync(stream, payload, JsonOpts);
-    }
-
-    private static void WriteTextEntry(ZipArchive zip, string path, string content)
-    {
-        var entry = zip.CreateEntry(path, CompressionLevel.Optimal);
-        using var stream = entry.Open();
-        using var writer = new StreamWriter(stream, new UTF8Encoding(false));
-        writer.Write(content);
     }
 }
