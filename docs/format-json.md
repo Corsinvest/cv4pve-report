@@ -36,7 +36,7 @@ Report_20260506_120000.zip
 ├── firewall.json
 ├── replication.json
 ├── rrd-nodes.json
-├── rrd-storages.json
+├── rrd-storage.json
 ├── rrd-guests.json
 └── syslog.json
 ```
@@ -65,7 +65,7 @@ Files are written in this order. Conditional files (`if …`) are only present w
 | 14 | **firewall.json** | Cluster + node + VM/CT firewall rules, aliases, IP sets | `Firewall.Enabled` |
 | 15 | **replication.json** | Replication job status across all nodes | `Node.IncludeReplication` |
 | 16 | **rrd-nodes.json** | Historical performance metrics per node | `Node.RrdData.Enabled` |
-| 17 | **rrd-storages.json** | Historical performance metrics per storage | `Storage.RrdData.Enabled` |
+| 17 | **rrd-storage.json** | Historical performance metrics per storage | `Storage.RrdData.Enabled` |
 | 18 | **rrd-guests.json** | Historical performance metrics per VM/CT | `Guest.RrdData.Enabled` |
 | 19 | **syslog.json** | Parsed systemd journal across all nodes | `Node.Syslog.Enabled` |
 | 20 | **cluster-log.json** | Cluster event log | `Cluster.Log.Enabled` |
