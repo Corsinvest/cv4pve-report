@@ -247,7 +247,7 @@ public partial class ReportEngine
                     AppendPartitionRows(item, d.FsInfo);
                 }
 
-                AppendDiskRows(item, d.Config.Disks);
+                AppendDiskRows(item, d.Config.DisksAll);
 
                 if (settings.Guest.Detail.Enabled)
                 {

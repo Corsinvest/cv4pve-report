@@ -121,7 +121,7 @@ public partial class ReportEngine
 
             if (d.Config != null)
             {
-                AppendDiskRows(item, d.Config.Disks);
+                AppendDiskRows(item, d.Config.DisksAll);
 
                 if (settings.Guest.Detail.Enabled)
                 {
