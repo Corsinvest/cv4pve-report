@@ -36,6 +36,7 @@ public partial class ReportEngine
                 VmName = entry.Vm.Name,
                 VmType = entry.Vm.Type,
                 VmStatus = entry.Vm.Status,
+                a.Kind,
                 a.Id,
                 a.Storage,
                 StorageType = storageRes?.PluginType,
