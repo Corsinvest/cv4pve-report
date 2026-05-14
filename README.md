@@ -17,7 +17,7 @@ Report Tool for Proxmox VE (Made in Italy)
 [![WinGet](https://img.shields.io/winget/v/Corsinvest.cv4pve.report?style=flat-square&logo=windows)](https://winstall.app/apps/Corsinvest.cv4pve.report)
 [![AUR](https://img.shields.io/aur/version/cv4pve-report?style=flat-square&logo=archlinux)](https://aur.archlinux.org/packages/cv4pve-report)
 
-> **The RVTools for Proxmox VE** — exports your entire Proxmox VE infrastructure as a single [Excel workbook](#excel-output---format-xlsx-default) **or** a [self-contained HTML site](#html-output---format-html), plus a network topology diagram (SVG).
+> **The RVTools for Proxmox VE** — exports your entire Proxmox VE infrastructure as a single [Excel workbook](#excel-output---format-xlsx-default), a [self-contained HTML site](#html-output---format-html) **or** a [multi-file JSON dataset](#json-output---format-json), plus a network topology diagram (SVG).
 
 **Fully navigable** — every node, VM and storage in the overview tables is a hyperlink to its dedicated detail page. Click and you're there.
 
@@ -39,7 +39,7 @@ RVTools is a pure inventory tool for VMware — it exports infrastructure data t
 |---|---------|:-----------------:|:-----------:|
 | **Platform** | VMware vSphere | Proxmox VE | Proxmox VE |
 | **Purpose** | Inventory & reporting | **Inventory & reporting** | **Diagnostics & health checks** |
-| **Output** | Excel | [Excel](#excel-output---format-xlsx-default) **or** [static HTML site](#html-output---format-html), plus [SVG network diagram](docs/network-diagram.md) | Text / HTML / JSON / Markdown / Excel |
+| **Output** | Excel | [Excel](#excel-output---format-xlsx-default), [static HTML site](#html-output---format-html) **or** [multi-file JSON](#json-output---format-json), plus [SVG network diagram](docs/network-diagram.md) | Text / HTML / JSON / Markdown / Excel |
 
 ### Capabilities
 
@@ -97,15 +97,16 @@ Pick the output format that fits your workflow:
 ```bash
 ./cv4pve-report ... export                  # Excel (default)
 ./cv4pve-report ... export --format Html    # HTML zipped site
+./cv4pve-report ... export --format Json    # JSON zipped dataset
 ```
 
-With `--output` / `-o` you choose the output path. **All formats now produce a single `.zip`** — extract it to access the files inside (a `.xlsx` for Excel, an `index.html` plus assets for HTML). The network topology SVG (`network-diagram.svg`) is bundled in the same zip. If the path you pass doesn't end in `.zip`, the extension is appended automatically.
+With `--output` / `-o` you choose the output path. **All formats now produce a single `.zip`** — extract it to access the files inside (a `.xlsx` for Excel, an `index.html` plus assets for HTML, one JSON per section for JSON). The network topology SVG (`network-diagram.svg`) is bundled in the same zip. If the path you pass doesn't end in `.zip`, the extension is appended automatically.
 
 ---
 
 ## Output Formats
 
-Both formats expose **the same data** using the same logical layout — one section per topic (Cluster, Nodes, VMs, Containers, Storages, …) plus per-resource detail (one per node, VM and container). Only the rendering differs: a sheet per section in Excel, a page per section in HTML. Pick the one that matches what you need to do with the report — each format has its own full reference under [`docs/`](docs/).
+All three formats expose **the same data** using the same logical layout — one section per topic (Cluster, Nodes, VMs, Containers, Storages, …) plus per-resource detail (one per node, VM and container). Only the rendering differs: a sheet per section in Excel, a page per section in HTML, a file per section in JSON. Pick the one that matches what you need to do with the report — each format has its own full reference under [`docs/`](docs/).
 
 ### Excel output `(--format Xlsx, default)`
 
@@ -140,6 +141,22 @@ For sharing on a wiki, ticket system or with non-technical stakeholders. Extract
 - **Network topology SVG** — bundled inside the zip and accessible from the sidebar — [guide](docs/network-diagram.md)
 
 > Full reference: **[HTML format guide](docs/format-html.md)** — page layout, sidebar behaviour, theme, export button and lazy-loading for large clusters.
+
+### JSON output `(--format Json)`
+
+```
+Report_20260506_120000.zip    ← multi-file JSON dataset (extract and parse with jq, Power BI, scripts, …)
+```
+
+For automation, scripting and integrations. Extract the zip and consume the files with `jq`, Python, PowerShell, Power BI, or any tool that reads JSON.
+
+- **One file per section** — `cluster.json`, `nodes.json`, `vms.json`, `storages.json`, … plus `nodes/<name>.json`, `vms/<id>.json` and `containers/<id>.json` for per-resource detail; same logical layout as the Excel sheets and HTML pages
+- **Stable file paths** — perfect for snapshot diffs: store the extracted zip in git and `diff -r` two snapshots to see exactly which VMs/nodes/storages changed
+- **Pipeline-friendly** — small file size (≈ a few MB even on 2700+ VM clusters; gzip compresses heavily), easy to ingest from CI / cron / monitoring jobs
+- **Rich metadata** — `metadata.json` carries the schema version, timestamp, application info and per-section generation stats
+- **Network topology SVG** — bundled as `network-diagram.svg` inside the zip
+
+> Full reference: **[JSON format guide](docs/format-json.md)** — file layout, schema, naming conventions and `jq` examples for common tasks.
 
 ---
 

@@ -15,4 +15,7 @@ public enum ReportFormat
 
     /// <summary>Static HTML site (index.html + per-section pages), packaged as a .zip.</summary>
     Html,
+
+    /// <summary>Multi-file JSON (one file per section + per-resource detail files), packaged as a .zip.</summary>
+    Json,
 }

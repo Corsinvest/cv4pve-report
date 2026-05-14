@@ -167,6 +167,7 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
         {
             ReportFormat.Xlsx => new Writers.Xlsx.XlsxReportWriter(info),
             ReportFormat.Html => new Writers.Html.HtmlReportWriter(info),
+            ReportFormat.Json => new Writers.Json.JsonReportWriter(info),
             _ => throw new ArgumentOutOfRangeException(nameof(format), format, null),
         };
 
