@@ -2,6 +2,15 @@
 
 ---
 
+## [2.3.0] — 2026-05-14
+
+### What's new
+
+- **New JSON output format — `--format Json`.** A third rendering alongside Excel and HTML, designed for automation, scripting and integrations. Produces a single zip containing one file per section (`cluster.json`, `nodes.json`, `vms.json`, `storages.json`, …) plus per-resource detail under `nodes/<name>.json`, `vms/<id>.json` and `containers/<id>.json`, same logical layout as the Excel sheets and HTML pages. A `metadata.json` carries the schema version, timestamp, application info, the filter set and a per-section generation log. The network topology SVG is bundled in the same zip as `network-diagram.svg`. Keys are camelCase with stable shapes (overview files are flat arrays of rows; detail files are objects with a fixed `info` block plus one entry per table), so consumers can navigate the dataset without knowing resource names in advance. Full reference in [`docs/format-json.md`](docs/format-json.md) with file layout, naming conventions, `jq` recipes and a snapshot-diff workflow.
+- **CD-ROM and cloud-init drives now listed in the Disks sheet.** The per-VM disk inventory used to skip `ide2`-style CD-ROMs and `cloudinit` drives, only showing real block devices. They now appear alongside the rest with a new `Kind` column (`Disk`, `CDRom`, `CloudInit`) so you can filter on what's actually a backed-up disk vs. a transient mount. Thanks for the report (#39).
+
+---
+
 ## [2.2.1] — 2026-05-13
 
 ### Fixes
