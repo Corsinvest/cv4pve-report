@@ -443,8 +443,6 @@ main {
 
 main h1 {
   margin-top: 0;
-  padding-bottom: 0.5rem;
-  border-bottom: 2px solid var(--color-border);
 }
 
 main h2 {
@@ -851,6 +849,8 @@ table.kv tbody tr:last-child td {
   align-items: center;
   gap: 0.75rem;
   margin: 0 0 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--color-border);
 }
 
 .page-header h1 {
