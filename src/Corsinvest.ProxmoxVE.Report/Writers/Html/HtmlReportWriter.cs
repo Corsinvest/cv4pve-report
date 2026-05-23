@@ -53,7 +53,7 @@ internal sealed partial class HtmlReportWriter(ReportInfo info) : IReportWriter
 
         var sidebarHtml = RenderSidebar();
 
-        await ZipHelpers.WriteTextEntryAsync(zip, "index.html", RenderPage("Home", sidebarHtml, _coverHtml, depth: 0));
+        await ZipHelpers.WriteTextEntryAsync(zip, "index.html", RenderPage("Summary", sidebarHtml, _coverHtml, depth: 0));
 
         // Detail pages are routed under sub-directories (vms/, nodes/, containers/) — see HtmlEncoder.PageFileName.
         foreach (var section in _sections)

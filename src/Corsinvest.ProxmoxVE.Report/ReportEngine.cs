@@ -167,7 +167,11 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
 
         var sections = new Section[]
         {
-            new("Cluster", "Cluster overview, users, roles, ACL, firewall, backup jobs", AddClusterDataAsync),
+            new("Cluster", "Cluster overview, status, options, firewall, backup jobs, replication, storages, metric servers, mappings", AddClusterDataAsync),
+            new("Cluster Access", "Users, API tokens, two-factor authentication, groups, roles, ACL, domains", AddClusterAccessDataAsync),
+            new("Cluster SDN", "SDN zones, vnets, controllers, IPAMs and subnets", AddClusterSdnDataAsync),
+            new("Cluster HA", "High Availability resources, groups and status", AddClusterHaDataAsync),
+            new("Cluster Pools", "Resource pools with member VMs, containers and storages", AddClusterPoolsDataAsync),
             new("Storages", "Storage list with size, usage and type", AddStoragesDataAsync),
             new("Nodes", "Node list with hardware, subscription, DNS, kernel details", AddNodesDataAsync),
             new("VMs", "Virtual machines (QEMU) with agent info, OS name/version/kernel, bios, cpu, memory and disk details", AddVmsDataAsync),

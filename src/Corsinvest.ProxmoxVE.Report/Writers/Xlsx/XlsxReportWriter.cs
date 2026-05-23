@@ -113,9 +113,16 @@ internal sealed partial class XlsxReportWriter : IReportWriter
                           .Where(w => w.Name.StartsWith(prefix + " "))
                           .OrderBy(w => int.TryParse(w.Name[(prefix.Length + 1)..], out var n) ? n : int.MaxValue));
 
+        void PlaceExact(string name) =>
+            Place(_workbook.Worksheets.Where(a => a.Name == name));
+
         PlaceByPrefix("Summary");
         PlaceByPrefix("Issues");
-        PlaceByPrefix("Cluster");
+        PlaceExact("Cluster");
+        PlaceExact("Cluster Access");
+        PlaceExact("Cluster SDN");
+        PlaceExact("Cluster HA");
+        PlaceExact("Cluster Pools");
         PlaceByPrefix("Nodes");
         PlaceByPrefix("VMs");
         PlaceByPrefix("Containers");
@@ -132,6 +139,8 @@ internal sealed partial class XlsxReportWriter : IReportWriter
         PlaceByPrefix("RRD Storage");
         PlaceByPrefix("RRD Guests");
         PlaceByPrefix("Syslog");
+        PlaceExact("Cluster Log");
+        PlaceExact("Cluster Tasks");
         PlaceByPrefix("Node");
         PlaceVmPrefix("VM");
         PlaceVmPrefix("CT");

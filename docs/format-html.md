@@ -8,12 +8,16 @@
 
 ```
 Report_20260506_120000.zip
-├── index.html                 ← cover / home page
+├── index.html                 ← Summary (cover, filters, contents)
 ├── issues.html                ← only present when at least one collection failure was recorded
 ├── network-diagram.html       ← network topology page
 ├── network-diagram.svg        ← raw SVG (embedded by network-diagram.html)
 │
 ├── cluster.html
+├── cluster-access.html
+├── cluster-sdn.html
+├── cluster-ha.html
+├── cluster-pools.html
 ├── cluster-log.html
 ├── cluster-tasks.html
 ├── nodes.html                 ← Nodes overview page
@@ -37,7 +41,7 @@ Report_20260506_120000.zip
 ├── firewall.html
 ├── replication.html
 ├── rrd-nodes.html
-├── rrd-storages.html
+├── rrd-storage.html
 ├── rrd-guests.html
 ├── syslog.html
 │
@@ -57,28 +61,32 @@ Pages appear in this order in the sidebar. Conditional pages (`if …`) are only
 
 | # | Page | Description | Condition |
 |---|------|-------------|-----------|
-| 1 | **Home** (`index.html`) | Cover with metadata, filters, hyperlinked Contents table | always |
+| 1 | **Summary** (`index.html`) | Cover with metadata, filters, hyperlinked Contents table | always |
 | 2 | **Issues** (`issues.html`) | Diagnostics for collection failures — see [Issues](#issues) below | only when failures recorded |
 | 3 | **Network Diagram** (`network-diagram.html`) | Topology SVG with embedded view | always when the SVG was generated |
-| 4 | **Cluster** (`cluster.html`) | Cluster-wide configuration and security (users, ACL, firewall options, backup jobs, HA, SDN, pools, hardware mappings) | `Cluster.Include` |
-| 5 | **Nodes** (`nodes.html` + `nodes/<name>.html`) | Node overview → per-node detail pages | always |
-| 6 | **VMs** (`vms.html` + `vms/<id>.html`) | VM overview → per-VM detail pages | always |
-| 7 | **Containers** (`containers.html` + `containers/<id>.html`) | Container overview → per-CT detail pages | always |
-| 8 | **Network** (`network.html`) | Node interfaces + VM/CT NICs (MAC, bridge, VLAN, IPs, model) | always |
-| 9 | **Storages** (`storages.html`) | Storage list with size, usage, type | always |
-| 10 | **Storage Content** (`storage-content.html`) | Storage files/images with size and VM ID links | `Storage.IncludeContent` |
-| 11 | **Backups** (`backups.html`) | Backup files across all storages | `Storage.IncludeBackups` |
-| 12 | **Disks** (`disks.html`) | Global VM/CT disk inventory | `Guest.IncludeDisks` |
-| 13 | **Partitions** (`partitions.html`) | Guest disk partitions via QEMU agent | `Guest.IncludePartitions` |
-| 14 | **Snapshots** (`snapshots.html`) | Global snapshot inventory across all VMs/CTs | `Guest.IncludeSnapshots` |
-| 15 | **Firewall** (`firewall.html`) | Cluster + node + VM/CT firewall rules, aliases, IP sets | `Firewall.Enabled` |
-| 16 | **Replication** (`replication.html`) | Replication job status across all nodes | `Node.IncludeReplication` |
-| 17 | **RRD Nodes** (`rrd-nodes.html`) | Historical performance metrics per node | `Node.RrdData.Enabled` |
-| 18 | **RRD Storage** (`rrd-storages.html`) | Historical performance metrics per storage | `Storage.RrdData.Enabled` |
-| 19 | **RRD Guests** (`rrd-guests.html`) | Historical performance metrics per VM/CT | `Guest.RrdData.Enabled` |
-| 20 | **Syslog** (`syslog.html`) | Parsed systemd journal across all nodes | `Node.Syslog.Enabled` |
-| 21 | **Cluster Log** (`cluster-log.html`) | Cluster event log | `Cluster.Log.Enabled` |
-| 22 | **Cluster Tasks** (`cluster-tasks.html`) | Recent tasks across the cluster | `Cluster.IncludeTasks` |
+| 4 | **Cluster** (`cluster.html`) | Cluster status, options, firewall options, backup jobs, replication, storages, metric servers and hardware mappings | `Cluster.Include` |
+| 5 | **Cluster Access** (`cluster-access.html`) | Users, API tokens, two-factor authentication, groups, roles, ACL and domains | `Cluster.Include` |
+| 6 | **Cluster SDN** (`cluster-sdn.html`) | SDN zones, vnets, controllers, IPAMs and subnets | `Cluster.Include` |
+| 7 | **Cluster HA** (`cluster-ha.html`) | High Availability resources, groups and status | `Cluster.Include` |
+| 8 | **Cluster Pools** (`cluster-pools.html`) | Resource pools with member VMs, containers and storages | `Cluster.Include` |
+| 9 | **Nodes** (`nodes.html` + `nodes/<name>.html`) | Node overview → per-node detail pages | always |
+| 10 | **VMs** (`vms.html` + `vms/<id>.html`) | VM overview → per-VM detail pages | always |
+| 11 | **Containers** (`containers.html` + `containers/<id>.html`) | Container overview → per-CT detail pages | always |
+| 12 | **Network** (`network.html`) | Node interfaces + VM/CT NICs (MAC, bridge, VLAN, IPs, model) | always |
+| 13 | **Storages** (`storages.html`) | Storage list with size, usage, type | always |
+| 14 | **Storage Content** (`storage-content.html`) | Storage files/images with size and VM ID links | `Storage.IncludeContent` |
+| 15 | **Backups** (`backups.html`) | Backup files across all storages | `Storage.IncludeBackups` |
+| 16 | **Disks** (`disks.html`) | Global VM/CT disk inventory | `Guest.IncludeDisks` |
+| 17 | **Partitions** (`partitions.html`) | Guest disk partitions via QEMU agent | `Guest.IncludePartitions` |
+| 18 | **Snapshots** (`snapshots.html`) | Global snapshot inventory across all VMs/CTs | `Guest.IncludeSnapshots` |
+| 19 | **Firewall** (`firewall.html`) | Cluster + node + VM/CT firewall rules, aliases, IP sets | `Firewall.Enabled` |
+| 20 | **Replication** (`replication.html`) | Replication job status across all nodes | `Node.IncludeReplication` |
+| 21 | **RRD Nodes** (`rrd-nodes.html`) | Historical performance metrics per node | `Node.RrdData.Enabled` |
+| 22 | **RRD Storage** (`rrd-storage.html`) | Historical performance metrics per storage | `Storage.RrdData.Enabled` |
+| 23 | **RRD Guests** (`rrd-guests.html`) | Historical performance metrics per VM/CT | `Guest.RrdData.Enabled` |
+| 24 | **Syslog** (`syslog.html`) | Parsed systemd journal across all nodes | `Node.Syslog.Enabled` |
+| 25 | **Cluster Log** (`cluster-log.html`) | Cluster event log | `Cluster.Log.Enabled` |
+| 26 | **Cluster Tasks** (`cluster-tasks.html`) | Recent tasks across the cluster | `Cluster.IncludeTasks` |
 
 > The contents of each page (which tables, which columns) are emitted by the engine and identical across formats — see [`docs/settings.md`](settings.md) for the toggles.
 
@@ -88,7 +96,7 @@ The sidebar groups Nodes / VMs / Containers under expandable headers, and Storag
 
 ## Issues
 
-When one or more Proxmox API calls fail during collection (a corrupt RRD file, a `500` from a node, missing permissions on a sub-resource, …), an extra `issues.html` page is emitted as the **second** sidebar link, right after Home. It also appears as the **first** row of the Contents table on the cover. On a healthy cluster the page (and the link) are absent.
+When one or more Proxmox API calls fail during collection (a corrupt RRD file, a `500` from a node, missing permissions on a sub-resource, …), an extra `issues.html` page is emitted as the **second** sidebar link, right after Summary. It also appears as the **first** row of the Contents table on the cover. On a healthy cluster the page (and the link) are absent.
 
 | Column | Content |
 |---|---|

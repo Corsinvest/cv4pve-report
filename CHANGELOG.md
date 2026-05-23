@@ -8,12 +8,21 @@
 
 - **JSON now reports raw byte counts and 0–1 fractions instead of pre-rounded GB/MB and percentages.** Excel and HTML output is unchanged — they still render `16.50 GB`, `0.02 MB`, `45.00 %`. Only JSON consumers (jq / Python / Power BI / snapshot diffs) see different keys and values: `"memorySize": 17179869184` instead of `"memorySizeGB": 16.5`, `"cpuUsage": 0.45` instead of `"cpuUsagePct": 0.45`, and so on. Two reasons: snapshot diffs are now lossless (no more "16.50 GB looks unchanged" when the underlying byte count moved), and the keys no longer carry rendering hints (`GB` / `MB` / `Pct`) that belong to Excel/HTML. Applies to every table and to the `info` block of detail files. `metadata.json` now reports `"schemaVersion": 2`. Closes #45.
 
+### What's new
+
+- **Cluster page split into five.** The single "Cluster" sheet/page/file used to mix everything cluster-wide — status, options, users, ACL, HA, SDN, pools, mappings — and on a large cluster (25 nodes / 2700+ VMs) it grew past 4500 rows of mixed schemas in one place. It is now broken into five siblings: **Cluster** (status, options, firewall options, backup jobs, replication, storages, metric servers, mappings), **Cluster Access** (users, API tokens, TFA, groups, roles, ACL, domains), **Cluster SDN** (zones, vnets, controllers, IPAMs, subnets), **Cluster HA** (resources, groups, status) and **Cluster Pools** (pools with member VMs/CTs/storages). Excel gets five separate sheets; HTML groups them under an expandable `Cluster` entry in the sidebar (Overview, Access, SDN, HA, Pools); JSON emits `cluster.json` plus `cluster-access.json`, `cluster-sdn.json`, `cluster-ha.json`, `cluster-pools.json`. Thanks @shaundeeb for the request (#42).
+
+### Renames
+
+- **HTML cover label: `Home` → `Summary`.** Aligns the HTML cover with the Excel `Summary` sheet — same concept, same name. The filename stays `index.html` so bookmarks don't break.
+
 ### HTML fixes
 
 - **Sidebar: Nodes / VMs / Containers entries are now properly indented and styled.** The "Overview" sub-entry was rendering bold and flush-left (instead of plain and indented like under Cluster/Storage), and the per-VM / per-node items were not indented at all. Both fixed.
 - **Detail pages: side-by-side "info / config" blocks now format values correctly.** Memory was showing up as a 17-digit byte number, percentages were missing the `%` sign — both side-effects of how we restructured the data pipeline. They render the same as the standalone info table now (`16.50 GB`, `45.00%`).
 - **Detail pages: the first block is now headed "Info" instead of "1007 — DomainControllerCV2".** The page's own `<h1>` already shows the resource id and name, so the same string in the sub-heading was duplicate noise and looked unbalanced next to its sibling "Config" heading. Excel keeps the descriptive title.
 - **Excel: labels like `vCPUs` and `Root FS GB` are no longer split mid-acronym** ("v C P Us", "Root Fs GB"). The internal heuristic now leaves human-authored labels alone.
+- **HTML format guide listed `rrd-storages.html` (plural).** The page is and always was `rrd-storage.html` (singular) — same issue that was already corrected in the JSON guide.
 
 ---
 
