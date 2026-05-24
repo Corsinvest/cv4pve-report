@@ -68,16 +68,22 @@ internal sealed class JsonSectionWriter(string name) : ISectionWriter
     }
 
     /// <summary>
-    /// Convert key-value blocks (as authored for Excel/HTML rendering, with
-    /// human-readable keys like "VM ID", "On Boot", "Memory Host %") into
-    /// JSON-friendly identifier keys ("vmID", "onBoot", "memoryHost").
+    /// Convert key-value blocks into JSON-friendly keys. Display labels such as
+    /// <c>"Memory GB"</c>, <c>"CPU Usage %"</c>, <c>"Root FS GB"</c>, <c>"VM ID"</c>
+    /// are all slugified via <see cref="JsonKey.FromDisplay"/>, which strips the
+    /// convention suffix (<c>" GB"</c> / <c>" MB"</c> / <c>" %"</c>) before camelCase.
+    /// Boolean flag values (string <c>"X"</c> / <c>""</c>) are coerced to <c>bool</c>.
     /// </summary>
     private static IDictionary<string, object?> NormaliseKeyValue(IDictionary<string, object?> items)
     {
         var result = new Dictionary<string, object?>(items.Count);
-        foreach (var (k, v) in items)
+        foreach (var (rawKey, value) in items)
         {
-            result[JsonKey.FromDisplay(k)] = v;
+            var (kind, _) = ColumnConvention.Parse(rawKey);
+            var transformedValue = kind == ColumnKind.Flag
+                                    ? (value is string s ? s.Length > 0 : value is bool b && b)
+                                    : value;
+            result[JsonKey.FromDisplay(rawKey)] = transformedValue;
         }
         return result;
     }

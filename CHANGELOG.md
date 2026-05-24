@@ -4,15 +4,16 @@
 
 ## [Unreleased]
 
-### Breaking changes (JSON, schema v2)
+### Breaking changes (JSON only)
 
-- **JSON now exposes raw values in table rows.** Size and IO columns no longer carry the GB/MB suffix in the key, and the value is the **raw byte count** from Proxmox; percentage columns no longer carry the `Pct` suffix (the value already was a `0–1` fraction). Examples:
-  - `"memorySizeGB": 16.5` → `"memorySize": 17179869184`
-  - `"netInMB": 0.02` → `"netIn": 20971`
-  - `"cpuUsagePct": 0.45` → `"cpuUsage": 0.45`
-  - `"ioWaitPct": 0.000195` → `"ioWait": 0.000195`
-  - Excel and HTML are unchanged: they still render `16.50 GB`, `0.02 MB`, `45.00 %`. The conversion moved from the engine into each writer, so JSON consumers get the raw bytes Proxmox returned without rounding noise — snapshot diffs are now stable and lossless.
-- `metadata.json` now reports `"schemaVersion": 2`. The `info` blocks inside detail files (`vms/<id>.json` → `info`, etc.) are unchanged and still use human-readable units (`"memoryGB": 16`) — that's a separate follow-up (#46). Closes #45.
+- **JSON now reports raw byte counts and 0–1 fractions instead of pre-rounded GB/MB and percentages.** Excel and HTML output is unchanged — they still render `16.50 GB`, `0.02 MB`, `45.00 %`. Only JSON consumers (jq / Python / Power BI / snapshot diffs) see different keys and values: `"memorySize": 17179869184` instead of `"memorySizeGB": 16.5`, `"cpuUsage": 0.45` instead of `"cpuUsagePct": 0.45`, and so on. Two reasons: snapshot diffs are now lossless (no more "16.50 GB looks unchanged" when the underlying byte count moved), and the keys no longer carry rendering hints (`GB` / `MB` / `Pct`) that belong to Excel/HTML. Applies to every table and to the `info` block of detail files. `metadata.json` now reports `"schemaVersion": 2`. Closes #45.
+
+### HTML fixes
+
+- **Sidebar: Nodes / VMs / Containers entries are now properly indented and styled.** The "Overview" sub-entry was rendering bold and flush-left (instead of plain and indented like under Cluster/Storage), and the per-VM / per-node items were not indented at all. Both fixed.
+- **Detail pages: side-by-side "info / config" blocks now format values correctly.** Memory was showing up as a 17-digit byte number, percentages were missing the `%` sign — both side-effects of how we restructured the data pipeline. They render the same as the standalone info table now (`16.50 GB`, `45.00%`).
+- **Detail pages: the first block is now headed "Info" instead of "1007 — DomainControllerCV2".** The page's own `<h1>` already shows the resource id and name, so the same string in the sub-heading was duplicate noise and looked unbalanced next to its sibling "Config" heading. Excel keeps the descriptive title.
+- **Excel: labels like `vCPUs` and `Root FS GB` are no longer split mid-acronym** ("v C P Us", "Root Fs GB"). The internal heuristic now leaves human-authored labels alone.
 
 ---
 

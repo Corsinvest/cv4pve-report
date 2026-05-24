@@ -319,7 +319,8 @@ a:hover {
   font-size: 0.75rem;
 }
 
-.sidebar nav details > a {
+.sidebar nav details > a,
+.sidebar nav .group-children > a {
   padding-left: 1.4rem;
 }
 

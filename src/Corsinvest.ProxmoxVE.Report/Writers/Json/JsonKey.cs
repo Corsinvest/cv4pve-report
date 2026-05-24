@@ -20,18 +20,25 @@ internal static class JsonKey
     ///   "Agent OS Info"     → "agentOSInfo"
     ///   "VM ID"             → "vmID"
     ///   "CPU Usage %"       → "cpuUsage"
+    ///   "Memory GB"         → "memory"
+    ///   "Root FS GB"        → "rootFS"
     ///   "On Boot"           → "onBoot"
     ///   "/etc/hosts"        → "etcHosts"
-    /// Symbols (% / parentheses / dashes / slashes) are dropped; the first word is
-    /// lowercased; subsequent words have their first letter uppercased while the
-    /// rest of each word is preserved (so common acronyms like ID/GB/MB/SSL/OS
-    /// keep their casing).
+    /// Convention suffixes (<c>GB</c>, <c>MB</c>, <c>%</c>) and symbols
+    /// (parentheses / dashes / slashes) are dropped; the first word is lower-cased;
+    /// subsequent words have their first letter upper-cased while the rest is
+    /// preserved (so common acronyms like ID/SSL/OS/FS keep their casing).
     /// </summary>
     public static string FromDisplay(string display)
     {
         if (string.IsNullOrEmpty(display)) { return display; }
 
-        var normalised = display.Replace("%", " ")
+        // Strip trailing unit / percentage suffix carried by KeyValue display labels.
+        var trimmed = display;
+        if (trimmed.EndsWith(" GB", StringComparison.Ordinal)) { trimmed = trimmed[..^3]; }
+        else if (trimmed.EndsWith(" MB", StringComparison.Ordinal)) { trimmed = trimmed[..^3]; }
+
+        var normalised = trimmed.Replace("%", " ")
                                 .Replace("(", " ")
                                 .Replace(")", " ")
                                 .Replace("/", " ")

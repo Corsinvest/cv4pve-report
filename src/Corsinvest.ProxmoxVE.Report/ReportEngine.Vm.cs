@@ -280,9 +280,9 @@ public partial class ReportEngine
             ["Status"] = d.Item.Status,
             ["CPU"] = d.Item.CpuSize,
             ["CPU Usage %"] = d.Item.HostCpuUsage,
-            ["Memory GB"] = ToGB(d.Item.MemorySize),
+            ["Memory GB"] = d.Item.MemorySize,
             ["Memory Host %"] = d.Item.HostMemoryUsage,
-            ["Disk GB"] = ToGB(d.Item.DiskSize),
+            ["Disk GB"] = d.Item.DiskSize,
             ["Uptime"] = FormatHelper.UptimeInfo(d.Item.Uptime),
         };
 
