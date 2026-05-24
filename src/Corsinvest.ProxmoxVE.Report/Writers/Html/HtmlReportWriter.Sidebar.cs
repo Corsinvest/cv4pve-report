@@ -170,7 +170,7 @@ internal sealed partial class HtmlReportWriter
 
         sb.AppendLine($"""        <details data-group="{HtmlEncoder.Attr(parent)}">""");
         sb.AppendLine($"""          <summary>{HtmlEncoder.Text(parent)} <span class="count">({totalEntries})</span></summary>""");
-        sb.AppendLine($"""          <a href="{HtmlEncoder.PageHref(parent)}" class="overview">Overview</a>""");
+        sb.AppendLine($"""          <a href="{HtmlEncoder.PageHref(parent)}">Overview</a>""");
         sb.AppendLine("""          <div class="group-children" data-loaded="false"></div>""");
         sb.AppendLine("        </details>");
     }

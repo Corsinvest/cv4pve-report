@@ -226,14 +226,6 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
             ? "(shared)"
             : item.Node;
 
-    private static double ToGB(double bytes) => Math.Round(bytes / 1024 / 1024 / 1024, 2);
-    private static double ToMB(double bytes) => Math.Round(bytes / 1024 / 1024, 2);
-
-    internal static string? LabeledValue(string label, string? value)
-        => string.IsNullOrWhiteSpace(value)
-            ? null
-            : $"{label}: {value}";
-
     internal static string VmTypeLabel(VmType type)
         => type == VmType.Qemu
             ? "VM"

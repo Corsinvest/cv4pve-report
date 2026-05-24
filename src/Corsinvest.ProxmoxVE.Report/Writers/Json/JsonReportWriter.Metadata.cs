@@ -17,7 +17,7 @@ internal sealed partial class JsonReportWriter
     private object BuildMetadata()
         => new
         {
-            schemaVersion = 1,
+            schemaVersion = 2,
             generatedAt = _generatedAt.ToString("O"),
             applicationName = _info.ApplicationName,
             applicationVersion = _info.ApplicationVersion,

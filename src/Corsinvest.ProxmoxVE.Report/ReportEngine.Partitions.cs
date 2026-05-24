@@ -36,8 +36,8 @@ public partial class ReportEngine
                         VmStatus = entry.Vm.Status,
                         a.MountPoint,
                         a.Type,
-                        TotalGB = ToGB(a.TotalBytes),
-                        UsedGB = ToGB(a.UsedBytes),
+                        TotalGB = a.TotalBytes,
+                        UsedGB = a.UsedBytes,
 
                         UsedPct = a.TotalBytes > 0
                                     ? (double)a.UsedBytes / a.TotalBytes

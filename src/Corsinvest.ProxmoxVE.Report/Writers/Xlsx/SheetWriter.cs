@@ -38,24 +38,40 @@ internal sealed class SheetWriter(IXLWorksheet ws, Dictionary<string, string> sh
         ws.Cell(Row, col).Style.Font.SetFontSize(12);
         Row++;
 
-        foreach (var (key, value) in items)
+        foreach (var (rawKey, value) in items)
         {
-            ws.Cell(Row, col).Value = key;
-            ws.Cell(Row, col).Style.Font.SetBold(true);
+            // PascalCase keys with a *GB / *MB / *Pct suffix carry the raw byte / fraction
+            // value; parse the key to get the human-readable label and the conversion kind.
+            var (kind, displayLabel) = ColumnConvention.Parse(rawKey);
+            var labelCell = ws.Cell(Row, col);
+            labelCell.Value = displayLabel;
+            labelCell.Style.Font.SetBold(true);
             var valueCell = ws.Cell(Row, col + 1);
-            var strValue = value?.ToString() ?? "";
-            valueCell.Value = value switch
+            var convertedValue = ConvertKeyValue(value, kind);
+            var strValue = convertedValue?.ToString() ?? "";
+            valueCell.Value = convertedValue switch
             {
                 bool b => b ? "X" : "",
-                double or float or int or long => Convert.ToDouble(value),
+                double or float or int or long => Convert.ToDouble(convertedValue),
                 _ => strValue
             };
 
-            if (value is bool)
+            switch (kind)
+            {
+                case ColumnKind.Percentage:
+                    valueCell.Style.NumberFormat.Format = "0.00%";
+                    break;
+                case ColumnKind.GB:
+                case ColumnKind.MB:
+                    valueCell.Style.NumberFormat.Format = "#,##0.00";
+                    break;
+            }
+
+            if (convertedValue is bool)
             {
                 valueCell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
             }
-            else if (key.Equals("Node", StringComparison.OrdinalIgnoreCase) && value is string nodeName)
+            else if (rawKey.Equals("Node", StringComparison.OrdinalIgnoreCase) && value is string nodeName)
             {
                 SetHyperlink(valueCell, LinkKey.Node(nodeName));
             }
@@ -140,7 +156,12 @@ internal sealed class SheetWriter(IXLWorksheet ws, Dictionary<string, string> sh
                     break;
 
                 case ColumnKind.GB:
+                    ConvertBytesToUnit(dataCol, UnitFormat.BytesToGB);
+                    dataCol.Style.NumberFormat.Format = "#,##0.00";
+                    break;
+
                 case ColumnKind.MB:
+                    ConvertBytesToUnit(dataCol, UnitFormat.BytesToMB);
                     dataCol.Style.NumberFormat.Format = "#,##0.00";
                     break;
 
@@ -178,6 +199,28 @@ internal sealed class SheetWriter(IXLWorksheet ws, Dictionary<string, string> sh
         configure?.Invoke(table);
         Row += afterCount - beforeCount;
     }
+
+    // Engine passes raw byte values for GB/MB columns; the writer converts at render time
+    // so the JSON output can expose bytes directly while Excel still shows "16.50".
+    private static void ConvertBytesToUnit(IXLRangeColumn dataCol, Func<double, double> convert)
+    {
+        foreach (var cell in dataCol.Cells())
+        {
+            if (cell.Value.IsNumber)
+            {
+                cell.Value = convert(cell.Value.GetNumber());
+            }
+        }
+    }
+
+    // KeyValue value-level conversion: bytes -> GB/MB for *GB / *MB keys.
+    // Percentages stay as-is (Excel "0.00%" format multiplies by 100 internally).
+    private static object? ConvertKeyValue(object? value, ColumnKind kind)
+        => value is IConvertible c && (kind == ColumnKind.GB || kind == ColumnKind.MB)
+            ? kind == ColumnKind.GB
+                ? UnitFormat.BytesToGB(c.ToDouble(System.Globalization.CultureInfo.InvariantCulture))
+                : UnitFormat.BytesToMB(c.ToDouble(System.Globalization.CultureInfo.InvariantCulture))
+            : value;
 
     private void SetHyperlink(IXLCell cell, string linkKey)
     {

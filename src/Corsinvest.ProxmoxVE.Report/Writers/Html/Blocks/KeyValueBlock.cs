@@ -15,10 +15,17 @@ internal sealed class KeyValueBlock(string title, IDictionary<string, object?> i
 
     public void Render(StringBuilder sb, Dictionary<string, string> links)
     {
-        var rows = string.Concat(items.Select(kv => $"""
-                  <tr><th scope="row">{HtmlEncoder.Text(kv.Key)}</th><td>{HtmlEncoder.Text(BlockFormat.FormatValue(kv.Value))}</td></tr>
+        var rows = string.Concat(items.Select(kv =>
+        {
+            // PascalCase keys with a *GB / *MB / *Pct suffix carry raw values; parse the
+            // key to recover both the human-readable label and the conversion kind.
+            var (kind, displayLabel) = ColumnConvention.Parse(kv.Key);
+            var rendered = FormatKeyValue(kv.Value, kind);
+            return $"""
+                          <tr><th scope="row">{HtmlEncoder.Text(displayLabel)}</th><td>{HtmlEncoder.Text(rendered)}</td></tr>
 
-            """));
+                    """;
+        }));
 
         sb.Append($"""
             <section class="kv-section" id="{AnchorId}">
@@ -32,4 +39,14 @@ internal sealed class KeyValueBlock(string title, IDictionary<string, object?> i
             """);
     }
 
+    // KeyValue render formatting: GB/MB bytes -> decimal, Percentage fraction -> "0.00 %",
+    // anything else falls back to the generic BlockFormat helper.
+    private static string FormatKeyValue(object? value, ColumnKind kind) => value switch
+    {
+        double dbl when kind == ColumnKind.Percentage => (dbl * 100).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + "%",
+        float fl when kind == ColumnKind.Percentage => (fl * 100).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + "%",
+        IConvertible c when kind == ColumnKind.GB => UnitFormat.BytesToGB(c.ToDouble(System.Globalization.CultureInfo.InvariantCulture)).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture),
+        IConvertible c when kind == ColumnKind.MB => UnitFormat.BytesToMB(c.ToDouble(System.Globalization.CultureInfo.InvariantCulture)).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture),
+        _ => BlockFormat.FormatValue(value),
+    };
 }
