@@ -34,7 +34,7 @@ public partial class ReportEngine
                         item.Node,
                         a.TimeDate,
                         CpuUsagePct = a.CpuUsagePercentage,
-                        a.IoWait,
+                        IoWaitPct = a.IoWait,
                         a.Loadavg,
                         MemorySizeGB = ToGB(a.MemorySize),
                         MemoryUsageGB = ToGB(a.MemoryUsage),
