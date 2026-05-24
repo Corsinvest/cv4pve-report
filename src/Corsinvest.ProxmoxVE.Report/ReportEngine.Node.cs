@@ -83,21 +83,21 @@ public partial class ReportEngine
                 CpuModel = d.Status?.CpuInfo.Model,
                 CpuMhz = d.Status?.CpuInfo.Mhz,
                 CpuHvm = d.Status?.CpuInfo.Hvm,
-                MemorySizeGB = ToGB(d.Item.MemorySize),
-                MemoryUsageGB = ToGB(d.Item.MemoryUsage),
+                MemorySizeGB = d.Item.MemorySize,
+                MemoryUsageGB = d.Item.MemoryUsage,
                 MemoryUsagePct = d.Item.MemoryUsagePercentage,
-                SwapTotalGB = ToGB(d.Status?.Swap.Total ?? 0),
-                SwapUsedGB = ToGB(d.Status?.Swap.Used ?? 0),
+                SwapTotalGB = d.Status?.Swap.Total ?? 0,
+                SwapUsedGB = d.Status?.Swap.Used ?? 0,
 
                 SwapUsagePct = d.Status?.Swap.Total > 0
                                 ? (double)d.Status.Swap.Used / d.Status.Swap.Total
                                 : (double?)null,
 
-                DiskSizeGB = ToGB(d.Item.DiskSize),
-                DiskUsageGB = ToGB(d.Item.DiskUsage),
+                DiskSizeGB = d.Item.DiskSize,
+                DiskUsageGB = d.Item.DiskUsage,
                 DiskUsagePct = d.Item.DiskUsagePercentage,
-                RootFsTotalGB = ToGB(d.Status?.RootFs.Total ?? 0),
-                RootFsUsedGB = ToGB(d.Status?.RootFs.Used ?? 0),
+                RootFsTotalGB = d.Status?.RootFs.Total ?? 0,
+                RootFsUsedGB = d.Status?.RootFs.Used ?? 0,
 
                 RootFsUsagePct = d.Status?.RootFs.Total > 0
                                     ? (double)d.Status.RootFs.Used / d.Status.RootFs.Total
@@ -273,7 +273,7 @@ public partial class ReportEngine
                                          a.Gpt,
                                          a.Wearout,
                                          a.Rpm,
-                                         SizeGB = ToGB(a.Size),
+                                         SizeGB = a.Size,
                                          MountedFlag = ToX(a.Mounted),
                                          a.ByIdLink,
                                          a.OsdId,
@@ -334,9 +334,9 @@ public partial class ReportEngine
                             zfsPoolList.Zip(zfsPoolDetails, (pool, poolData) => new
                             {
                                 pool.Name,
-                                SizeGB = ToGB(pool.Size),
-                                FreeGB = ToGB(pool.Free),
-                                AllocatedGB = ToGB(pool.Alloc),
+                                SizeGB = pool.Size,
+                                FreeGB = pool.Free,
+                                AllocatedGB = pool.Alloc,
                                 FragmentationPct = pool.Frag / 100.0,
                                 Deduplication = pool.Dedup,
                                 pool.Health,

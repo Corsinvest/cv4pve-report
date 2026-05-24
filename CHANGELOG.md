@@ -2,6 +2,20 @@
 
 ---
 
+## [Unreleased]
+
+### Breaking changes (JSON, schema v2)
+
+- **JSON now exposes raw values in table rows.** Size and IO columns no longer carry the GB/MB suffix in the key, and the value is the **raw byte count** from Proxmox; percentage columns no longer carry the `Pct` suffix (the value already was a `0–1` fraction). Examples:
+  - `"memorySizeGB": 16.5` → `"memorySize": 17179869184`
+  - `"netInMB": 0.02` → `"netIn": 20971`
+  - `"cpuUsagePct": 0.45` → `"cpuUsage": 0.45`
+  - `"ioWaitPct": 0.000195` → `"ioWait": 0.000195`
+  - Excel and HTML are unchanged: they still render `16.50 GB`, `0.02 MB`, `45.00 %`. The conversion moved from the engine into each writer, so JSON consumers get the raw bytes Proxmox returned without rounding noise — snapshot diffs are now stable and lossless.
+- `metadata.json` now reports `"schemaVersion": 2`. The `info` blocks inside detail files (`vms/<id>.json` → `info`, etc.) are unchanged and still use human-readable units (`"memoryGB": 16`) — that's a separate follow-up (#46). Closes #45.
+
+---
+
 ## [2.3.0] — 2026-05-14
 
 ### What's new

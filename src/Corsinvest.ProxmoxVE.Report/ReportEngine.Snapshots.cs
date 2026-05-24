@@ -50,7 +50,7 @@ public partial class ReportEngine
                     IncludeRamFlag = ToX(snapshot.VmStatus),
 
                     SizeGB = SnapshotSizeProvider != null
-                                ? ToGB(await SnapshotSizeProvider(item.Node, item.VmType, item.VmId, snapshot.Name))
+                                ? await SnapshotSizeProvider(item.Node, item.VmType, item.VmId, snapshot.Name)
                                 : (double?)null,
 
                     DescriptionWrap = snapshot.Description,

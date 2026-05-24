@@ -134,7 +134,7 @@ CI snapshots can fail/warn the build by checking `jq '.issues | length' issues.j
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "generatedAt": "2026-05-08T17:28:51.8677072Z",
   "applicationName": "cv4pve-report",
   "applicationVersion": "2.2.0",
@@ -156,20 +156,27 @@ CI snapshots can fail/warn the build by checking `jq '.issues | length' issues.j
 
 ### Naming conventions
 
-- **Property keys** are **camelCase** (`vmId`, `memorySizeGB`, `cpuUsagePct`).
-- **Common acronyms** keep their casing (`vmID`, `osType`, `agentOSInfo`, `sslCertificates`).
-- **`null`** values are omitted from the JSON to keep files compact.
-- **Boolean flags** coming from columns named `…Flag` are emitted as JSON booleans; their suffix is stripped (`isTemplateFlag` → `isTemplate`).
+Overview tables, RRD tables and any other multi-row tables expose **raw values** with **bare keys**:
+
+- **Sizes / IO** — raw **bytes** (`ulong`). The C# field name in the engine carries a `GB` / `MB` hint for Excel/HTML rendering; the JSON output strips that suffix.
+- **Percentages** — raw fractions in **`[0, 1]`**. The C# `Pct` suffix is stripped in JSON.
+- **Booleans** — real JSON `true` / `false`. The C# `Flag` suffix is stripped.
+- **Multi-line text** — kept as-is (string with `\n`). The C# `Wrap` suffix is stripped.
+- **Dates** — ISO-8601 strings (UTC where applicable).
+- **`null`** values are omitted to keep files compact.
+- **Property keys** are **camelCase** (`vmId`, `memorySize`, `cpuUsage`); common acronyms keep their casing (`vmID`, `osType`, `agentOSInfo`).
 
 | Kind | Key example | Value example | Notes |
 |---|---|---|---|
 | Text | `name`, `node`, `status` | `"vm01"` | Plain string. |
 | Boolean | `isTemplate`, `enabled` | `true` / `false` | Real JSON booleans, not `"X"` / `""`. |
 | Number — count | `cpu`, `cores`, `count` | `8` | Integer or float, unit-less. |
-| Number — size | `memorySizeGB`, `rootFsMB` | `16.5` | The **unit is in the key suffix** (`GB` / `MB`); no auto-conversion. |
-| Number — percentage | `cpuUsagePct`, `memoryUsagePct` | `0.45` | Float **0–1**. Multiply by 100 for the "%" form. |
+| Number — bytes | `memorySize`, `diskRead` | `17179869184` | Raw bytes (`ulong`). Divide by `1024**3` for GiB, `1024**2` for MiB. |
+| Number — fraction | `cpuUsage`, `memoryUsage`, `ioWait` | `0.45` | Float **0–1**. Multiply by 100 for the "%" form. |
 | Datetime | `lastSync`, `startTime` | `"2026-05-10T14:30:00Z"` | ISO-8601, UTC. |
 | Date only | `expiry`, `validUntil` | `"2026-05-10"` | ISO-8601 date. |
+
+> **`info` blocks in detail files** (e.g. `vms/100.json` > `info`) are an exception: they're authored as a human-readable snapshot with display labels (`"memoryGB": 16`) and decimal values, kept for readability when opening a single detail file by hand. The raw-bytes contract above applies to **table rows**, which is where snapshot diffs live.
 
 ### `jq` recipes
 
@@ -177,8 +184,8 @@ CI snapshots can fail/warn the build by checking `jq '.issues | length' issues.j
 # All running VMs
 jq '.[] | select(.status == "running") | .name' vms.json
 
-# VMs using more than 16 GB of memory
-jq '.[] | select(.memorySizeGB > 16) | {id: .vmId, name: .name, memoryGB: .memorySizeGB}' vms.json
+# VMs using more than 16 GiB of memory (raw bytes, divide by 1024^3)
+jq '.[] | select(.memorySize > 16 * 1024 * 1024 * 1024) | {id: .vmId, name: .name, memoryGB: (.memorySize / 1073741824)}' vms.json
 
 # Snapshot count per VM
 jq 'group_by(.vmId) | map({vmId: .[0].vmId, count: length})' snapshots.json

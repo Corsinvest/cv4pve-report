@@ -140,7 +140,12 @@ internal sealed class SheetWriter(IXLWorksheet ws, Dictionary<string, string> sh
                     break;
 
                 case ColumnKind.GB:
+                    ConvertBytesToUnit(dataCol, UnitFormat.BytesToGB);
+                    dataCol.Style.NumberFormat.Format = "#,##0.00";
+                    break;
+
                 case ColumnKind.MB:
+                    ConvertBytesToUnit(dataCol, UnitFormat.BytesToMB);
                     dataCol.Style.NumberFormat.Format = "#,##0.00";
                     break;
 
@@ -177,6 +182,19 @@ internal sealed class SheetWriter(IXLWorksheet ws, Dictionary<string, string> sh
 
         configure?.Invoke(table);
         Row += afterCount - beforeCount;
+    }
+
+    // Engine passes raw byte values for GB/MB columns; the writer converts at render time
+    // so the JSON output can expose bytes directly while Excel still shows "16.50".
+    private static void ConvertBytesToUnit(IXLRangeColumn dataCol, Func<double, double> convert)
+    {
+        foreach (var cell in dataCol.Cells())
+        {
+            if (cell.Value.IsNumber)
+            {
+                cell.Value = convert(cell.Value.GetNumber());
+            }
+        }
     }
 
     private void SetHyperlink(IXLCell cell, string linkKey)

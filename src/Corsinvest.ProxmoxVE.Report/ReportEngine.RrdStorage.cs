@@ -29,8 +29,8 @@ public partial class ReportEngine
                         Node = StorageNode(item),
                         item.Storage,
                         a.TimeDate,
-                        SizeGB = ToGB(a.Size),
-                        UsedGB = ToGB(a.Used),
+                        SizeGB = a.Size,
+                        UsedGB = a.Used,
                         UsagePct = a.Size > 0 ? (double)a.Used / a.Size : (double?)null,
                     }).ToList());
         });

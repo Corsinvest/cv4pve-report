@@ -29,8 +29,8 @@ public partial class ReportEngine
                         a.PluginType,
                         Content = ToNewLine(a.Content),
                         SharedFlag = ToX(a.Shared),
-                        DiskSizeGB = ToGB(a.DiskSize),
-                        DiskUsageGB = ToGB(a.DiskUsage),
+                        DiskSizeGB = a.DiskSize,
+                        DiskUsageGB = a.DiskUsage,
                         DiskUsagePct = a.DiskUsagePercentage,
                     }),
                     new TableOptions<dynamic>()

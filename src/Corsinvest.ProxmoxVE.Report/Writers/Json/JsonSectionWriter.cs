@@ -89,7 +89,13 @@ internal sealed class JsonSectionWriter(string name) : ISectionWriter
             ColumnKind.Flag => (name[..^4], raw is string s ? s.Length > 0 : raw is bool b && b),
             // Wrap columns are just text with multi-line content — keep value, strip the suffix from the key.
             ColumnKind.Wrap => (name[..^4], raw),
-            // GB / MB / Percentage / DateOnly / Text: keep the raw value as the engine produced it.
+            // GB / MB columns carry raw byte counts from the engine; strip the unit suffix
+            // so the JSON exposes the raw bytes under a bare key (e.g. "memorySize").
+            ColumnKind.GB => (name[..^2], raw),
+            ColumnKind.MB => (name[..^2], raw),
+            // Pct columns carry a 0–1 fraction; strip the suffix for consistency (e.g. "cpuUsage").
+            ColumnKind.Percentage => (name[..^3], raw),
+            // DateOnly / DateTime / Number / Text: keep both key and value as the engine produced them.
             _ => (name, raw),
         };
 }

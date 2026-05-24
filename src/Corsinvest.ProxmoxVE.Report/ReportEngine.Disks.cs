@@ -42,7 +42,7 @@ public partial class ReportEngine
                 StorageType = storageRes?.PluginType,
                 StorageSharedFlag = ToX(storageRes?.Shared),
                 a.FileName,
-                SizeGB = ToGB(a.SizeBytes),
+                SizeGB = a.SizeBytes,
                 StorageUsagePct = storageRes is { DiskSize: > 0 }
                                     ? (double)a.SizeBytes / storageRes.DiskSize
                                     : (double?)null,
