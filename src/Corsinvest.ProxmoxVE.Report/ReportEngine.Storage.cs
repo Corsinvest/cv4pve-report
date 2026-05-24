@@ -16,7 +16,7 @@ public partial class ReportEngine
 
         foreach (var a in filtered)
         {
-            _writer.Links[SheetLinkKey(ClusterResourceType.Storage, StorageNode(a), a.Storage)] = "Storages";
+            _writer.Links[LinkKey.Storage(StorageNode(a), a.Storage)] = "Storages";
         }
 
         using var sw = _writer.AddSection("Storages");

@@ -15,6 +15,7 @@ internal static class LinkKey
     // Per-entity keys (parameterised).
     public static string Node(string node) => $"node:{node}";
     public static string Vm(long vmId) => $"vm:{vmId}";
+    public static string Storage(string node, string storage) => $"storage:{node}:{storage}";
     public static string NodeNetwork(string node, string iface) => $"node:{node}:network:{iface}";
     public static string List(string what) => $"list:{what}";
 
