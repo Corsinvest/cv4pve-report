@@ -4,6 +4,7 @@
  */
 
 using Corsinvest.ProxmoxVE.Api.Extension;
+using Corsinvest.ProxmoxVE.Report.Compliance;
 using Corsinvest.ProxmoxVE.Report.Helpers;
 using Corsinvest.ProxmoxVE.Report.Writers;
 
@@ -19,6 +20,18 @@ public partial class ReportEngine
                                                             ? settings.Cluster.Log.MaxCount
                                                             : null)
                                .ToSafeEnum(_issues, "Cluster Log", LinkKey.ClusterLog);
+
+        if (_compliance.IsRequired(ComplianceDataKind.ClusterLog))
+        {
+            _compliance.Provide(ComplianceDataKind.ClusterLog,
+                                logs.Select(l => new Compliance.Models.ClusterLogEntryInfo(
+                                    TimeUnix: l.Time,
+                                    Node: l.Node,
+                                    User: l.User,
+                                    Pri: l.Severity,
+                                    Tag: l.Service,
+                                    Message: l.Message)).ToList());
+        }
 
         using var sw = _writer.AddSection("Cluster Log");
         sw.AddTable(null,

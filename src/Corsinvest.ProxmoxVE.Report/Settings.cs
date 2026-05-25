@@ -38,6 +38,11 @@ public class Settings
     public SettingsFirewall Firewall { get; set; } = new();
 
     /// <summary>
+    /// Compliance settings — toggles for ISO 27001, NIS2 and other standards
+    /// </summary>
+    public SettingsCompliance Compliance { get; set; } = new();
+
+    /// <summary>
     /// Max parallel requests when fetching (1 = sequential)
     /// </summary>
     public int MaxParallelRequests { get; set; } = 5;
@@ -120,6 +125,18 @@ public class Settings
             Storage = new()
             {
                 RrdData = new() { TimeFrame = RrdDataTimeFrame.Week },
+            },
+            Compliance = new()
+            {
+                ISO27001 = true,
+                NIS2 = true,
+                CIS = true,
+                AgID = true,
+                PCIDSS = true,
+                GDPR = true,
+                DORA = true,
+                NISTCSF = true,
+                ISO27017 = true,
             },
         };
     }

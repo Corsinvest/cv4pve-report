@@ -13,6 +13,7 @@ using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Node;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Storage;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Vm;
+using Corsinvest.ProxmoxVE.Report.Compliance;
 using Corsinvest.ProxmoxVE.Report.Helpers;
 using Corsinvest.ProxmoxVE.Report.Models;
 using Corsinvest.ProxmoxVE.Report.Writers;
@@ -43,6 +44,7 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
     private HashSet<long> _vmIds = [];
     private readonly IssueTracker _issues = new();
     private IReportWriter _writer = null!;
+    private ComplianceEngine _compliance = new([]);
 
     private record VmNetworkRow(long VmId,
                                 string Name,
@@ -106,6 +108,35 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
                 Nodes: nodes);
         })];
 
+        if (_compliance.IsRequired(Compliance.ComplianceDataKind.Vms))
+        {
+            _compliance.Provide(Compliance.ComplianceDataKind.Vms,
+                                _resources.Where(r => r.ResourceType == ClusterResourceType.Vm)
+                                          .Select(r => new Compliance.Models.VmInfo(
+                                              VmId: r.VmId,
+                                              Name: r.Name ?? "",
+                                              Node: r.Node ?? "",
+                                              Type: VmTypeLabel(r.VmType),
+                                              Status: r.Status ?? "",
+                                              IsTemplate: r.IsTemplate))
+                                          .ToList());
+        }
+
+        if (_compliance.IsRequired(Compliance.ComplianceDataKind.Storages))
+        {
+            _compliance.Provide(Compliance.ComplianceDataKind.Storages,
+                                _resources.Where(r => r.ResourceType == ClusterResourceType.Storage)
+                                          .Select(r => new Compliance.Models.StorageInfo(
+                                              Storage: r.Storage ?? "",
+                                              Node: r.Node ?? "",
+                                              Type: r.PluginType ?? "",
+                                              Content: r.Content,
+                                              Shared: r.Shared,
+                                              Enabled: string.Equals(r.Status, "available", StringComparison.OrdinalIgnoreCase),
+                                              UsagePct: r.DiskSize > 0 ? (double)r.DiskUsage / r.DiskSize : (double?)null))
+                                          .ToList());
+        }
+
         _writer.Links[LinkKey.Storages] = "Storages";
         _writer.Links[LinkKey.ListNodes] = "Nodes";
         _writer.Links[LinkKey.ListVms] = "VMs";
@@ -164,6 +195,8 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
             _ => throw new ArgumentOutOfRangeException(nameof(format), format, null),
         };
 
+        _compliance = new ComplianceEngine(ComplianceRegistry.EnabledPacks(settings.Compliance));
+
         await LoadResourcesAsync();
 
         // Section order: at-a-glance Cluster → inventory → time-series → cluster deep-dives.
@@ -194,6 +227,8 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
             new("Cluster Pools", "Resource pools with member VMs, containers and storages", AddClusterPoolsDataAsync),
             new("Cluster Log", "Cluster log with user, node, service and message", AddClusterLogDataAsync),
             new("Cluster Tasks", "All recent tasks across the cluster with status, duration and node", AddClusterTasksDataAsync),
+
+            new("Compliance", "Compliance findings against enabled standards (ISO 27001, NIS2, ...)", AddComplianceDataAsync),
         };
 
         var stats = new List<SectionStat>();

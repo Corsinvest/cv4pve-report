@@ -90,6 +90,7 @@ Pages appear in this order in the sidebar. Conditional pages (`if …`) are only
 | 24 | **Cluster Pools** (`cluster-pools.html`) | Resource pools with member VMs, containers and storages | `Cluster.Include` |
 | 25 | **Cluster Log** (`cluster-log.html`) | Cluster event log | `Cluster.Log.Enabled` |
 | 26 | **Cluster Tasks** (`cluster-tasks.html`) | Recent tasks across the cluster | `Cluster.IncludeTasks` |
+| 27 | **Compliance** (`compliance.html` + `compliance/<pack>.html`) | Compliance overview → per-pack detail pages | any `Compliance.*` flag |
 
 > The contents of each page (which tables, which columns) are emitted by the engine and identical across formats — see [`docs/settings.md`](settings.md) for the toggles.
 
@@ -109,6 +110,12 @@ When one or more Proxmox API calls fail during collection (a corrupt RRD file, a
 | Timestamp | When the failure was recorded. |
 
 The page uses the same per-table search and click-to-sort as the rest of the report, so filtering by severity or section is immediate.
+
+---
+
+## Compliance
+
+When at least one standard is enabled in `settings.json` under `Compliance`, the report adds a `Compliance` group in the sidebar with an **Overview** entry (`compliance.html`) plus one sub-page per enabled pack under `compliance/<pack>.html`. Each pack page contains Info / Disclaimer / Controls / Checks tables; the **Status** column renders as a coloured badge (✓ PASS / ✗ FAIL / ◐ PARTIAL / — N/A) and the **Score %** column as a colour-coded number. Every table uses the standard per-column filter / sort so isolating `FAIL` rows or `High`/`Critical` severities is immediate. Full reference: [docs/compliance.md](compliance.md).
 
 ---
 

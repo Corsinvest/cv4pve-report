@@ -180,6 +180,24 @@ internal sealed class SheetWriter(IXLWorksheet ws, Dictionary<string, string> sh
                            .Midpoint(XLCFContentType.Number, 60, XLColor.FromHtml("#f0d264"))   // yellow ~ warn
                            .HighestValue(XLColor.FromHtml("#7cc77c"));                          // green ~ good
                     break;
+
+                case ColumnKind.StatusBadge:
+                    dataCol.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                    dataCol.Style.Font.SetBold(true);
+                    dataCol.AddConditionalFormat().WhenEquals("\"PASS\"").Fill.SetBackgroundColor(XLColor.FromHtml("#d4edda"));
+                    dataCol.AddConditionalFormat().WhenEquals("\"FAIL\"").Fill.SetBackgroundColor(XLColor.FromHtml("#f8d7da"));
+                    dataCol.AddConditionalFormat().WhenEquals("\"PARTIAL\"").Fill.SetBackgroundColor(XLColor.FromHtml("#fff3cd"));
+                    dataCol.AddConditionalFormat().WhenEquals("\"N/A\"").Fill.SetBackgroundColor(XLColor.FromHtml("#e9ecef"));
+                    break;
+
+                case ColumnKind.ScoreBadge:
+                    dataCol.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                    dataCol.Style.NumberFormat.Format = "0%";
+                    dataCol.AddConditionalFormat().ColorScale()
+                           .LowestValue(XLColor.FromHtml("#d05a5a"))
+                           .Midpoint(XLCFContentType.Number, 0.6, XLColor.FromHtml("#f0d264"))
+                           .HighestValue(XLColor.FromHtml("#7cc77c"));
+                    break;
             }
 
             if (dataCol.FirstCell().Value.IsDateTime)

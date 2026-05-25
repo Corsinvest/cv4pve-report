@@ -4,6 +4,7 @@
  */
 
 using Corsinvest.ProxmoxVE.Api.Extension;
+using Corsinvest.ProxmoxVE.Report.Compliance;
 using Corsinvest.ProxmoxVE.Report.Helpers;
 using Corsinvest.ProxmoxVE.Report.Writers;
 
@@ -27,6 +28,14 @@ public partial class ReportEngine
                                                                               .ToSafeSingle(_issues, "Cluster Pools", LinkKey.ClusterPools);
                                                      return (pool, members: detail?.Members ?? []);
                                                  });
+        if (_compliance.IsRequired(ComplianceDataKind.Pools))
+        {
+            _compliance.Provide(ComplianceDataKind.Pools,
+                                poolResults.Select(r => new Compliance.Models.PoolInfo(
+                                    Id: r.pool.Id,
+                                    MemberCount: r.members.Count())).ToList());
+        }
+
         var poolRows = poolResults.SelectMany(r => r.members.Select(member => new
         {
             Pool = r.pool.Id,

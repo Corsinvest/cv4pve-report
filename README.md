@@ -72,6 +72,7 @@ RVTools is a pure inventory tool for VMware — it exports infrastructure data t
 | Cluster log & cluster tasks | | ✓ | |
 | Resilient collection (skip & report broken endpoints) | | ✓ | |
 | **[Health Score](#health-score) per Node / VM / CT / Storage** | | ✓ | |
+| **[Compliance](#compliance) — ISO 27001, NIS2, CIS v8, AgID, PCI DSS, GDPR, DORA, NIST CSF, ISO 27017** | | ✓ | |
 | Health checks & diagnostics | | | ✓ |
 
 > **cv4pve-report** shows you *what* is in your infrastructure.
@@ -89,6 +90,11 @@ What's collected:
 - **Global sections** — Firewall (rules/aliases/ipsets), RRD Nodes/Storage/Guests, Syslog, Cluster Log, Cluster Tasks, Replication, Network, Disks, Partitions, Snapshots, Storage Content, Backups
 - **Issues** — diagnostic page that aggregates any per-resource failure encountered while collecting data; appears only when there is at least one issue and is linked from the Summary/cover and the sidebar so it's the first thing you see when something didn't work
 - **Network topology** — auto-generated SVG diagram of physical NICs, bonds, bridges, gateway VMs and network-backed storage — [guide](docs/network-diagram.md)
+
+What's computed:
+
+- **[Health Score](#health-score)** — 0–100 number per Node / VM / CT / Storage that summarises resource pressure (higher = healthier). Rendered as a colour-coded badge in HTML / Excel, raw number in JSON. Same formula as `cv4pve-admin`.
+- **[Compliance](#compliance)** — automated technical assessment against 9 standards (ISO 27001, NIS2, CIS v8, AgID, PCI DSS, GDPR, DORA, NIST CSF 2.0, ISO 27017). Per-control status (PASS / FAIL / N/A), score and audit-ready findings with remediation. Opt-in; full reference in [docs/compliance.md](docs/compliance.md).
 
 How you can shape it:
 
@@ -149,6 +155,34 @@ Each row in the Nodes / VMs / Containers / Storages overviews carries a **0–10
 | Storage | `100 − Disk%` |
 
 Thresholds: **≥ 80** green (good), **≥ 60** yellow (warning), **below** red (critical).
+
+---
+
+## Compliance
+
+cv4pve-report can run a **technical compliance assessment** against 9 widely-adopted security and regulatory frameworks. When at least one standard is enabled, the report adds a dedicated **Compliance** section that lists, per standard, every applicable control with status (✓ PASS / ✗ FAIL / ◐ PARTIAL / — N/A), an overall score and the detail of every check executed.
+
+| Standard | Coverage focus |
+|---|---|
+| **ISO/IEC 27001:2022** | Annex A technical controls |
+| **NIS2** (EU 2022/2555) | Art. 21(2) minimum measures |
+| **CIS Controls v8** | Foundational safeguards |
+| **AgID Misure Minime** | Italian PA baseline (ABSC) |
+| **PCI DSS v4.0** | Network / access / log requirements |
+| **GDPR — Art. 32** | Security of processing |
+| **DORA** (EU 2022/2554) | ICT risk management — financial sector |
+| **NIST CSF 2.0** | Govern / Identify / Protect / Detect / Respond / Recover |
+| **ISO/IEC 27017:2015** | Cloud security extensions to ISO 27001 |
+
+Toggle the standards in `settings.json`:
+
+```json
+{ "Compliance": { "ISO27001": true, "NIS2": true } }
+```
+
+The `--full` profile enables every standard. **Full reference**: [docs/compliance.md](docs/compliance.md) — explains the scoring model, output layout, and the technical/procedural scope split.
+
+> The assessment is **automated and technical**. Procedural, organisational and physical controls are out of scope and require manual review. The report **does not constitute formal certification**.
 
 ---
 

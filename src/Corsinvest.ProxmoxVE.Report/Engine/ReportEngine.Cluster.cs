@@ -6,6 +6,7 @@
 using Corsinvest.ProxmoxVE.Api.Extension;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Api.Shared.Utils;
+using Corsinvest.ProxmoxVE.Report.Compliance;
 using Corsinvest.ProxmoxVE.Report.Helpers;
 using Corsinvest.ProxmoxVE.Report.Writers;
 
@@ -89,9 +90,31 @@ public partial class ReportEngine
                             fwOptions.PolicyOut,
                             fwOptions.LogRatelimit
                         }]);
+
+            if (_compliance.IsRequired(ComplianceDataKind.FirewallClusterOptions))
+            {
+                _compliance.Provide(ComplianceDataKind.FirewallClusterOptions,
+                                    new[] { new Compliance.Models.FirewallClusterOptionsInfo(
+                                        Enabled: fwOptions.Enable,
+                                        PolicyIn: fwOptions.PolicyIn,
+                                        PolicyOut: fwOptions.PolicyOut) });
+            }
         }
 
         ReportGlobal("Cluster: Backup Jobs");
+        if (_compliance.IsRequired(ComplianceDataKind.BackupJobs))
+        {
+            _compliance.Provide(ComplianceDataKind.BackupJobs,
+                                backupJobsTask.Result.Select(a => new Compliance.Models.BackupJobInfo(
+                                    Id: a.Id,
+                                    Enabled: a.Enabled,
+                                    All: a.All,
+                                    VmIds: ParseVmIds(a.VmId),
+                                    Pool: a.Pool,
+                                    Node: a.Node,
+                                    Storage: a.Storage,
+                                    Schedule: a.Schedule)).ToList());
+        }
         sw.AddTable("Backup Jobs",
                     backupJobsTask.Result.Select(a => new
                     {
@@ -116,6 +139,16 @@ public partial class ReportEngine
                     }));
 
         ReportGlobal("Cluster: Replication");
+        if (_compliance.IsRequired(ComplianceDataKind.ReplicationJobs))
+        {
+            _compliance.Provide(ComplianceDataKind.ReplicationJobs,
+                                replicationTask.Result.Select(a => new Compliance.Models.ReplicationJobInfo(
+                                    Id: a.Id,
+                                    GuestVmId: long.TryParse(a.Guest, out var gid) ? gid : null,
+                                    Target: a.Target,
+                                    Schedule: a.Schedule,
+                                    Disabled: a.Disable)).ToList());
+        }
         sw.AddTable("Replication",
                     replicationTask.Result.Select(a => new
                     {
@@ -161,6 +194,14 @@ public partial class ReportEngine
                     }));
 
         ReportGlobal("Cluster: Metric Servers");
+        if (_compliance.IsRequired(ComplianceDataKind.MetricServers))
+        {
+            _compliance.Provide(ComplianceDataKind.MetricServers,
+                                metricServersTask.Result.Select(a => new Compliance.Models.MetricServerInfo(
+                                    Id: a.Id,
+                                    Type: a.Type,
+                                    Disabled: a.Disable)).ToList());
+        }
         sw.AddTable("Metric Servers",
                     metricServersTask.Result.Select(a => new
                     {
@@ -197,5 +238,16 @@ public partial class ReportEngine
                     }));
 
         return 1;
+    }
+
+    private static IReadOnlyList<long> ParseVmIds(string? csv)
+    {
+        if (string.IsNullOrWhiteSpace(csv)) { return []; }
+        var ids = new List<long>();
+        foreach (var token in csv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (long.TryParse(token, out var id)) { ids.Add(id); }
+        }
+        return ids;
     }
 }

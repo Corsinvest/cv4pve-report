@@ -98,6 +98,7 @@ internal sealed class JsonSectionWriter(string name) : ISectionWriter
             ColumnKind.GB => (name[..^2], raw),
             ColumnKind.MB => (name[..^2], raw),
             ColumnKind.Percentage => (name[..^3], raw),
+            ColumnKind.ScoreBadge => (name[..^"Badge".Length], raw),
             _ => (name, raw),
         };
 }

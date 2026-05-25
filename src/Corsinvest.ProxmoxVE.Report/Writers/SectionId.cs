@@ -17,4 +17,5 @@ internal abstract record SectionId(string Key)
     public sealed record Node(string Hostname) : SectionId($"Node {Hostname}");
     public sealed record Vm(long Id, string DisplayLabel) : SectionId($"VM {Id}");
     public sealed record Container(long Id, string DisplayLabel) : SectionId($"CT {Id}");
+    public sealed record Compliance(string PackId, string PackTitle) : SectionId($"Compliance {PackId}");
 }

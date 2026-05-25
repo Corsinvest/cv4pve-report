@@ -44,6 +44,10 @@ internal static class LinkKey
     public const string RrdGuests = "section:rrd-guests";
     public const string Syslog = "section:syslog";
     public const string Issues = "section:issues";
+    public const string Compliance = "section:compliance";
+
+    /// <summary>Hyperlink target for a specific compliance pack inside the Compliance section.</summary>
+    public static string CompliancePack(string packId) => $"compliance:{packId.ToLowerInvariant()}";
 
     /// <summary>
     /// Returns the canonical <c>section:*</c> key for a top-level section name,
@@ -73,6 +77,7 @@ internal static class LinkKey
             "RRD Guests" => RrdGuests,
             "Syslog" => Syslog,
             "Issues" => Issues,
+            "Compliance" => Compliance,
             _ => null,
         };
 }

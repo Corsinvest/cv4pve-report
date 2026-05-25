@@ -62,6 +62,10 @@ internal static class HtmlEncoder
         {
             return $"containers/{Slug(sectionName["CT ".Length..])}.html";
         }
+        else if (sectionName.StartsWith("Compliance ", StringComparison.Ordinal))
+        {
+            return $"compliance/{Slug(sectionName["Compliance ".Length..])}.html";
+        }
         else
         {
             return $"{Slug(sectionName)}.html";

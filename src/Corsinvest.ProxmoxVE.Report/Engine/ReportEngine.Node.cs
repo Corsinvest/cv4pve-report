@@ -7,6 +7,7 @@ using Corsinvest.ProxmoxVE.Api.Extension;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Node;
 using Corsinvest.ProxmoxVE.Api.Shared.Utils;
+using Corsinvest.ProxmoxVE.Report.Compliance;
 using Corsinvest.ProxmoxVE.Report.Helpers;
 using Corsinvest.ProxmoxVE.Report.Writers;
 
@@ -67,6 +68,46 @@ public partial class ReportEngine
 
         var results = (await RunParallelAsync(filtered, item => FetchNodeDataAsync(item, pt)))
                             .OrderBy(a => a.Item.Id).ToList();
+
+        if (_compliance.IsRequired(ComplianceDataKind.Certificates))
+        {
+            var certResults = await RunParallelAsync(
+                filtered.Where(n => !n.IsUnknown && n.IsOnline),
+                async n => (Node: n.Node,
+                            Certs: await client.Nodes[n.Node].Certificates.Info.GetAsync()
+                                                              .ToSafeEnum(_issues, "Node", LinkKey.Node(n.Node))));
+
+            _compliance.Provide(ComplianceDataKind.Certificates,
+                                certResults.SelectMany(r => r.Certs.Select(c => new Compliance.Models.CertificateInfo(
+                                    Node: r.Node,
+                                    FileName: c.FileName ?? "",
+                                    Subject: c.Subject ?? "",
+                                    Issuer: c.Issuer ?? "",
+                                    NotAfterUnix: c.NotAfter))).ToList());
+        }
+
+        if (_compliance.IsRequired(ComplianceDataKind.Nodes))
+        {
+            _compliance.Provide(ComplianceDataKind.Nodes,
+                                results.Select(d => new Compliance.Models.NodeInfo(
+                                    Node: d.Item.Node,
+                                    IsOnline: d.Item.IsOnline,
+                                    SubscriptionStatus: d.Subscription?.Status,
+                                    SubscriptionNextDueDate: d.Subscription?.NextDuedate,
+                                    PveVersion: d.Version?.Version,
+                                    PveRelease: d.Version?.Release,
+                                    KernelRelease: d.Status?.CurrentKernel?.Release)).ToList());
+        }
+
+        if (_compliance.IsRequired(ComplianceDataKind.NodeNetworks))
+        {
+            _compliance.Provide(ComplianceDataKind.NodeNetworks,
+                                results.SelectMany(d => d.Networks.Select(n => new Compliance.Models.NodeNetworkInfo(
+                                    Node: d.Item.Node,
+                                    Iface: n.Interface ?? "",
+                                    Type: n.Type ?? "",
+                                    Slaves: n.Slaves))).ToList());
+        }
 
         foreach (var d in results)
         {

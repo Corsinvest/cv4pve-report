@@ -35,6 +35,8 @@ internal static partial class ColumnConvention
         if (EndsWith(name, "Flag")) { return (ColumnKind.Flag, PascalCaseToWords(name[..^4])); }
         if (EndsWith(name, "Date")) { return (ColumnKind.DateOnly, PascalCaseToWords(name)); }
         if (EndsWith(name, "HealthScore")) { return (ColumnKind.HealthScore, PascalCaseToWords(name[..^"Score".Length])); }
+        if (EndsWith(name, "ScoreBadge")) { return (ColumnKind.ScoreBadge, PascalCaseToWords(name[..^"Badge".Length]) + " %"); }
+        if (name.Equals("Status", StringComparison.Ordinal)) { return (ColumnKind.StatusBadge, "Status"); }
 
         // camelCase ("vCPUs") and labels with spaces ("VM ID") are display labels too.
         var isDisplayLabel = name.Contains(' ') || (name.Length > 0 && char.IsLower(name[0]));

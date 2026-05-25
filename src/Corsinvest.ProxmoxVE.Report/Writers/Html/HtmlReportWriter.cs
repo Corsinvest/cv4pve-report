@@ -24,6 +24,7 @@ internal sealed partial class HtmlReportWriter(ReportInfo info) : IReportWriter
     {
         Links[id.Key] = id.Key;
         if (LinkKey.ForSection(id.Key) is { } sectionKey) { Links[sectionKey] = id.Key; }
+        if (id is SectionId.Compliance cp) { Links[LinkKey.CompliancePack(cp.PackId)] = id.Key; }
 
         var displayName = id switch
         {
@@ -36,6 +37,7 @@ internal sealed partial class HtmlReportWriter(ReportInfo info) : IReportWriter
                                         : $"{c.Id} — {c.DisplayLabel}",
 
             SectionId.Node n => n.Hostname,
+            SectionId.Compliance cp2 => $"Compliance — {cp2.PackTitle}",
             _ => id.Key,
         };
 

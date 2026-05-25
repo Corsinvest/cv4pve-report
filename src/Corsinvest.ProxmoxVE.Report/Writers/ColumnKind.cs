@@ -22,4 +22,6 @@ internal enum ColumnKind
     Flag,
     Wrap,
     HealthScore,
+    StatusBadge,
+    ScoreBadge,
 }

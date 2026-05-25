@@ -47,6 +47,8 @@ Sheets are written in this order. Conditional sheets (`if …`) are only present
 | 23 | **Cluster Pools** | Resource pools with member VMs, containers and storages | `Cluster.Include` |
 | 24 | **Cluster Log** | Cluster event log | `Cluster.Log.Enabled` |
 | 25 | **Cluster Tasks** | Recent tasks across the cluster | `Cluster.IncludeTasks` |
+| 26 | **Compliance** | Overview table of enabled standards (score, findings, severity counters) with hyperlinks to each pack sheet | any `Compliance.*` flag |
+| … | **Compliance `<PackId>`** | Per-standard sheet: Info + Disclaimer + Controls table + Checks table — one sheet per enabled pack | per `Compliance.<PackId>` flag |
 | … | **Node `<name>`** | Per-node detail (services, network, disks, SMART, ZFS, APT, certificates, tasks) | `Node.Detail.Enabled` |
 | … | **VM `<id>`** | Per-VM detail (agent OS info, network, disks, firewall logs, tasks) | `Guest.Detail.Enabled` |
 | … | **CT `<id>`** | Per-CT detail (same as VM) | `Guest.Detail.Enabled` |
@@ -65,6 +67,12 @@ When one or more Proxmox API calls fail during collection (a corrupt RRD file, a
 | Section | The logical section where the failure happened (e.g. `RRD Storage`, `Firewall Log`, `Cluster`). **Hyperlinked** to the relevant sheet — VM / Node / Storage / global section — so you can jump from the error to its context. |
 | Message | Diagnostic line built from the Proxmox response: HTTP status, the API error body and the failing endpoint, joined with `—`. Example: `500 Internal Server Error — got wrong time resolution (60 != 1800) — GET /nodes/orion/storage/local-ceph/rrddata`. |
 | Timestamp | When the failure was recorded. |
+
+---
+
+## Compliance
+
+When at least one standard is enabled in `settings.json` under `Compliance`, the workbook adds a `Compliance` overview sheet plus one `Compliance <PackId>` sheet per enabled pack. The overview lists every pack with score, findings count and severity breakdown; the **Pack** column is a hyperlink to the matching pack sheet. Each pack sheet contains Info / Disclaimer / Controls / Checks tables — the `Status` column renders as a coloured fill (PASS green / FAIL red / PARTIAL yellow / N/A grey), the `Score %` column as a green-yellow-red colour scale. Full reference: [docs/compliance.md](compliance.md).
 
 ---
 

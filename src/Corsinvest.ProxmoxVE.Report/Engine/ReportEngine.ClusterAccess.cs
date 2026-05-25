@@ -4,6 +4,8 @@
  */
 
 using Corsinvest.ProxmoxVE.Api.Extension;
+using Corsinvest.ProxmoxVE.Report.Compliance;
+using Corsinvest.ProxmoxVE.Report.Compliance.Models;
 using Corsinvest.ProxmoxVE.Report.Helpers;
 using Corsinvest.ProxmoxVE.Report.Writers;
 
@@ -27,6 +29,63 @@ public partial class ReportEngine
         var domainsTask = client.Access.Domains.GetAsync().ToSafeEnum(_issues, "Cluster Access", LinkKey.ClusterAccess);
 
         await Task.WhenAll(usersTask, tfaTask, groupsTask, rolesTask, aclTask, domainsTask);
+
+        if (_compliance.IsRequired(ComplianceDataKind.Users))
+        {
+            _compliance.Provide(ComplianceDataKind.Users,
+                                usersTask.Result.Select(u => new UserInfo(
+                                    Id: u.Id,
+                                    Enabled: u.Enable,
+                                    ExpireUnix: u.Expire,
+                                    Email: u.Email,
+                                    Tokens: [.. (u.Tokens ?? []).Select(t => new TokenInfo(t.Id,
+                                        ExpireUnix: t.Expire,
+                                        PrivSeparated: t.Privsep == 1))])).ToList());
+        }
+
+        if (_compliance.IsRequired(ComplianceDataKind.Tfa))
+        {
+            _compliance.Provide(ComplianceDataKind.Tfa,
+                                tfaTask.Result.Select(t => new TfaInfo(
+                                    UserId: t.UserId,
+                                    Types: (t.Entries?.Select(e => e.Type).Distinct() ?? []).ToList())).ToList());
+        }
+
+        if (_compliance.IsRequired(ComplianceDataKind.Acl))
+        {
+            _compliance.Provide(ComplianceDataKind.Acl,
+                                aclTask.Result.Select(a => new AclEntry(
+                                    Path: a.Path,
+                                    UserOrGroup: a.UsersGroupid,
+                                    Type: a.Type,
+                                    RoleId: a.Roleid,
+                                    Propagate: a.Propagate == 1)).ToList());
+        }
+
+        if (_compliance.IsRequired(ComplianceDataKind.Groups))
+        {
+            _compliance.Provide(ComplianceDataKind.Groups,
+                                groupsTask.Result.Select(g => new GroupInfo(
+                                    Id: g.Id,
+                                    Users: (g.Users ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))).ToList());
+        }
+
+        if (_compliance.IsRequired(ComplianceDataKind.Domains))
+        {
+            _compliance.Provide(ComplianceDataKind.Domains,
+                                domainsTask.Result.Select(d => new DomainInfo(
+                                    Realm: d.Realm,
+                                    Type: d.Type,
+                                    Tfa: d.Tfa)).ToList());
+        }
+
+        if (_compliance.IsRequired(ComplianceDataKind.Roles))
+        {
+            _compliance.Provide(ComplianceDataKind.Roles,
+                                rolesTask.Result.Select(r => new RoleInfo(
+                                    Id: r.Id,
+                                    IsBuiltIn: r.Special == 1)).ToList());
+        }
 
         sw.AddTable("Users",
                     usersTask.Result.Select(a => new

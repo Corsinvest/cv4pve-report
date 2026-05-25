@@ -7,6 +7,7 @@ using Corsinvest.ProxmoxVE.Api.Extension;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Common;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Vm;
+using Corsinvest.ProxmoxVE.Report.Compliance;
 using Corsinvest.ProxmoxVE.Report.Helpers;
 using Corsinvest.ProxmoxVE.Report.Writers;
 
@@ -24,10 +25,14 @@ public partial class ReportEngine
         ITableHandle? aliasTable = null;
         ITableHandle? ipSetTable = null;
         var rulesCount = 0;
+        var complianceRules = _compliance.IsRequired(ComplianceDataKind.FirewallRules)
+                                ? new List<Compliance.Models.FirewallRuleInfo>()
+                                : null;
 
         void AppendRules(string scopeType, string scope, string scopeName, IEnumerable<FirewallRule> rules)
         {
-            var rows = rules.Select(a => new
+            var rulesList = rules.ToList();
+            var rows = rulesList.Select(a => new
             {
                 ScopeType = scopeType,
                 Scope = scope,
@@ -52,6 +57,23 @@ public partial class ReportEngine
             rulesCount += rows.Count;
             if (rulesTable == null) { rulesTable = sw.AddTable("Firewall Rules", rows); }
             else { sw.AppendData(rulesTable, rows); }
+
+            if (complianceRules != null)
+            {
+                complianceRules.AddRange(rulesList.Select(a => new Compliance.Models.FirewallRuleInfo(
+                    ScopeType: scopeType,
+                    Scope: scope,
+                    ScopeName: scopeName,
+                    Position: a.Positon,
+                    Type: a.Type ?? "",
+                    Action: a.Action ?? "",
+                    Enabled: a.Enable,
+                    Source: a.Source,
+                    Dest: a.Dest,
+                    Macro: a.Macro,
+                    Iface: a.Iface,
+                    Log: a.Log)));
+            }
         }
 
         void AppendAliases(string scopeType, string scope, string scopeName, IEnumerable<FirewallAlias> aliases)
@@ -96,19 +118,35 @@ public partial class ReportEngine
         AppendAliases("cluster", "cluster", "", clusterAliasesTask.Result);
         AppendIpSets("cluster", "cluster", "", clusterIpSetsTask.Result);
 
+        var collectNodeOptions = _compliance.IsRequired(ComplianceDataKind.FirewallNodeOptions);
+
         var nodeFirewallResults = await RunParallelAsync(
             GetResources(ClusterResourceType.Node).Where(a => !a.IsUnknown),
             async item =>
             {
                 ReportGlobal($"Firewall: Node {item.Node}");
-                var rules = await client.Nodes[item.Node].Firewall.Rules.GetAsync()
-                                        .ToSafeEnum(_issues, "Firewall", LinkKey.Node(item.Node));
-                return (scope: item.Node, rules);
+                var fw = client.Nodes[item.Node].Firewall;
+                var rulesTask = fw.Rules.GetAsync().ToSafeEnum(_issues, "Firewall", LinkKey.Node(item.Node));
+                var optionsTask = collectNodeOptions
+                                    ? fw.Options.GetAsync().ToSafeSingle(_issues, "Firewall", LinkKey.Node(item.Node))
+                                    : Task.FromResult<Corsinvest.ProxmoxVE.Api.Shared.Models.Node.NodeFirewallOptions?>(null);
+                await Task.WhenAll(rulesTask, optionsTask);
+                return (scope: item.Node, rules: rulesTask.Result, options: optionsTask.Result);
             });
 
-        foreach (var (scope, rules) in nodeFirewallResults.OrderBy(r => r.scope))
+        foreach (var (scope, rules, _) in nodeFirewallResults.OrderBy(r => r.scope))
         {
             AppendRules("node", scope, "", rules);
+        }
+
+        if (collectNodeOptions)
+        {
+            _compliance.Provide(ComplianceDataKind.FirewallNodeOptions,
+                                nodeFirewallResults.Where(r => r.options != null)
+                                                   .Select(r => new Compliance.Models.FirewallNodeOptionsInfo(
+                                                       Node: r.scope,
+                                                       Enabled: r.options!.Enable))
+                                                   .ToList());
         }
 
         var guestFirewallResults = await RunParallelAsync(
@@ -146,6 +184,11 @@ public partial class ReportEngine
             AppendRules(scopeType, scope, scopeName, rules);
             AppendAliases(scopeType, scope, scopeName, aliases);
             AppendIpSets(scopeType, scope, scopeName, ipSets);
+        }
+
+        if (complianceRules != null)
+        {
+            _compliance.Provide(ComplianceDataKind.FirewallRules, complianceRules);
         }
 
         return rulesCount;

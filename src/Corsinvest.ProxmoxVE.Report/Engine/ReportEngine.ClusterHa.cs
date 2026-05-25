@@ -5,6 +5,7 @@
 
 using Corsinvest.ProxmoxVE.Api.Extension;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
+using Corsinvest.ProxmoxVE.Report.Compliance;
 using Corsinvest.ProxmoxVE.Report.Helpers;
 using Corsinvest.ProxmoxVE.Report.Writers;
 
@@ -33,6 +34,17 @@ public partial class ReportEngine
                             : Task.FromResult<IReadOnlyList<ClusterHaGroup>>([]);
 
         await Task.WhenAll(haResourcesTask, haStatusTask, haGroupsTask);
+
+        if (_compliance.IsRequired(ComplianceDataKind.HaResources))
+        {
+            _compliance.Provide(ComplianceDataKind.HaResources,
+                                haResourcesTask.Result.Select(a => new Compliance.Models.HaResourceInfo(
+                                    Sid: a.Sid,
+                                    Type: a.Type,
+                                    Group: a.Group,
+                                    State: a.State,
+                                    VmId: ParseSidVmId(a.Sid))).ToList());
+        }
 
         sw.AddTable("Resources",
                     haResourcesTask.Result.Select(a => new
@@ -79,5 +91,13 @@ public partial class ReportEngine
                     }));
 
         return haResourcesTask.Result.Count + haStatusTask.Result.Count;
+    }
+
+    private static long? ParseSidVmId(string? sid)
+    {
+        if (string.IsNullOrEmpty(sid)) { return null; }
+        var idx = sid.IndexOf(':');
+        if (idx < 0 || idx == sid.Length - 1) { return null; }
+        return long.TryParse(sid.AsSpan(idx + 1), out var id) ? id : null;
     }
 }

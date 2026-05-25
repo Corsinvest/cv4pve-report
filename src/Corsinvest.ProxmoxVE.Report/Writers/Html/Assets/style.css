@@ -629,6 +629,32 @@ table.data td.health-cell {
   :root:not([data-theme="light"]) .health-crit { background: #5a1a20; color: #f5b8be; }
 }
 
+table.data td.status-cell {
+  text-align: center;
+}
+.status {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.95em;
+  line-height: 1;
+}
+.status-pass    { background: #d4edda; color: #155724; }
+.status-fail    { background: #f8d7da; color: #721c24; }
+.status-partial { background: #fff3cd; color: #856404; }
+.status-na      { background: var(--color-table-zebra); color: var(--color-text-muted); }
+
+[data-theme="dark"] .status-pass    { background: #1d4f2b; color: #b9e7c1; }
+[data-theme="dark"] .status-fail    { background: #5a1a20; color: #f5b8be; }
+[data-theme="dark"] .status-partial { background: #4d3a0a; color: #ffe79e; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .status-pass    { background: #1d4f2b; color: #b9e7c1; }
+  :root:not([data-theme="light"]) .status-fail    { background: #5a1a20; color: #f5b8be; }
+  :root:not([data-theme="light"]) .status-partial { background: #4d3a0a; color: #ffe79e; }
+}
+
 table.data tfoot th {
   padding: 0.4rem 0.6rem;
   background: var(--color-table-header);

@@ -113,6 +113,17 @@ Key flags:
     "MaxCount": 0,                 // 0 = unlimited firewall log lines
     "Since": null,                 // DateOnly e.g. "2024-01-01"
     "Until": null
+  },
+  "Compliance": {                  // off by default — see docs/compliance.md
+    "ISO27001": false,             // ISO/IEC 27001:2022
+    "NIS2": false,                 // NIS2 — Directive (EU) 2022/2555
+    "CIS": false,                  // CIS Controls v8
+    "AgID": false,                 // AgID Misure Minime ICT (Italian PA baseline)
+    "PCIDSS": false,               // PCI DSS v4.0
+    "GDPR": false,                 // GDPR — Art. 32 Security of processing
+    "DORA": false,                 // DORA — Regulation (EU) 2022/2554
+    "NISTCSF": false,              // NIST Cybersecurity Framework 2.0
+    "ISO27017": false              // ISO/IEC 27017:2015 cloud security extensions
   }
 }
 ```

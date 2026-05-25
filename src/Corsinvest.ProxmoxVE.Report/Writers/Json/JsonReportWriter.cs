@@ -36,6 +36,7 @@ internal sealed partial class JsonReportWriter(ReportInfo info) : IReportWriter
     {
         Links[id.Key] = id.Key;
         if (LinkKey.ForSection(id.Key) is { } sectionKey) { Links[sectionKey] = id.Key; }
+        if (id is SectionId.Compliance cp) { Links[LinkKey.CompliancePack(cp.PackId)] = id.Key; }
 
         var section = new JsonSectionWriter(id.Key);
         _sections.Add(section);
@@ -68,11 +69,12 @@ internal sealed partial class JsonReportWriter(ReportInfo info) : IReportWriter
 
     /// <summary>
     /// Translate a logical section name to its file path inside the zip:
-    ///   "Cluster"     -> "cluster.json"
-    ///   "Node cc01"   -> "nodes/cc01.json"
-    ///   "VM 100"      -> "vms/100.json"
-    ///   "CT 200"      -> "containers/200.json"
-    ///   "RRD Nodes"   -> "rrd-nodes.json"
+    ///   "Cluster"            -> "cluster.json"
+    ///   "Node cc01"          -> "nodes/cc01.json"
+    ///   "VM 100"             -> "vms/100.json"
+    ///   "CT 200"             -> "containers/200.json"
+    ///   "RRD Nodes"          -> "rrd-nodes.json"
+    ///   "Compliance ISO27001"-> "compliance/iso27001.json"
     /// </summary>
     private static string JsonFileName(string sectionName)
     {
@@ -87,6 +89,10 @@ internal sealed partial class JsonReportWriter(ReportInfo info) : IReportWriter
         else if (sectionName.StartsWith("CT ", StringComparison.Ordinal))
         {
             return $"containers/{Slug(sectionName["CT ".Length..])}.json";
+        }
+        else if (sectionName.StartsWith("Compliance ", StringComparison.Ordinal))
+        {
+            return $"compliance/{Slug(sectionName["Compliance ".Length..])}.json";
         }
         else
         {

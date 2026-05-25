@@ -76,6 +76,9 @@ internal sealed partial class HtmlReportWriter
         AppendFlat(sb, sectionNames, "Firewall");
         AppendFlat(sb, sectionNames, "Replication");
         AppendSyntheticGroup(sb, sectionNames, "Performance", ["RRD Nodes", "RRD Guests", "RRD Storage", "Syslog"]);
+        var complianceChildren = sectionNames.Where(n => n.StartsWith("Compliance ")).Order().ToList();
+        var complianceLabels = complianceChildren.ToDictionary(n => n, n => n["Compliance ".Length..]);
+        AppendGroup(sb, sectionNames, displayNames, "Compliance", complianceChildren, childLabels: complianceLabels);
 
         sb.AppendLine("      </nav>");
         sb.Append("    </aside>");

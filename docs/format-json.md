@@ -81,6 +81,7 @@ Files are written in this order. Conditional files (`if …`) are only present w
 | 23 | **cluster-pools.json** | Resource pools with member VMs, containers and storages | `Cluster.Include` |
 | 24 | **cluster-log.json** | Cluster event log | `Cluster.Log.Enabled` |
 | 25 | **cluster-tasks.json** | Recent tasks across the cluster | `Cluster.IncludeTasks` |
+| 26 | **compliance.json** + **compliance/`<pack>`.json** | Compliance overview + per-pack detail file | any `Compliance.*` flag |
 
 > The contents of each file (which keys, which values) are emitted by the engine and identical across formats — see [`docs/settings.md`](settings.md) for the toggles.
 
@@ -113,6 +114,24 @@ When one or more Proxmox API calls fail during collection (a corrupt RRD file, a
 | `linkKey` | Opaque key pointing to the relevant resource: `vm:<id>`, `node:<name>`, `section:<name>`. Useful for cross-referencing other JSON files. |
 
 CI snapshots can fail/warn the build by checking `jq '.issues | length' issues.json` or `jq '[.issues[] | select(.severity == "Error")] | length'`.
+
+---
+
+## Compliance
+
+When at least one standard is enabled in `settings.json` under `Compliance`, the report emits:
+
+- `compliance.json` — flat array of one row per enabled pack with `pack`, `title`, `controls`, `findings`, severity counters (`critical`/`high`/`medium`/`low`/`info`), `skipped` and `score` (0–1 fraction).
+- `compliance/<pack>.json` — per-pack object keyed by block title: `info` (pack metadata + score), `disclaimer`, `controls` (array of control status rows), `checks` (array of one row per check outcome, PASS / FAIL / N/A).
+
+CI/automation usage examples (single pack failing the build when score drops below threshold):
+
+```bash
+jq '.[] | select(.pack == "ISO27001") | .score' compliance.json     # → 0.77
+jq '.checks[] | select(.status == "FAIL")' compliance/iso27001.json
+```
+
+Full reference: [docs/compliance.md](compliance.md).
 
 ---
 

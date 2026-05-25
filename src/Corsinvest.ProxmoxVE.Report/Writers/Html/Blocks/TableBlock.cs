@@ -67,7 +67,7 @@ internal sealed class TableBlock<T> : IBlock
     {
         var dataType = col.Kind switch
         {
-            ColumnKind.Number or ColumnKind.Percentage or ColumnKind.GB or ColumnKind.MB => " data-type=\"number\"",
+            ColumnKind.Number or ColumnKind.Percentage or ColumnKind.GB or ColumnKind.MB or ColumnKind.HealthScore or ColumnKind.ScoreBadge => " data-type=\"number\"",
             ColumnKind.DateTime or ColumnKind.DateOnly => " data-type=\"date\"",
             _ => "",
         };
@@ -108,6 +108,28 @@ internal sealed class TableBlock<T> : IBlock
             return $"<td{classAttr}><span class=\"health health-{level}\">{score:F0}</span></td>";
         }
 
+        if (col.Kind == ColumnKind.StatusBadge)
+        {
+            var statusText = (value as string ?? "").Trim();
+            return statusText switch
+            {
+                "PASS" => $"<td{classAttr}><span class=\"status status-pass\" title=\"PASS\">✓</span></td>",
+                "FAIL" => $"<td{classAttr}><span class=\"status status-fail\" title=\"FAIL\">✗</span></td>",
+                "N/A" => $"<td{classAttr}><span class=\"status status-na\" title=\"N/A\">—</span></td>",
+                "PARTIAL" => $"<td{classAttr}><span class=\"status status-partial\" title=\"PARTIAL\">◐</span></td>",
+                _ => $"<td{classAttr}>{HtmlEncoder.Text(statusText)}</td>",
+            };
+        }
+
+        if (col.Kind == ColumnKind.ScoreBadge)
+        {
+            if (value is null) { return $"<td{classAttr}><span class=\"health health-na\">—</span></td>"; }
+            var score = Convert.ToDouble(value, CultureInfo.InvariantCulture);
+            var percent = score <= 1 ? score * 100 : score;
+            var level = percent >= 80 ? "good" : percent >= 60 ? "warn" : "crit";
+            return $"<td{classAttr}><span class=\"health health-{level}\">{percent:F0}%</span></td>";
+        }
+
         var text = HtmlEncoder.Text(FormatCell(value, col.Kind));
 
         if (ColumnLinks != null
@@ -129,6 +151,8 @@ internal sealed class TableBlock<T> : IBlock
             ColumnKind.Wrap => " class=\"wrap\"",
             ColumnKind.DateTime or ColumnKind.DateOnly => " class=\"date\"",
             ColumnKind.HealthScore => " class=\"health-cell\"",
+            ColumnKind.StatusBadge => " class=\"status-cell\"",
+            ColumnKind.ScoreBadge => " class=\"health-cell\"",
             _ => "",
         };
 

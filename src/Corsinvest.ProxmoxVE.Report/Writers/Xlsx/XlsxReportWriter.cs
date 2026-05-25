@@ -55,6 +55,7 @@ internal sealed partial class XlsxReportWriter : IReportWriter
         var sheet = new SheetWriter(ws, Links);
 
         if (LinkKey.ForSection(id.Key) is { } sectionKey) { Links[sectionKey] = safeName; }
+        if (id is SectionId.Compliance cp) { Links[LinkKey.CompliancePack(cp.PackId)] = safeName; }
 
         return new XlsxSectionWriter(sheet);
     }
@@ -137,6 +138,8 @@ internal sealed partial class XlsxReportWriter : IReportWriter
         PlaceExact("Cluster Pools");
         PlaceExact("Cluster Log");
         PlaceExact("Cluster Tasks");
+        PlaceExact("Compliance");
+        Place(_workbook.Worksheets.Where(a => a.Name.StartsWith("Compliance ", StringComparison.Ordinal)).OrderBy(w => w.Name));
         PlaceByPrefix("Node");
         PlaceVmPrefix("VM");
         PlaceVmPrefix("CT");
