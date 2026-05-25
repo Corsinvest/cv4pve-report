@@ -16,6 +16,5 @@
 - [ ] **Copy-to-clipboard button on dense config cells** — long Proxmox config strings (e.g. `virtio=BC:24:11:…,bridge=vmbr2,queues=4`) get a small 📋 button beside them.
 - [ ] **Section anchor links** — show a `#` icon next to every `<h2>` so a specific in-page section can be linked directly via URL fragment.
 - [ ] **Per-table CSV export** — alongside the existing "export standalone HTML" button, offer a "download this table as CSV" action.
-- [ ] **Snapshot compare mode** *(idea)* — given two report zips, produce a visual diff page showing what changed (added/removed/changed VMs, storage usage drift, new ACL rules, …). Complex but the most valuable use of stable file paths.
 
 
