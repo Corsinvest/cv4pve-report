@@ -62,14 +62,6 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
             _ => _resources.Where(a => a.ResourceType == type),
         };
 
-    private string? GetSheetName(ClusterResourceType type, params string[] values)
-        => _writer.Links.TryGetValue(SheetLinkKey(type, values), out var name)
-            ? name
-            : null;
-
-    internal static string SheetLinkKey(ClusterResourceType type, params string[] values)
-        => $"{type.ToString().ToLowerInvariant()}:{values.JoinAsString(":")}";
-
     private async Task LoadResourcesAsync()
     {
         _resources = [.. await client.GetResourcesAsync(ClusterResourceType.All)];
@@ -123,11 +115,11 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
             switch (item.ResourceType)
             {
                 case ClusterResourceType.Node:
-                    _writer.Links[SheetLinkKey(ClusterResourceType.Node, item.Node)] = $"Node {item.Node}";
+                    _writer.Links[LinkKey.Node(item.Node)] = $"Node {item.Node}";
                     break;
 
                 case ClusterResourceType.Vm:
-                    _writer.Links[SheetLinkKey(ClusterResourceType.Vm, item.VmId.ToString())] = $"{VmTypeLabel(item.VmType)} {item.VmId}";
+                    _writer.Links[LinkKey.Vm(item.VmId)] = $"{VmTypeLabel(item.VmType)} {item.VmId}";
                     break;
             }
         }
@@ -228,11 +220,6 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
 
     internal static string VmTypeLabel(VmType type)
         => type == VmType.Qemu
-            ? "VM"
-            : "CT";
-
-    internal static string VmTypeLabel(string? type)
-        => string.Equals(type, "qemu", StringComparison.OrdinalIgnoreCase)
             ? "VM"
             : "CT";
 

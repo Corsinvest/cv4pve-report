@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
-using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Report.Writers;
 
 namespace Corsinvest.ProxmoxVE.Report;
@@ -16,7 +15,7 @@ public partial class ReportEngine
 
         foreach (var a in filtered)
         {
-            _writer.Links[SheetLinkKey(ClusterResourceType.Storage, StorageNode(a), a.Storage)] = "Storages";
+            _writer.Links[LinkKey.Storage(StorageNode(a), a.Storage)] = "Storages";
         }
 
         using var sw = _writer.AddSection("Storages");
