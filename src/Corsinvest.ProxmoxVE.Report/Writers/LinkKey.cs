@@ -27,6 +27,10 @@ internal static class LinkKey
     // Global section pages — each maps 1:1 to a section name. Writers auto-register
     // them in AddSection via ForSection(name).
     public const string Cluster = "section:cluster";
+    public const string ClusterAccess = "section:cluster-access";
+    public const string ClusterSdn = "section:cluster-sdn";
+    public const string ClusterHa = "section:cluster-ha";
+    public const string ClusterPools = "section:cluster-pools";
     public const string ClusterLog = "section:cluster-log";
     public const string ClusterTasks = "section:cluster-tasks";
     public const string Storages = "section:storages";
@@ -52,6 +56,10 @@ internal static class LinkKey
         => sectionName switch
         {
             "Cluster" => Cluster,
+            "Cluster Access" => ClusterAccess,
+            "Cluster SDN" => ClusterSdn,
+            "Cluster HA" => ClusterHa,
+            "Cluster Pools" => ClusterPools,
             "Cluster Log" => ClusterLog,
             "Cluster Tasks" => ClusterTasks,
             "Storages" => Storages,

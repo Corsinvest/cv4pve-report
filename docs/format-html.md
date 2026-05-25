@@ -8,14 +8,14 @@
 
 ```
 Report_20260506_120000.zip
-├── index.html                 ← cover / home page
+├── index.html                 ← Summary (cover, filters, contents)
 ├── issues.html                ← only present when at least one collection failure was recorded
 ├── network-diagram.html       ← network topology page
 ├── network-diagram.svg        ← raw SVG (embedded by network-diagram.html)
 │
 ├── cluster.html
-├── cluster-log.html
-├── cluster-tasks.html
+│
+├── storages.html
 ├── nodes.html                 ← Nodes overview page
 ├── nodes/
 │   ├── cc01.html              ← per-node detail page
@@ -27,19 +27,26 @@ Report_20260506_120000.zip
 ├── containers.html
 ├── containers/
 │   └── 200.html
-├── storages.html
+├── network.html
 ├── storage-content.html
 ├── backups.html
 ├── disks.html
 ├── partitions.html
 ├── snapshots.html
-├── network.html
 ├── firewall.html
 ├── replication.html
+│
 ├── rrd-nodes.html
-├── rrd-storages.html
+├── rrd-storage.html
 ├── rrd-guests.html
 ├── syslog.html
+│
+├── cluster-access.html        ← Cluster admin deep-dives
+├── cluster-sdn.html
+├── cluster-ha.html
+├── cluster-pools.html
+├── cluster-log.html
+├── cluster-tasks.html
 │
 └── assets/
     ├── style.css              ← stylesheet (light + dark)
@@ -57,15 +64,15 @@ Pages appear in this order in the sidebar. Conditional pages (`if …`) are only
 
 | # | Page | Description | Condition |
 |---|------|-------------|-----------|
-| 1 | **Home** (`index.html`) | Cover with metadata, filters, hyperlinked Contents table | always |
+| 1 | **Summary** (`index.html`) | Cover with metadata, filters, hyperlinked Contents table | always |
 | 2 | **Issues** (`issues.html`) | Diagnostics for collection failures — see [Issues](#issues) below | only when failures recorded |
 | 3 | **Network Diagram** (`network-diagram.html`) | Topology SVG with embedded view | always when the SVG was generated |
-| 4 | **Cluster** (`cluster.html`) | Cluster-wide configuration and security (users, ACL, firewall options, backup jobs, HA, SDN, pools, hardware mappings) | `Cluster.Include` |
-| 5 | **Nodes** (`nodes.html` + `nodes/<name>.html`) | Node overview → per-node detail pages | always |
-| 6 | **VMs** (`vms.html` + `vms/<id>.html`) | VM overview → per-VM detail pages | always |
-| 7 | **Containers** (`containers.html` + `containers/<id>.html`) | Container overview → per-CT detail pages | always |
-| 8 | **Network** (`network.html`) | Node interfaces + VM/CT NICs (MAC, bridge, VLAN, IPs, model) | always |
-| 9 | **Storages** (`storages.html`) | Storage list with size, usage, type | always |
+| 4 | **Cluster** (`cluster.html`) | Cluster status, options, firewall options, backup jobs, replication, storages, metric servers and hardware mappings | `Cluster.Include` |
+| 5 | **Storages** (`storages.html`) | Storage list with size, usage, type | always |
+| 6 | **Nodes** (`nodes.html` + `nodes/<name>.html`) | Node overview → per-node detail pages | always |
+| 7 | **VMs** (`vms.html` + `vms/<id>.html`) | VM overview → per-VM detail pages | always |
+| 8 | **Containers** (`containers.html` + `containers/<id>.html`) | Container overview → per-CT detail pages | always |
+| 9 | **Network** (`network.html`) | Node interfaces + VM/CT NICs (MAC, bridge, VLAN, IPs, model) | always |
 | 10 | **Storage Content** (`storage-content.html`) | Storage files/images with size and VM ID links | `Storage.IncludeContent` |
 | 11 | **Backups** (`backups.html`) | Backup files across all storages | `Storage.IncludeBackups` |
 | 12 | **Disks** (`disks.html`) | Global VM/CT disk inventory | `Guest.IncludeDisks` |
@@ -74,11 +81,15 @@ Pages appear in this order in the sidebar. Conditional pages (`if …`) are only
 | 15 | **Firewall** (`firewall.html`) | Cluster + node + VM/CT firewall rules, aliases, IP sets | `Firewall.Enabled` |
 | 16 | **Replication** (`replication.html`) | Replication job status across all nodes | `Node.IncludeReplication` |
 | 17 | **RRD Nodes** (`rrd-nodes.html`) | Historical performance metrics per node | `Node.RrdData.Enabled` |
-| 18 | **RRD Storage** (`rrd-storages.html`) | Historical performance metrics per storage | `Storage.RrdData.Enabled` |
+| 18 | **RRD Storage** (`rrd-storage.html`) | Historical performance metrics per storage | `Storage.RrdData.Enabled` |
 | 19 | **RRD Guests** (`rrd-guests.html`) | Historical performance metrics per VM/CT | `Guest.RrdData.Enabled` |
 | 20 | **Syslog** (`syslog.html`) | Parsed systemd journal across all nodes | `Node.Syslog.Enabled` |
-| 21 | **Cluster Log** (`cluster-log.html`) | Cluster event log | `Cluster.Log.Enabled` |
-| 22 | **Cluster Tasks** (`cluster-tasks.html`) | Recent tasks across the cluster | `Cluster.IncludeTasks` |
+| 21 | **Cluster Access** (`cluster-access.html`) | Users, API tokens, two-factor authentication, groups, roles, ACL and domains | `Cluster.Include` |
+| 22 | **Cluster SDN** (`cluster-sdn.html`) | SDN zones, vnets, controllers, IPAMs and subnets | `Cluster.Include` |
+| 23 | **Cluster HA** (`cluster-ha.html`) | High Availability resources, groups and status | `Cluster.Include` |
+| 24 | **Cluster Pools** (`cluster-pools.html`) | Resource pools with member VMs, containers and storages | `Cluster.Include` |
+| 25 | **Cluster Log** (`cluster-log.html`) | Cluster event log | `Cluster.Log.Enabled` |
+| 26 | **Cluster Tasks** (`cluster-tasks.html`) | Recent tasks across the cluster | `Cluster.IncludeTasks` |
 
 > The contents of each page (which tables, which columns) are emitted by the engine and identical across formats — see [`docs/settings.md`](settings.md) for the toggles.
 
@@ -88,7 +99,7 @@ The sidebar groups Nodes / VMs / Containers under expandable headers, and Storag
 
 ## Issues
 
-When one or more Proxmox API calls fail during collection (a corrupt RRD file, a `500` from a node, missing permissions on a sub-resource, …), an extra `issues.html` page is emitted as the **second** sidebar link, right after Home. It also appears as the **first** row of the Contents table on the cover. On a healthy cluster the page (and the link) are absent.
+When one or more Proxmox API calls fail during collection (a corrupt RRD file, a `500` from a node, missing permissions on a sub-resource, …), an extra `issues.html` page is emitted as the **second** sidebar link, right after Summary. It also appears as the **first** row of the Contents table on the cover. On a healthy cluster the page (and the link) are absent.
 
 | Column | Content |
 |---|---|

@@ -167,7 +167,12 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
 
         var sections = new Section[]
         {
-            new("Cluster", "Cluster overview, users, roles, ACL, firewall, backup jobs", AddClusterDataAsync),
+            // Cluster overview comes first — it answers "is the cluster healthy and how is it
+            // configured at a glance" and is the most consulted page. The detail breakdowns
+            // (Access, SDN, HA, Pools, Log, Tasks) go at the end as deep-dive material.
+            new("Cluster", "Cluster overview, status, options, firewall, backup jobs, replication, storages, metric servers, mappings", AddClusterDataAsync),
+
+            // Inventory / operational sections — the day-to-day reading order.
             new("Storages", "Storage list with size, usage and type", AddStoragesDataAsync),
             new("Nodes", "Node list with hardware, subscription, DNS, kernel details", AddNodesDataAsync),
             new("VMs", "Virtual machines (QEMU) with agent info, OS name/version/kernel, bios, cpu, memory and disk details", AddVmsDataAsync),
@@ -179,10 +184,18 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
             new("Snapshots", "Global snapshot inventory across all VMs and containers", AddSnapshotsDataAsync),
             new("Firewall", "Global firewall rules, aliases and IPSets across cluster, nodes, VMs and containers", AddFirewallDataAsync),
             new("Replication", "Global replication status across all nodes: last sync, next sync, errors and duration", AddReplicationDataAsync),
+
+            // Historical / time-series data.
             new("RRD Nodes", "Historical performance data (CPU, memory, swap, disk, network) for all nodes", AddRrdNodeDataAsync),
             new("RRD Storage", "Historical performance data (size, used, usage%) for all storages", AddRrdStorageDataAsync),
             new("RRD Guests", "Historical performance data (CPU, memory, disk, network) for all VMs and containers", AddRrdGuestDataAsync),
             new("Syslog", "Systemd journal per node parsed into date, time, host, service, pid and message", AddSyslogDataAsync),
+
+            // Cluster deep-dives — grouped together as the trailing "cluster administration" block.
+            new("Cluster Access", "Users, API tokens, two-factor authentication, groups, roles, ACL, domains", AddClusterAccessDataAsync),
+            new("Cluster SDN", "SDN zones, vnets, controllers, IPAMs and subnets", AddClusterSdnDataAsync),
+            new("Cluster HA", "High Availability resources, groups and status", AddClusterHaDataAsync),
+            new("Cluster Pools", "Resource pools with member VMs, containers and storages", AddClusterPoolsDataAsync),
             new("Cluster Log", "Cluster log with user, node, service and message", AddClusterLogDataAsync),
             new("Cluster Tasks", "All recent tasks across the cluster with status, duration and node", AddClusterTasksDataAsync),
         };

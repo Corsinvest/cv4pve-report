@@ -24,12 +24,12 @@ Sheets are written in this order. Conditional sheets (`if …`) are only present
 |---|-------|-------------|-----------|
 | 1 | **Summary** | Report metadata, filters, hyperlinked table of contents | always |
 | 2 | **Issues** | Diagnostics for collection failures — see [Issues](#issues) below | only when failures recorded |
-| 3 | **Cluster** | Cluster-wide configuration and security (users, ACL, firewall options, backup jobs, HA, SDN, pools, hardware mappings) | `Cluster.Include` |
-| 4 | **Nodes** | Node overview → links to per-node detail sheets | always |
-| 5 | **VMs** | VM overview → links to per-VM detail sheets | always |
-| 6 | **Containers** | Container overview → links to per-CT detail sheets | always |
-| 7 | **Network** | Node interfaces + VM/CT NICs (MAC, bridge, VLAN, IPs, model) | always |
-| 8 | **Storages** | Storage list with size, usage, type | always |
+| 3 | **Cluster** | Cluster status, options, firewall options, backup jobs, replication, storages, metric servers and hardware mappings | `Cluster.Include` |
+| 4 | **Storages** | Storage list with size, usage, type | always |
+| 5 | **Nodes** | Node overview → links to per-node detail sheets | always |
+| 6 | **VMs** | VM overview → links to per-VM detail sheets | always |
+| 7 | **Containers** | Container overview → links to per-CT detail sheets | always |
+| 8 | **Network** | Node interfaces + VM/CT NICs (MAC, bridge, VLAN, IPs, model) | always |
 | 9 | **Storage Content** | Storage files/images with size and VM ID links | `Storage.IncludeContent` |
 | 10 | **Backups** | Backup files across all storages | `Storage.IncludeBackups` |
 | 11 | **Disks** | Global VM/CT disk inventory | `Guest.IncludeDisks` |
@@ -41,8 +41,12 @@ Sheets are written in this order. Conditional sheets (`if …`) are only present
 | 17 | **RRD Storage** | Historical performance metrics per storage | `Storage.RrdData.Enabled` |
 | 18 | **RRD Guests** | Historical performance metrics per VM/CT | `Guest.RrdData.Enabled` |
 | 19 | **Syslog** | Parsed systemd journal across all nodes | `Node.Syslog.Enabled` |
-| 20 | **Cluster Log** | Cluster event log | `Cluster.Log.Enabled` |
-| 21 | **Cluster Tasks** | Recent tasks across the cluster | `Cluster.IncludeTasks` |
+| 20 | **Cluster Access** | Users, API tokens, two-factor authentication, groups, roles, ACL and domains | `Cluster.Include` |
+| 21 | **Cluster SDN** | SDN zones, vnets, controllers, IPAMs and subnets | `Cluster.Include` |
+| 22 | **Cluster HA** | High Availability resources, groups and status | `Cluster.Include` |
+| 23 | **Cluster Pools** | Resource pools with member VMs, containers and storages | `Cluster.Include` |
+| 24 | **Cluster Log** | Cluster event log | `Cluster.Log.Enabled` |
+| 25 | **Cluster Tasks** | Recent tasks across the cluster | `Cluster.IncludeTasks` |
 | … | **Node `<name>`** | Per-node detail (services, network, disks, SMART, ZFS, APT, certificates, tasks) | `Node.Detail.Enabled` |
 | … | **VM `<id>`** | Per-VM detail (agent OS info, network, disks, firewall logs, tasks) | `Guest.Detail.Enabled` |
 | … | **CT `<id>`** | Per-CT detail (same as VM) | `Guest.Detail.Enabled` |

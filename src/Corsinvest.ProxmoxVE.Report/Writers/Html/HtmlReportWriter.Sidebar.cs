@@ -43,7 +43,7 @@ internal sealed partial class HtmlReportWriter
         sb.AppendLine("      </div>");
         sb.AppendLine("""      <input type="search" id="sidebar-filter" placeholder="Find section…" aria-label="Filter sections">""");
         sb.AppendLine("""      <nav id="sidebar-nav">""");
-        sb.AppendLine("""        <a href="index.html" class="overview">Home</a>""");
+        sb.AppendLine("""        <a href="index.html" class="overview">Summary</a>""");
 
         if (sectionNames.Contains("Issues"))
         {
@@ -55,7 +55,21 @@ internal sealed partial class HtmlReportWriter
             sb.AppendLine("""        <a href="network-diagram.html" class="overview">Network Diagram</a>""");
         }
 
-        AppendGroup(sb, sectionNames, displayNames, "Cluster", ["Cluster Log", "Cluster Tasks"]);
+        // Cluster — top-level group with "Overview" pointing at cluster.html and the
+        // four deep-dive pages plus log/tasks as children. The sidebar is always
+        // visible so grouping wins over the "physical" Cluster-admin-at-the-bottom
+        // ordering used by Excel sheet tabs and the JSON file list.
+        var clusterChildLabels = new Dictionary<string, string>
+        {
+            ["Cluster Access"] = "Access",
+            ["Cluster SDN"] = "SDN",
+            ["Cluster HA"] = "HA",
+            ["Cluster Pools"] = "Pools",
+        };
+        AppendGroup(sb, sectionNames, displayNames, "Cluster",
+                    ["Cluster Access", "Cluster SDN", "Cluster HA", "Cluster Pools", "Cluster Log", "Cluster Tasks"],
+                    childLabels: clusterChildLabels);
+
         AppendLazyGroup(sb, sectionNames, "Nodes", [.. sectionNames.Where(n => n.StartsWith("Node ")).Order()]);
         AppendLazyGroup(sb, sectionNames, "VMs", [.. sectionNames.Where(n => n.StartsWith("VM ")).OrderBy(VmIdSortKey)]);
         AppendLazyGroup(sb, sectionNames, "Containers", [.. sectionNames.Where(n => n.StartsWith("CT ")).OrderBy(VmIdSortKey)]);
@@ -80,7 +94,8 @@ internal sealed partial class HtmlReportWriter
                                     Dictionary<string, string> displayNames,
                                     string parent,
                                     IReadOnlyList<string> children,
-                                    string? parentLabel = null)
+                                    string? parentLabel = null,
+                                    IReadOnlyDictionary<string, string>? childLabels = null)
     {
         if (!known.Contains(parent)) { return; }
 
@@ -100,9 +115,11 @@ internal sealed partial class HtmlReportWriter
         sb.AppendLine($"""          <a href="{HtmlEncoder.PageHref(parent)}">Overview</a>""");
         foreach (var child in visibleChildren)
         {
-            var text = displayNames.TryGetValue(child, out var dn)
-                        ? dn
-                        : child;
+            var text = childLabels is not null && childLabels.TryGetValue(child, out var shortLabel)
+                        ? shortLabel
+                        : displayNames.TryGetValue(child, out var dn)
+                            ? dn
+                            : child;
 
             sb.AppendLine($"""          <a href="{HtmlEncoder.PageHref(child)}">{HtmlEncoder.Text(text)}</a>""");
         }

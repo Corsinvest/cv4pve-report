@@ -4,16 +4,21 @@
 
 ## [Unreleased]
 
+### What's new
+
+- **Cluster split into five sheets / pages / files.** On large clusters the single "Cluster" tab had grown past 4500 mixed-schema rows (status, users, ACL, HA, SDN, pools, mappings — all together). It is now broken into a main **Cluster** (status, options, firewall options, backup jobs, replication, storages, metric servers, mappings) plus four sibling deep-dives: **Cluster Access**, **Cluster SDN**, **Cluster HA**, **Cluster Pools**. JSON gets matching `cluster-access.json` / `cluster-sdn.json` / `cluster-ha.json` / `cluster-pools.json`; HTML keeps a top-level `Cluster` link and groups the deep-dives under a "Cluster Admin" panel in the sidebar. Thanks @shaundeeb for the request (#42).
+- **Section order reworked.** Reading order is now: at-a-glance **Cluster** first, then day-to-day **inventory** (Storages, Nodes, VMs, Containers, Network, …), then **time-series** (RRD, Syslog), and finally the **cluster admin** deep-dives (Access, SDN, HA, Pools, Log, Tasks). Applies to Excel sheets, HTML sidebar, JSON file ordering, and the Summary contents table.
+- **HTML cover renamed `Home` → `Summary`** so it matches the Excel `Summary` sheet. The file is still `index.html`, no bookmark breaks.
+
 ### Breaking changes (JSON only)
 
-- **JSON now reports raw byte counts and 0–1 fractions instead of pre-rounded GB/MB and percentages.** Excel and HTML output is unchanged — they still render `16.50 GB`, `0.02 MB`, `45.00 %`. Only JSON consumers (jq / Python / Power BI / snapshot diffs) see different keys and values: `"memorySize": 17179869184` instead of `"memorySizeGB": 16.5`, `"cpuUsage": 0.45` instead of `"cpuUsagePct": 0.45`, and so on. Two reasons: snapshot diffs are now lossless (no more "16.50 GB looks unchanged" when the underlying byte count moved), and the keys no longer carry rendering hints (`GB` / `MB` / `Pct`) that belong to Excel/HTML. Applies to every table and to the `info` block of detail files. `metadata.json` now reports `"schemaVersion": 2`. Closes #45.
+- **JSON values are now raw — bytes for sizes / IO, fractions `0–1` for percentages — and keys lose the unit suffix.** Excel and HTML output is unchanged (still `16.50 GB`, `0.02 MB`, `45.00 %`). Only JSON consumers see new keys/values: `"memorySize": 17179869184` instead of `"memorySizeGB": 16.5`, `"cpuUsage": 0.45` instead of `"cpuUsagePct": 0.45`. The change makes snapshot diffs lossless (a few-MB drift used to round to the same `16.5` GB; now the byte count tells you the truth) and keeps the JSON keys free of formatting hints. Applies to every table and to the `info` block of detail files. `metadata.json` now reports `"schemaVersion": 2`. Closes #45.
 
-### HTML fixes
+### Fixes
 
-- **Sidebar: Nodes / VMs / Containers entries are now properly indented and styled.** The "Overview" sub-entry was rendering bold and flush-left (instead of plain and indented like under Cluster/Storage), and the per-VM / per-node items were not indented at all. Both fixed.
-- **Detail pages: side-by-side "info / config" blocks now format values correctly.** Memory was showing up as a 17-digit byte number, percentages were missing the `%` sign — both side-effects of how we restructured the data pipeline. They render the same as the standalone info table now (`16.50 GB`, `45.00%`).
-- **Detail pages: the first block is now headed "Info" instead of "1007 — DomainControllerCV2".** The page's own `<h1>` already shows the resource id and name, so the same string in the sub-heading was duplicate noise and looked unbalanced next to its sibling "Config" heading. Excel keeps the descriptive title.
-- **Excel: labels like `vCPUs` and `Root FS GB` are no longer split mid-acronym** ("v C P Us", "Root Fs GB"). The internal heuristic now leaves human-authored labels alone.
+- **RRD Nodes: "Io Wait" column is no longer always `0`.** The value coming from Proxmox is a fraction `0–1` (typically tiny — `0.0002` = 0.02%), and the column wasn't being treated as a percentage, so the formatter rounded it to zero on every row. It now displays the real percentage. Thanks for the report (#43).
+- **HTML format guide listed `rrd-storages.html` (plural)** — the file is and always was `rrd-storage.html`.
+- **HTML cover page: the export button is now aligned with the title divider line.**
 
 ---
 

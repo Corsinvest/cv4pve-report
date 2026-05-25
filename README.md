@@ -253,7 +253,7 @@ cv4pve-report --host=YOUR_HOST --api-token=user@realm!token=uuid export --full  
 
 What's collected:
 
-- **Cluster** — users, API tokens, TFA, groups, roles, ACL, firewall options, domains, backup jobs, HA, SDN, pools
+- **Cluster** — split across five pages/sheets/files: main (status, options, firewall options, backup jobs, replication, storages, metric servers, mappings) + **Cluster Access** (users, tokens, TFA, groups, roles, ACL, domains) + **Cluster SDN** (zones, vnets, controllers, IPAMs, subnets) + **Cluster HA** (resources, groups, status) + **Cluster Pools** (members)
 - **Nodes** — services, network, disks, SMART, ZFS, APT, SSL certificates, replication, syslog, firewall logs, tasks
 - **VMs/CTs** — config, network, disks, snapshots, firewall logs, tasks, QEMU agent info
 - **Global sections** — Firewall (rules/aliases/ipsets), RRD Nodes/Storage/Guests, Syslog, Cluster Log, Cluster Tasks, Replication, Network, Disks, Partitions, Snapshots, Storage Content, Backups

@@ -13,8 +13,8 @@ Report_20260506_120000.zip
 ├── network-diagram.svg        ← network topology diagram (raw SVG)
 │
 ├── cluster.json
-├── cluster-log.json
-├── cluster-tasks.json
+│
+├── storages.json
 ├── nodes.json                 ← Nodes overview (compact list)
 ├── nodes/
 │   ├── cc01.json              ← per-node detail
@@ -26,19 +26,26 @@ Report_20260506_120000.zip
 ├── containers.json
 ├── containers/
 │   └── 200.json
-├── storages.json
+├── network.json
 ├── storage-content.json
 ├── backups.json
 ├── disks.json
 ├── partitions.json
 ├── snapshots.json
-├── network.json
 ├── firewall.json
 ├── replication.json
+│
 ├── rrd-nodes.json
 ├── rrd-storage.json
 ├── rrd-guests.json
-└── syslog.json
+├── syslog.json
+│
+├── cluster-access.json        ← Cluster admin deep-dives
+├── cluster-sdn.json
+├── cluster-ha.json
+├── cluster-pools.json
+├── cluster-log.json
+└── cluster-tasks.json
 ```
 
 ---
@@ -51,12 +58,12 @@ Files are written in this order. Conditional files (`if …`) are only present w
 |---|------|-------------|-----------|
 | 1 | **metadata.json** | Report-wide info: schema version, timestamp, filters, per-section generation log | always |
 | 2 | **issues.json** | Diagnostics for collection failures — see [Issues](#issues) below | only when failures recorded |
-| 3 | **cluster.json** | Cluster-wide configuration and security (users, ACL, firewall options, backup jobs, HA, SDN, pools, hardware mappings) | `Cluster.Include` |
-| 4 | **nodes.json** + **nodes/`<name>`.json** | Node overview list + per-node detail file | always |
-| 5 | **vms.json** + **vms/`<id>`.json** | VM overview list + per-VM detail file | always |
-| 6 | **containers.json** + **containers/`<id>`.json** | Container overview list + per-CT detail file | always |
-| 7 | **network.json** | Node interfaces + VM/CT NICs (MAC, bridge, VLAN, IPs, model) | always |
-| 8 | **storages.json** | Storage list with size, usage, type | always |
+| 3 | **cluster.json** | Cluster status, options, firewall options, backup jobs, replication, storages, metric servers and hardware mappings | `Cluster.Include` |
+| 4 | **storages.json** | Storage list with size, usage, type | always |
+| 5 | **nodes.json** + **nodes/`<name>`.json** | Node overview list + per-node detail file | always |
+| 6 | **vms.json** + **vms/`<id>`.json** | VM overview list + per-VM detail file | always |
+| 7 | **containers.json** + **containers/`<id>`.json** | Container overview list + per-CT detail file | always |
+| 8 | **network.json** | Node interfaces + VM/CT NICs (MAC, bridge, VLAN, IPs, model) | always |
 | 9 | **storage-content.json** | Storage files/images with size and VM ID links | `Storage.IncludeContent` |
 | 10 | **backups.json** | Backup files across all storages | `Storage.IncludeBackups` |
 | 11 | **disks.json** | Global VM/CT disk inventory | `Guest.IncludeDisks` |
@@ -68,8 +75,12 @@ Files are written in this order. Conditional files (`if …`) are only present w
 | 17 | **rrd-storage.json** | Historical performance metrics per storage | `Storage.RrdData.Enabled` |
 | 18 | **rrd-guests.json** | Historical performance metrics per VM/CT | `Guest.RrdData.Enabled` |
 | 19 | **syslog.json** | Parsed systemd journal across all nodes | `Node.Syslog.Enabled` |
-| 20 | **cluster-log.json** | Cluster event log | `Cluster.Log.Enabled` |
-| 21 | **cluster-tasks.json** | Recent tasks across the cluster | `Cluster.IncludeTasks` |
+| 20 | **cluster-access.json** | Users, API tokens, two-factor authentication, groups, roles, ACL and domains | `Cluster.Include` |
+| 21 | **cluster-sdn.json** | SDN zones, vnets, controllers, IPAMs and subnets | `Cluster.Include` |
+| 22 | **cluster-ha.json** | High Availability resources, groups and status | `Cluster.Include` |
+| 23 | **cluster-pools.json** | Resource pools with member VMs, containers and storages | `Cluster.Include` |
+| 24 | **cluster-log.json** | Cluster event log | `Cluster.Log.Enabled` |
+| 25 | **cluster-tasks.json** | Recent tasks across the cluster | `Cluster.IncludeTasks` |
 
 > The contents of each file (which keys, which values) are emitted by the engine and identical across formats — see [`docs/settings.md`](settings.md) for the toggles.
 
