@@ -55,10 +55,8 @@ internal sealed partial class HtmlReportWriter
             sb.AppendLine("""        <a href="network-diagram.html" class="overview">Network Diagram</a>""");
         }
 
-        // Cluster — top-level group with "Overview" pointing at cluster.html and the
-        // four deep-dive pages plus log/tasks as children. The sidebar is always
-        // visible so grouping wins over the "physical" Cluster-admin-at-the-bottom
-        // ordering used by Excel sheet tabs and the JSON file list.
+        // Cluster groups all the deep-dives together — the always-visible sidebar
+        // makes grouping nicer than the trailing-block order used by XLSX / JSON.
         var clusterChildLabels = new Dictionary<string, string>
         {
             ["Cluster Access"] = "Access",

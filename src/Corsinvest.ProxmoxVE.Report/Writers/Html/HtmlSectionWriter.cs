@@ -66,9 +66,8 @@ internal sealed class HtmlSectionWriter(HtmlReportWriter parent, string name, st
     {
         var sb = new StringBuilder();
 
-        // Page-level Table of Contents — mirrors the in-sheet "Index" used in Excel.
-        // Only emit it when there are at least 2 anchored blocks; on single-section
-        // pages (e.g. simple lists) the TOC would be redundant.
+        // Page-level TOC (mirrors the in-sheet "Index" used in Excel) — only useful
+        // when the page has 2+ anchored blocks, otherwise redundant with the <h1>.
         var anchored = _blocks.Where(b => b.AnchorId != null && !string.IsNullOrEmpty(b.Title))
                               .ToList();
 

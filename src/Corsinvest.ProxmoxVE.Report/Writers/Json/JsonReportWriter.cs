@@ -123,10 +123,8 @@ internal sealed partial class JsonReportWriter(ReportInfo info) : IReportWriter
             switch (block)
             {
                 case JsonBlock.KeyValue kv:
-                    // The first KeyValue of a multi-block section is the page header
-                    // (display label = VM id+name, node hostname, "Cluster", …). Its
-                    // title is unstable and duplicates the file path; expose it under
-                    // the fixed "info" key so consumers can navigate predictably.
+                    // First block is the page header (unstable, name-derived title) → expose
+                    // under the fixed "info" key for predictable consumer navigation.
                     result[i == 0
                             ? "info"
                             : JsonKey.FromDisplay(kv.Title)] = kv.Items;

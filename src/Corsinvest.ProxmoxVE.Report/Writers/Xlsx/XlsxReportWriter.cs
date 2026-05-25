@@ -45,8 +45,7 @@ internal sealed partial class XlsxReportWriter : IReportWriter
         };
         var safeName = SafeSheetName(sheetName);
 
-        // Update any sheetLink that still points to the logical name to the
-        // actual safe name (mirrors the existing behaviour in ReportEngine).
+        // Pre-existing Links pointing at the logical name follow the truncated safe name.
         foreach (var key in Links.Where(kv => kv.Value == id.Key).Select(kv => kv.Key).ToList())
         {
             Links[key] = safeName;
@@ -55,8 +54,6 @@ internal sealed partial class XlsxReportWriter : IReportWriter
         var ws = _workbook.Worksheets.Add(safeName);
         var sheet = new SheetWriter(ws, Links);
 
-        // Auto-register the canonical section:* key so tables in other sheets
-        // can hyperlink to this page via LinkKey.ForSection(name).
         if (LinkKey.ForSection(id.Key) is { } sectionKey) { Links[sectionKey] = safeName; }
 
         return new XlsxSectionWriter(sheet);
@@ -81,7 +78,6 @@ internal sealed partial class XlsxReportWriter : IReportWriter
 
     private string SafeSheetName(string candidate)
     {
-        const int MaxSheetNameLength = 31;
         var name = candidate.Length <= MaxSheetNameLength ? candidate : candidate[..MaxSheetNameLength];
         if (!_usedSheetNames.TryGetValue(name, out var count))
         {

@@ -22,14 +22,12 @@ internal static partial class ColumnConvention
     /// <summary>Name-only parsing — no CLR type, plain-text values fall through to <see cref="ColumnKind.Text"/>.</summary>
     public static (ColumnKind Kind, string DisplayName) Parse(string name)
     {
-        // Display labels already in human form (with spaces, e.g. "Memory GB", "CPU Usage %",
-        // "Root FS GB") are returned as-is so authored capitalisation/acronyms are preserved.
+        // Human-authored labels ("Memory GB", "CPU Usage %") keep their casing verbatim;
+        // PascalCase identifiers get the regex word-split.
         if (name.EndsWith(" %", StringComparison.Ordinal)) { return (ColumnKind.Percentage, name); }
         if (name.EndsWith(" GB", StringComparison.Ordinal)) { return (ColumnKind.GB, name); }
         if (name.EndsWith(" MB", StringComparison.Ordinal)) { return (ColumnKind.MB, name); }
 
-        // PascalCase property names / anonymous-type fields get the regex word-split and the
-        // appropriate display suffix appended.
         if (EndsWith(name, "Pct")) { return (ColumnKind.Percentage, PascalCaseToWords(name[..^3]) + " %"); }
         if (EndsWith(name, "GB")) { return (ColumnKind.GB, PascalCaseToWords(name)); }
         if (EndsWith(name, "MB")) { return (ColumnKind.MB, PascalCaseToWords(name)); }
@@ -37,10 +35,7 @@ internal static partial class ColumnConvention
         if (EndsWith(name, "Flag")) { return (ColumnKind.Flag, PascalCaseToWords(name[..^4])); }
         if (EndsWith(name, "Date")) { return (ColumnKind.DateOnly, PascalCaseToWords(name)); }
 
-        // Free-form display labels — those containing whitespace ("VM ID", "On Boot")
-        // or starting with a lowercase letter ("vCPUs", "vSomething") — are kept
-        // verbatim. Only single-word PascalCase identifiers go through the regex
-        // word-split, so "OsType" becomes "Os Type" but "OS Type" / "vCPUs" stay.
+        // camelCase ("vCPUs") and labels with spaces ("VM ID") are display labels too.
         var isDisplayLabel = name.Contains(' ') || (name.Length > 0 && char.IsLower(name[0]));
         return (ColumnKind.Text, isDisplayLabel ? name : PascalCaseToWords(name));
     }

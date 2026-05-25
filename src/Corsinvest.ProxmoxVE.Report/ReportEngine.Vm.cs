@@ -123,8 +123,6 @@ public partial class ReportEngine
                 }
                 catch (Exception ex)
                 {
-                    // Include short exception detail so issues like timeouts, auth errors, or
-                    // agent-returned errors can be diagnosed without re-running with a debugger.
                     var msg = ex.InnerException?.Message ?? ex.Message;
                     _issues.Warning("VM Detail", msg, LinkKey.Vm(item.VmId));
                     hostname = $"Agent not running! ({msg})";

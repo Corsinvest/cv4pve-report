@@ -40,7 +40,7 @@ Report_20260506_120000.zip
 ├── rrd-guests.json
 ├── syslog.json
 │
-├── cluster-access.json        ← Cluster admin deep-dives
+├── cluster-access.json        ← Cluster deep-dives
 ├── cluster-sdn.json
 ├── cluster-ha.json
 ├── cluster-pools.json
@@ -148,12 +148,14 @@ CI snapshots can fail/warn the build by checking `jq '.issues | length' issues.j
   "schemaVersion": 2,
   "generatedAt": "2026-05-08T17:28:51.8677072Z",
   "applicationName": "cv4pve-report",
-  "applicationVersion": "2.2.0",
+  "applicationVersion": "2.4.0",
   "applicationUrl": "https://github.com/Corsinvest/cv4pve-report",
   "filters": {
     "nodes": "@all",
     "guests": "@all",
-    "guestRrd": { "timeFrame": "Day", "consolidation": "Average" }
+    "nodeRrd":    { "timeFrame": "Day", "consolidation": "Average" },
+    "guestRrd":   { "timeFrame": "Day", "consolidation": "Average" },
+    "storageRrd": { "timeFrame": "Day", "consolidation": "Average" }
   },
   "sections": [
     { "name": "Cluster", "count": 1, "durationSeconds": 0.18 },

@@ -14,11 +14,7 @@ internal sealed class KeyValueRowBlock(IReadOnlyList<(string Title, IDictionary<
 
     public void Render(StringBuilder sb, Dictionary<string, string> links)
     {
-        // First block is the page-header summary (display label = VM id + name, container
-        // id + hostname, …); render it under the fixed "Info" heading so the row stays
-        // visually balanced against the sibling "Config" / "Agent OS Info" blocks — and
-        // because the same info already appears in the page's <h1>. Mirrors the
-        // i == 0 → "info" rule the JSON writer applies in SectionPayload.
+        // First block → fixed "Info" heading (mirrors the JSON writer's i == 0 → "info" rule).
         var inner = string.Concat(blocks.Select((b, i) => RenderBlock(i == 0 ? "Info" : b.Title, b.Items)));
 
         sb.Append($"""
@@ -52,7 +48,6 @@ internal sealed class KeyValueRowBlock(IReadOnlyList<(string Title, IDictionary<
             """;
     }
 
-    // Same formatting rules as KeyValueBlock.FormatKeyValue.
     private static string FormatKeyValue(object? value, ColumnKind kind) => value switch
     {
         double dbl when kind == ColumnKind.Percentage => (dbl * 100).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + "%",
