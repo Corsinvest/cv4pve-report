@@ -71,10 +71,31 @@ RVTools is a pure inventory tool for VMware — it exports infrastructure data t
 | Syslog (all nodes, parsed into columns) | | ✓ | |
 | Cluster log & cluster tasks | | ✓ | |
 | Resilient collection (skip & report broken endpoints) | | ✓ | |
+| **[Health Score](#health-score) per Node / VM / CT / Storage** | | ✓ | |
 | Health checks & diagnostics | | | ✓ |
 
 > **cv4pve-report** shows you *what* is in your infrastructure.
 > **[cv4pve-diag](https://github.com/Corsinvest/cv4pve-diag)** tells you *what is wrong* with it.
+
+---
+
+## Features
+
+What's collected:
+
+- **Cluster** — split across five pages/sheets/files: main (status, options, firewall options, backup jobs, replication, storages, metric servers, mappings) + **Cluster Access** (users, tokens, TFA, groups, roles, ACL, domains) + **Cluster SDN** (zones, vnets, controllers, IPAMs, subnets) + **Cluster HA** (resources, groups, status) + **Cluster Pools** (members)
+- **Nodes** — services, network, disks, SMART, ZFS, APT, SSL certificates, replication, syslog, firewall logs, tasks
+- **VMs/CTs** — config, network, disks, snapshots, firewall logs, tasks, QEMU agent info
+- **Global sections** — Firewall (rules/aliases/ipsets), RRD Nodes/Storage/Guests, Syslog, Cluster Log, Cluster Tasks, Replication, Network, Disks, Partitions, Snapshots, Storage Content, Backups
+- **Issues** — diagnostic page that aggregates any per-resource failure encountered while collecting data; appears only when there is at least one issue and is linked from the Summary/cover and the sidebar so it's the first thing you see when something didn't work
+- **Network topology** — auto-generated SVG diagram of physical NICs, bonds, bridges, gateway VMs and network-backed storage — [guide](docs/network-diagram.md)
+
+How you can shape it:
+
+- **Three profiles** — `--fast` for a quick scan on large clusters, default Standard for daily reporting, `--full` for audits and capacity planning
+- **`settings.json`** — bring your own config to enable/disable exactly the sections you want — [see Settings Reference](#settings-reference)
+- **Flexible target selection** — `@all`, pools, tags, nodes, ID ranges, wildcards, exclusions — [see VM/CT Selection Patterns](#vmct-selection-patterns)
+- **API token** support, cross-platform (Windows, Linux, macOS), no root access required
 
 ---
 
@@ -106,81 +127,28 @@ With `--output` / `-o` you choose the output path. **All formats now produce a s
 
 ## Output Formats
 
-All three formats expose **the same data** using the same logical layout — one section per topic (Cluster, Nodes, VMs, Containers, Storages, …) plus per-resource detail (one per node, VM and container). Only the rendering differs: a sheet per section in Excel, a page per section in HTML, a file per section in JSON. Pick the one that matches what you need to do with the report — each format has its own full reference under [`docs/`](docs/).
+All three formats expose **the same data** using the same logical layout — one section per topic (Cluster, Nodes, VMs, Containers, Storages, …) plus per-resource detail. Only the rendering differs. Each format produces a single `.zip` (extract to access the contents); the network topology SVG is bundled inside every zip ([diagram guide](docs/network-diagram.md)).
 
-### Excel output `(--format Xlsx, default)`
-
-```
-Report_20260506_120000.zip    ← contains report.xlsx + network-diagram.svg
-```
-
-For analysts and capacity planning. Extract the zip and open `report.xlsx` in Excel, LibreOffice Calc or any spreadsheet tool.
-
-- **One workbook**, one sheet per section (Cluster, Nodes, VMs, Containers, Storages, …) plus per-node and per-VM detail sheets at the end
-- **Hyperlinks everywhere** — click a node, VM or storage in any list to jump straight to its detail sheet; every detail sheet has a `← Back` link to its overview
-- **Per-sheet index** — every detail sheet starts with a clickable index of its tables so you can jump to the section you need
-- **Native filtering / sorting / pivot** — every table is a real Excel table; use built-in autofilter, sort, slicer or pivot the data without exporting elsewhere
-- **Network topology SVG** — bundled inside the zip as `network-diagram.svg`; open in any browser to see the full network map (NICs → bonds → bridges → VMs → storages) — [guide](docs/network-diagram.md)
-
-> Full reference: **[Excel format guide](docs/format-xlsx.md)** — sheet order, per-sheet contents, hyperlinks and Excel-specific behaviour.
-
-### HTML output `(--format Html)`
-
-```
-Report_20260506_120000.zip    ← static website (extract and open index.html)
-```
-
-For sharing on a wiki, ticket system or with non-technical stakeholders. Extract the zip and open `index.html` in any browser — works fully offline, no server needed.
-
-- **Static website** — `index.html` plus one page per section, all linked together; navigate with the sidebar like any wiki
-- **Search & sort** — global sidebar filter (find any node, VM or container by id or name), per-table search and click-to-sort headers on every column
-- **Light & dark theme** — toggle in the top corner; auto-follows your OS preference
-- **Share a single page** — every node/VM/container detail page has an Export button (top right) that bundles the page as a stand-alone `.html` file (CSS and table interactions inline) — paste it into a ticket or attach it to an email without sending the whole report
-- **Built for large clusters** — sidebar groups (Nodes, VMs, Containers) load their entries on demand, so the report stays fast and the zip stays small even with thousands of guests; tested up to 2700+ VMs
-- **Print-friendly** — dedicated print stylesheet hides chrome and lays tables out for paper / PDF export from the browser
-- **Network topology SVG** — bundled inside the zip and accessible from the sidebar — [guide](docs/network-diagram.md)
-
-> Full reference: **[HTML format guide](docs/format-html.md)** — page layout, sidebar behaviour, theme, export button and lazy-loading for large clusters.
-
-### JSON output `(--format Json)`
-
-```
-Report_20260506_120000.zip    ← multi-file JSON dataset (extract and parse with jq, Power BI, scripts, …)
-```
-
-For automation, scripting and integrations. Extract the zip and consume the files with `jq`, Python, PowerShell, Power BI, or any tool that reads JSON.
-
-- **One file per section** — `cluster.json`, `nodes.json`, `vms.json`, `storages.json`, … plus `nodes/<name>.json`, `vms/<id>.json` and `containers/<id>.json` for per-resource detail; same logical layout as the Excel sheets and HTML pages
-- **Stable file paths** — perfect for snapshot diffs: store the extracted zip in git and `diff -r` two snapshots to see exactly which VMs/nodes/storages changed
-- **Pipeline-friendly** — small file size (≈ a few MB even on 2700+ VM clusters; gzip compresses heavily), easy to ingest from CI / cron / monitoring jobs
-- **Rich metadata** — `metadata.json` carries the schema version, timestamp, application info and per-section generation stats
-- **Network topology SVG** — bundled as `network-diagram.svg` inside the zip
-
-> Full reference: **[JSON format guide](docs/format-json.md)** — file layout, schema, naming conventions and `jq` examples for common tasks.
+| Format | Best for | Full reference |
+|---|---|---|
+| **Excel** `--format Xlsx` *(default)* | Analysts, capacity planning, native filter / sort / pivot in Excel or LibreOffice Calc | [docs/format-xlsx.md](docs/format-xlsx.md) |
+| **HTML** `--format Html` | Sharing on a wiki / ticket / email, navigating offline with sidebar, light/dark theme, per-page standalone export | [docs/format-html.md](docs/format-html.md) |
+| **JSON** `--format Json` | Automation, CI pipelines, snapshot diffs, `jq` / Power BI / Python ingestion | [docs/format-json.md](docs/format-json.md) |
 
 ---
 
-## Response Files
+## Health Score
 
-Arguments can be stored in a response file and referenced with `@filename`. This is useful to avoid repeating connection parameters on every run.
+Each row in the Nodes / VMs / Containers / Storages overviews carries a **0–100 Health Score** that summarises the resource's pressure (higher = healthier). Excel and HTML render it as a colour-coded badge / green-yellow-red colour scale so the worst offenders pop visually; JSON exposes the raw number under a `health` key for `jq` queries and snapshot diffs. The formula matches [`cv4pve-admin`](https://github.com/Corsinvest/cv4pve-admin) so the same resource shows the same score across tools:
 
-```text
-# config.rsp
---host
-192.168.1.1
---api-token
-user@pam!report=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-```
+| Resource | Formula |
+|---|---|
+| Node | `100 − (CPU% × 0.4 + RAM% × 0.4 + Disk% × 0.2)` |
+| VM / CT (running) | `100 − (CPU% × 0.5 + RAM% × 0.5)` |
+| VM / CT (stopped) | *— (not measurable)* |
+| Storage | `100 − Disk%` |
 
-```bash
-cv4pve-report @config.rsp export
-cv4pve-report @config.rsp --settings-file=settings.json export
-cv4pve-report @config.rsp export --full
-```
-
-- One token per line (option name and value on separate lines)
-- Lines starting with `#` are comments
-- Response files can be nested: a line starting with `@` references another file
+Thresholds: **≥ 80** green (good), **≥ 60** yellow (warning), **below** red (critical).
 
 ---
 
@@ -249,23 +217,73 @@ cv4pve-report --host=YOUR_HOST --api-token=user@realm!token=uuid export --full  
 
 ---
 
-## Features
+## VM/CT Selection Patterns
 
-What's collected:
+The `Guest.Ids` setting supports the same powerful pattern matching as [cv4pve-autosnap](https://github.com/Corsinvest/cv4pve-autosnap):
 
-- **Cluster** — split across five pages/sheets/files: main (status, options, firewall options, backup jobs, replication, storages, metric servers, mappings) + **Cluster Access** (users, tokens, TFA, groups, roles, ACL, domains) + **Cluster SDN** (zones, vnets, controllers, IPAMs, subnets) + **Cluster HA** (resources, groups, status) + **Cluster Pools** (members)
-- **Nodes** — services, network, disks, SMART, ZFS, APT, SSL certificates, replication, syslog, firewall logs, tasks
-- **VMs/CTs** — config, network, disks, snapshots, firewall logs, tasks, QEMU agent info
-- **Global sections** — Firewall (rules/aliases/ipsets), RRD Nodes/Storage/Guests, Syslog, Cluster Log, Cluster Tasks, Replication, Network, Disks, Partitions, Snapshots, Storage Content, Backups
-- **Issues** — diagnostic page that aggregates any per-resource failure encountered while collecting data; appears only when there is at least one issue and is linked from the Summary/cover and the sidebar so it's the first thing you see when something didn't work
-- **Network topology** — auto-generated SVG diagram of physical NICs, bonds, bridges, gateway VMs and network-backed storage — [guide](docs/network-diagram.md)
+| Pattern | Syntax | Description | Example |
+|---------|--------|-------------|---------|
+| **All VMs** | `@all` | All VMs/CTs in cluster | `@all` |
+| **Single ID** | `ID` | Specific VM/CT by ID | `100` |
+| **Single Name** | `name` | Specific VM/CT by name | `web-server` |
+| **Multiple** | `ID,ID,ID` | Comma-separated list | `100,101,102` |
+| **ID Range** | `start:end` | Range of IDs (inclusive) | `100:110` |
+| **Wildcard** | `%pattern%` | Name contains pattern | `%web%` |
+| **By Node** | `@node-name` | All VMs on specific node | `@node-pve1` |
+| **By Pool** | `@pool-name` | All VMs in pool | `@pool-production` |
+| **By Tag** | `@tag-name` | All VMs with tag | `@tag-backup` |
+| **Exclusion** | `-ID` or `-name` | Exclude specific VM | `@all,-100` |
+| **Tag Exclusion** | `-@tag-name` | Exclude by tag | `@all,-@tag-test` |
+| **Node Exclusion** | `-@node-name` | Exclude by node | `@all,-@node-pve2` |
 
-How you can shape it:
+```
+@all                          # all VMs/CTs
+100,101,102                   # specific IDs
+100:200                       # IDs from 100 to 200
+@pool-production              # all VMs in pool "production"
+@tag-backup                   # all VMs tagged "backup"
+@node-pve1                    # all VMs on node pve1
+@all,-100,-101                # all except VM 100 and 101
+@all,-@tag-test               # all except VMs tagged "test"
+%web%                         # VMs whose name contains "web"
+```
 
-- **Three profiles** — `--fast` for a quick scan on large clusters, default Standard for daily reporting, `--full` for audits and capacity planning
-- **`settings.json`** — bring your own config to enable/disable exactly the sections you want — [see Settings Reference](#settings-reference)
-- **Flexible target selection** — `@all`, pools, tags, nodes, ID ranges, wildcards, exclusions — [see VM/CT Selection Patterns](#vmct-selection-patterns)
-- **API token** support, cross-platform (Windows, Linux, macOS), no root access required
+---
+
+## Settings Reference
+
+Three built-in profiles (`--fast`, default, `--full`) cover the common cases — see the [profiles comparison](#profiles-comparison) above. For fine-grained control bring your own settings file:
+
+```bash
+cv4pve-report create-settings --full > settings.json   # generate from a profile
+cv4pve-report ... export --settings-file=settings.json  # use it
+```
+
+> Full reference: **[Settings guide](docs/settings.md)** — all properties, annotated JSON example, skip-heavy-section flags, and performance tuning (`MaxParallelRequests`, `ApiTimeout`, `QemuAgentTimeout`).
+
+---
+
+## Response Files
+
+Arguments can be stored in a response file and referenced with `@filename`. This is useful to avoid repeating connection parameters on every run.
+
+```text
+# config.rsp
+--host
+192.168.1.1
+--api-token
+user@pam!report=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+```
+
+```bash
+cv4pve-report @config.rsp export
+cv4pve-report @config.rsp --settings-file=settings.json export
+cv4pve-report @config.rsp export --full
+```
+
+- One token per line (option name and value on separate lines)
+- Lines starting with `#` are comments
+- Response files can be nested: a line starting with `@` references another file
 
 ---
 
@@ -300,52 +318,6 @@ All binaries on the [Releases page](https://github.com/Corsinvest/cv4pve-report/
 
 
 </details>
-
----
-
-## Settings Reference
-
-Three built-in profiles (`--fast`, default, `--full`) cover the common cases — see the [profiles comparison](#profiles-comparison) above. For fine-grained control bring your own settings file:
-
-```bash
-cv4pve-report create-settings --full > settings.json   # generate from a profile
-cv4pve-report ... export --settings-file=settings.json  # use it
-```
-
-> Full reference: **[Settings guide](docs/settings.md)** — all properties, annotated JSON example, skip-heavy-section flags, and performance tuning (`MaxParallelRequests`, `ApiTimeout`, `QemuAgentTimeout`).
-
----
-
-## VM/CT Selection Patterns
-
-The `Guest.Ids` setting supports the same powerful pattern matching as [cv4pve-autosnap](https://github.com/Corsinvest/cv4pve-autosnap):
-
-| Pattern | Syntax | Description | Example |
-|---------|--------|-------------|---------|
-| **All VMs** | `@all` | All VMs/CTs in cluster | `@all` |
-| **Single ID** | `ID` | Specific VM/CT by ID | `100` |
-| **Single Name** | `name` | Specific VM/CT by name | `web-server` |
-| **Multiple** | `ID,ID,ID` | Comma-separated list | `100,101,102` |
-| **ID Range** | `start:end` | Range of IDs (inclusive) | `100:110` |
-| **Wildcard** | `%pattern%` | Name contains pattern | `%web%` |
-| **By Node** | `@node-name` | All VMs on specific node | `@node-pve1` |
-| **By Pool** | `@pool-name` | All VMs in pool | `@pool-production` |
-| **By Tag** | `@tag-name` | All VMs with tag | `@tag-backup` |
-| **Exclusion** | `-ID` or `-name` | Exclude specific VM | `@all,-100` |
-| **Tag Exclusion** | `-@tag-name` | Exclude by tag | `@all,-@tag-test` |
-| **Node Exclusion** | `-@node-name` | Exclude by node | `@all,-@node-pve2` |
-
-```
-@all                          # all VMs/CTs
-100,101,102                   # specific IDs
-100:200                       # IDs from 100 to 200
-@pool-production              # all VMs in pool "production"
-@tag-backup                   # all VMs tagged "backup"
-@node-pve1                    # all VMs on node pve1
-@all,-100,-101                # all except VM 100 and 101
-@all,-@tag-test               # all except VMs tagged "test"
-%web%                         # VMs whose name contains "web"
-```
 
 ---
 

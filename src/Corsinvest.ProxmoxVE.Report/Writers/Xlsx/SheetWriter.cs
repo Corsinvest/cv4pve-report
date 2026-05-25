@@ -171,6 +171,15 @@ internal sealed class SheetWriter(IXLWorksheet ws, Dictionary<string, string> sh
                 case ColumnKind.Flag:
                     dataCol.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                     break;
+
+                case ColumnKind.HealthScore:
+                    dataCol.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                    dataCol.Style.NumberFormat.Format = "0";
+                    dataCol.AddConditionalFormat().ColorScale()
+                           .LowestValue(XLColor.FromHtml("#d05a5a"))                            // red ~ critical
+                           .Midpoint(XLCFContentType.Number, 60, XLColor.FromHtml("#f0d264"))   // yellow ~ warn
+                           .HighestValue(XLColor.FromHtml("#7cc77c"));                          // green ~ good
+                    break;
             }
 
             if (dataCol.FirstCell().Value.IsDateTime)

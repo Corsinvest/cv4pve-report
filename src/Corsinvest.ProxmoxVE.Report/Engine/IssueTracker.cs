@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
+using Corsinvest.ProxmoxVE.Report.Models;
+
 namespace Corsinvest.ProxmoxVE.Report;
 
 internal sealed class IssueTracker
