@@ -55,8 +55,10 @@ internal sealed partial class HtmlReportWriter
             sb.AppendLine("""        <a href="network-diagram.html" class="overview">Network Diagram</a>""");
         }
 
-        // Cluster split into 4 sibling sections + 2 log/task overviews. Show short
-        // labels in the sidebar so the "Cluster " prefix doesn't repeat for each child.
+        // Cluster — top-level group with "Overview" pointing at cluster.html and the
+        // four deep-dive pages plus log/tasks as children. The sidebar is always
+        // visible so grouping wins over the "physical" Cluster-admin-at-the-bottom
+        // ordering used by Excel sheet tabs and the JSON file list.
         var clusterChildLabels = new Dictionary<string, string>
         {
             ["Cluster Access"] = "Access",
@@ -67,6 +69,7 @@ internal sealed partial class HtmlReportWriter
         AppendGroup(sb, sectionNames, displayNames, "Cluster",
                     ["Cluster Access", "Cluster SDN", "Cluster HA", "Cluster Pools", "Cluster Log", "Cluster Tasks"],
                     childLabels: clusterChildLabels);
+
         AppendLazyGroup(sb, sectionNames, "Nodes", [.. sectionNames.Where(n => n.StartsWith("Node ")).Order()]);
         AppendLazyGroup(sb, sectionNames, "VMs", [.. sectionNames.Where(n => n.StartsWith("VM ")).OrderBy(VmIdSortKey)]);
         AppendLazyGroup(sb, sectionNames, "Containers", [.. sectionNames.Where(n => n.StartsWith("CT ")).OrderBy(VmIdSortKey)]);

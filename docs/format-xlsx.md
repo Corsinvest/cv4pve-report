@@ -25,26 +25,26 @@ Sheets are written in this order. Conditional sheets (`if …`) are only present
 | 1 | **Summary** | Report metadata, filters, hyperlinked table of contents | always |
 | 2 | **Issues** | Diagnostics for collection failures — see [Issues](#issues) below | only when failures recorded |
 | 3 | **Cluster** | Cluster status, options, firewall options, backup jobs, replication, storages, metric servers and hardware mappings | `Cluster.Include` |
-| 4 | **Cluster Access** | Users, API tokens, two-factor authentication, groups, roles, ACL and domains | `Cluster.Include` |
-| 5 | **Cluster SDN** | SDN zones, vnets, controllers, IPAMs and subnets | `Cluster.Include` |
-| 6 | **Cluster HA** | High Availability resources, groups and status | `Cluster.Include` |
-| 7 | **Cluster Pools** | Resource pools with member VMs, containers and storages | `Cluster.Include` |
-| 8 | **Nodes** | Node overview → links to per-node detail sheets | always |
-| 9 | **VMs** | VM overview → links to per-VM detail sheets | always |
-| 10 | **Containers** | Container overview → links to per-CT detail sheets | always |
-| 11 | **Network** | Node interfaces + VM/CT NICs (MAC, bridge, VLAN, IPs, model) | always |
-| 12 | **Storages** | Storage list with size, usage, type | always |
-| 13 | **Storage Content** | Storage files/images with size and VM ID links | `Storage.IncludeContent` |
-| 14 | **Backups** | Backup files across all storages | `Storage.IncludeBackups` |
-| 15 | **Disks** | Global VM/CT disk inventory | `Guest.IncludeDisks` |
-| 16 | **Partitions** | Guest disk partitions via QEMU agent | `Guest.IncludePartitions` |
-| 17 | **Snapshots** | Global snapshot inventory across all VMs/CTs | `Guest.IncludeSnapshots` |
-| 18 | **Firewall** | Cluster + node + VM/CT firewall rules, aliases, IP sets | `Firewall.Enabled` |
-| 19 | **Replication** | Replication job status across all nodes | `Node.IncludeReplication` |
-| 20 | **RRD Nodes** | Historical performance metrics per node | `Node.RrdData.Enabled` |
-| 21 | **RRD Storage** | Historical performance metrics per storage | `Storage.RrdData.Enabled` |
-| 22 | **RRD Guests** | Historical performance metrics per VM/CT | `Guest.RrdData.Enabled` |
-| 23 | **Syslog** | Parsed systemd journal across all nodes | `Node.Syslog.Enabled` |
+| 4 | **Storages** | Storage list with size, usage, type | always |
+| 5 | **Nodes** | Node overview → links to per-node detail sheets | always |
+| 6 | **VMs** | VM overview → links to per-VM detail sheets | always |
+| 7 | **Containers** | Container overview → links to per-CT detail sheets | always |
+| 8 | **Network** | Node interfaces + VM/CT NICs (MAC, bridge, VLAN, IPs, model) | always |
+| 9 | **Storage Content** | Storage files/images with size and VM ID links | `Storage.IncludeContent` |
+| 10 | **Backups** | Backup files across all storages | `Storage.IncludeBackups` |
+| 11 | **Disks** | Global VM/CT disk inventory | `Guest.IncludeDisks` |
+| 12 | **Partitions** | Guest disk partitions via QEMU agent | `Guest.IncludePartitions` |
+| 13 | **Snapshots** | Global snapshot inventory across all VMs/CTs | `Guest.IncludeSnapshots` |
+| 14 | **Firewall** | Cluster + node + VM/CT firewall rules, aliases, IP sets | `Firewall.Enabled` |
+| 15 | **Replication** | Replication job status across all nodes | `Node.IncludeReplication` |
+| 16 | **RRD Nodes** | Historical performance metrics per node | `Node.RrdData.Enabled` |
+| 17 | **RRD Storage** | Historical performance metrics per storage | `Storage.RrdData.Enabled` |
+| 18 | **RRD Guests** | Historical performance metrics per VM/CT | `Guest.RrdData.Enabled` |
+| 19 | **Syslog** | Parsed systemd journal across all nodes | `Node.Syslog.Enabled` |
+| 20 | **Cluster Access** | Users, API tokens, two-factor authentication, groups, roles, ACL and domains | `Cluster.Include` |
+| 21 | **Cluster SDN** | SDN zones, vnets, controllers, IPAMs and subnets | `Cluster.Include` |
+| 22 | **Cluster HA** | High Availability resources, groups and status | `Cluster.Include` |
+| 23 | **Cluster Pools** | Resource pools with member VMs, containers and storages | `Cluster.Include` |
 | 24 | **Cluster Log** | Cluster event log | `Cluster.Log.Enabled` |
 | 25 | **Cluster Tasks** | Recent tasks across the cluster | `Cluster.IncludeTasks` |
 | … | **Node `<name>`** | Per-node detail (services, network, disks, SMART, ZFS, APT, certificates, tasks) | `Node.Detail.Enabled` |
