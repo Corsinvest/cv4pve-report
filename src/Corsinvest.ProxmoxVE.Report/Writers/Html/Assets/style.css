@@ -603,6 +603,32 @@ table.data td.date {
   font-variant-numeric: tabular-nums;
 }
 
+table.data td.health-cell {
+  text-align: center;
+}
+.health {
+  display: inline-block;
+  min-width: 2.2em;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.85em;
+  font-variant-numeric: tabular-nums;
+}
+.health-good { background: #d4edda; color: #155724; }
+.health-warn { background: #fff3cd; color: #856404; }
+.health-crit { background: #f8d7da; color: #721c24; }
+.health-na   { background: var(--color-table-zebra); color: var(--color-text-muted); }
+
+[data-theme="dark"] .health-good { background: #1d4f2b; color: #b9e7c1; }
+[data-theme="dark"] .health-warn { background: #4d3a0a; color: #ffe79e; }
+[data-theme="dark"] .health-crit { background: #5a1a20; color: #f5b8be; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .health-good { background: #1d4f2b; color: #b9e7c1; }
+  :root:not([data-theme="light"]) .health-warn { background: #4d3a0a; color: #ffe79e; }
+  :root:not([data-theme="light"]) .health-crit { background: #5a1a20; color: #f5b8be; }
+}
+
 table.data tfoot th {
   padding: 0.4rem 0.6rem;
   background: var(--color-table-header);

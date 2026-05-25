@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
+using Corsinvest.ProxmoxVE.Report.Helpers;
 using Corsinvest.ProxmoxVE.Report.Writers;
 
 namespace Corsinvest.ProxmoxVE.Report;
@@ -25,6 +26,7 @@ public partial class ReportEngine
                         Node = StorageNode(a),
                         a.Storage,
                         a.Status,
+                        HealthScore = HealthScore.For(a),
                         a.PluginType,
                         Content = ToNewLine(a.Content),
                         SharedFlag = ToX(a.Shared),

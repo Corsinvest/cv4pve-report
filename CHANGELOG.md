@@ -2,6 +2,14 @@
 
 ---
 
+## [Unreleased]
+
+### What's new
+
+- **Health Score column on Nodes / VMs / Containers / Storages.** Each row now carries a single 0–100 health number that summarises the resource's resource pressure (Node: weighted CPU/RAM/Disk; running VM/CT: weighted CPU/RAM; Storage: Disk usage). Higher is healthier. HTML renders it as a colour-coded badge (green ≥ 80, yellow ≥ 60, red below); Excel applies a green-yellow-red colour scale so the worst offenders pop visually and you can sort the column to surface them; JSON exposes the raw number under a `health` key. Stopped VMs / unavailable values are emitted as null / blank. Same formula as `cv4pve-admin` so the number means the same thing across tools.
+
+---
+
 ## [2.4.0] — 2026-05-25
 
 ### What's new

@@ -21,4 +21,5 @@ internal enum ColumnKind
     MB,
     Flag,
     Wrap,
+    HealthScore,
 }

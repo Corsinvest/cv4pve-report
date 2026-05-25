@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
-namespace Corsinvest.ProxmoxVE.Report;
+namespace Corsinvest.ProxmoxVE.Report.Models;
 
 internal enum IssueSeverity { Info, Warning, Error }
 

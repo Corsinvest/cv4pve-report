@@ -100,6 +100,14 @@ internal sealed class TableBlock<T> : IBlock
             return $"<td{classAttr}>{glyph}</td>";
         }
 
+        if (col.Kind == ColumnKind.HealthScore)
+        {
+            if (value is null) { return $"<td{classAttr}><span class=\"health health-na\">—</span></td>"; }
+            var score = Convert.ToDouble(value, CultureInfo.InvariantCulture);
+            var level = score >= 80 ? "good" : score >= 60 ? "warn" : "crit";
+            return $"<td{classAttr}><span class=\"health health-{level}\">{score:F0}</span></td>";
+        }
+
         var text = HtmlEncoder.Text(FormatCell(value, col.Kind));
 
         if (ColumnLinks != null
@@ -120,6 +128,7 @@ internal sealed class TableBlock<T> : IBlock
             ColumnKind.Flag => " class=\"flag\"",
             ColumnKind.Wrap => " class=\"wrap\"",
             ColumnKind.DateTime or ColumnKind.DateOnly => " class=\"date\"",
+            ColumnKind.HealthScore => " class=\"health-cell\"",
             _ => "",
         };
 

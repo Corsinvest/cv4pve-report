@@ -5,8 +5,9 @@
 
 using System.Net;
 using Corsinvest.ProxmoxVE.Api;
+using Corsinvest.ProxmoxVE.Report.Models;
 
-namespace Corsinvest.ProxmoxVE.Report;
+namespace Corsinvest.ProxmoxVE.Report.Helpers;
 
 internal static class PveResultExtensions
 {

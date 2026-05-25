@@ -7,6 +7,7 @@ using Corsinvest.ProxmoxVE.Api.Extension;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Node;
 using Corsinvest.ProxmoxVE.Api.Shared.Utils;
+using Corsinvest.ProxmoxVE.Report.Helpers;
 using Corsinvest.ProxmoxVE.Report.Writers;
 
 namespace Corsinvest.ProxmoxVE.Report;
@@ -75,6 +76,7 @@ public partial class ReportEngine
             {
                 d.Item.Node,
                 d.Item.Status,
+                HealthScore = HealthScore.For(d.Item),
                 Uptime = FormatHelper.UptimeInfo(d.Item.Uptime),
                 d.Item.CpuSize,
                 CpuCpus = d.Status?.CpuInfo.Cpus,
