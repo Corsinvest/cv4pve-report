@@ -7,7 +7,6 @@ using Corsinvest.ProxmoxVE.Report.Compliance.Checks.Access;
 using Corsinvest.ProxmoxVE.Report.Compliance.Checks.Backup;
 using Corsinvest.ProxmoxVE.Report.Compliance.Checks.Crypto;
 using Corsinvest.ProxmoxVE.Report.Compliance.Checks.Firewall;
-using Corsinvest.ProxmoxVE.Report.Compliance.Checks.Logging;
 using Corsinvest.ProxmoxVE.Report.Compliance.Checks.Resilience;
 using Corsinvest.ProxmoxVE.Report.Compliance.Checks.Storage;
 using Corsinvest.ProxmoxVE.Report.Compliance.Checks.System;

@@ -25,7 +25,7 @@ internal sealed class CertificateExpiringCheck : IComplianceCheck
     {
         var certs = ctx.Get<CertificateInfo>(ComplianceDataKind.Certificates);
         var nowUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        var thresholdUnix = nowUnix + WarningDays * 86400L;
+        var thresholdUnix = nowUnix + (WarningDays * 86400L);
 
         foreach (var c in certs)
         {
