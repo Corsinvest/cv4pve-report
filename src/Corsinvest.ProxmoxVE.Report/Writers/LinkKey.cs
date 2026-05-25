@@ -12,20 +12,17 @@ namespace Corsinvest.ProxmoxVE.Report.Writers;
 /// </summary>
 internal static class LinkKey
 {
-    // Per-entity keys (parameterised).
     public static string Node(string node) => $"node:{node}";
     public static string Vm(long vmId) => $"vm:{vmId}";
     public static string Storage(string node, string storage) => $"storage:{node}:{storage}";
     public static string NodeNetwork(string node, string iface) => $"node:{node}:network:{iface}";
     public static string List(string what) => $"list:{what}";
 
-    // Named list keys.
     public const string ListNodes = "list:nodes";
     public const string ListVms = "list:vms";
     public const string ListContainers = "list:containers";
 
-    // Global section pages — each maps 1:1 to a section name. Writers auto-register
-    // them in AddSection via ForSection(name).
+    // Section pages — auto-registered by writers via ForSection(name) in AddSection.
     public const string Cluster = "section:cluster";
     public const string ClusterAccess = "section:cluster-access";
     public const string ClusterSdn = "section:cluster-sdn";

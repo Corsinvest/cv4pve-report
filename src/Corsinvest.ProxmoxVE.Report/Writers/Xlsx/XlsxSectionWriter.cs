@@ -93,9 +93,8 @@ internal sealed class XlsxSectionWriter(SheetWriter inner) : ISectionWriter
 
     public void Dispose()
     {
-        // Replay until we've flushed: BackLink + the first KeyValue block (the "identity" header).
-        // Then reserve the index rows. Then replay the remaining ops (other KeyValues + Tables).
-        // If there is no leading KeyValue, the index is reserved at the very top.
+        // Two-phase replay so the index rows can be reserved between the header
+        // KeyValue block and the tables (or at the very top if there's no header).
         var firstKvIndex = _pending.FindIndex(op => op.Kind == OpKind.KeyValue);
         var splitAfter = firstKvIndex < 0 ? -1 : firstKvIndex;
 

@@ -17,8 +17,6 @@ internal sealed class KeyValueBlock(string title, IDictionary<string, object?> i
     {
         var rows = string.Concat(items.Select(kv =>
         {
-            // PascalCase keys with a *GB / *MB / *Pct suffix carry raw values; parse the
-            // key to recover both the human-readable label and the conversion kind.
             var (kind, displayLabel) = ColumnConvention.Parse(kv.Key);
             var rendered = FormatKeyValue(kv.Value, kind);
             return $"""
@@ -39,8 +37,6 @@ internal sealed class KeyValueBlock(string title, IDictionary<string, object?> i
             """);
     }
 
-    // KeyValue render formatting: GB/MB bytes -> decimal, Percentage fraction -> "0.00 %",
-    // anything else falls back to the generic BlockFormat helper.
     private static string FormatKeyValue(object? value, ColumnKind kind) => value switch
     {
         double dbl when kind == ColumnKind.Percentage => (dbl * 100).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + "%",

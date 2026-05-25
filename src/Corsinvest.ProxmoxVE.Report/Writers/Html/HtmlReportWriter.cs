@@ -23,9 +23,6 @@ internal sealed partial class HtmlReportWriter(ReportInfo info) : IReportWriter
     public ISectionWriter AddSection(SectionId id)
     {
         Links[id.Key] = id.Key;
-
-        // Auto-register the canonical section:* key so tables in other pages
-        // can hyperlink to this page via LinkKey.ForSection(name).
         if (LinkKey.ForSection(id.Key) is { } sectionKey) { Links[sectionKey] = id.Key; }
 
         var displayName = id switch
@@ -55,7 +52,6 @@ internal sealed partial class HtmlReportWriter(ReportInfo info) : IReportWriter
 
         await ZipHelpers.WriteTextEntryAsync(zip, "index.html", RenderPage("Summary", sidebarHtml, _coverHtml, depth: 0));
 
-        // Detail pages are routed under sub-directories (vms/, nodes/, containers/) — see HtmlEncoder.PageFileName.
         foreach (var section in _sections)
         {
             var fileName = HtmlEncoder.PageFileName(section.Name);

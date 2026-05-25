@@ -40,8 +40,6 @@ internal sealed class SheetWriter(IXLWorksheet ws, Dictionary<string, string> sh
 
         foreach (var (rawKey, value) in items)
         {
-            // PascalCase keys with a *GB / *MB / *Pct suffix carry the raw byte / fraction
-            // value; parse the key to get the human-readable label and the conversion kind.
             var (kind, displayLabel) = ColumnConvention.Parse(rawKey);
             var labelCell = ws.Cell(Row, col);
             labelCell.Value = displayLabel;
@@ -200,8 +198,6 @@ internal sealed class SheetWriter(IXLWorksheet ws, Dictionary<string, string> sh
         Row += afterCount - beforeCount;
     }
 
-    // Engine passes raw byte values for GB/MB columns; the writer converts at render time
-    // so the JSON output can expose bytes directly while Excel still shows "16.50".
     private static void ConvertBytesToUnit(IXLRangeColumn dataCol, Func<double, double> convert)
     {
         foreach (var cell in dataCol.Cells())
@@ -213,8 +209,6 @@ internal sealed class SheetWriter(IXLWorksheet ws, Dictionary<string, string> sh
         }
     }
 
-    // KeyValue value-level conversion: bytes -> GB/MB for *GB / *MB keys.
-    // Percentages stay as-is (Excel "0.00%" format multiplies by 100 internally).
     private static object? ConvertKeyValue(object? value, ColumnKind kind)
         => value is IConvertible c && (kind == ColumnKind.GB || kind == ColumnKind.MB)
             ? kind == ColumnKind.GB

@@ -41,7 +41,7 @@ Report_20260506_120000.zip
 ├── rrd-guests.html
 ├── syslog.html
 │
-├── cluster-access.html        ← Cluster admin deep-dives
+├── cluster-access.html        ← Cluster deep-dives
 ├── cluster-sdn.html
 ├── cluster-ha.html
 ├── cluster-pools.html

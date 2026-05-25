@@ -123,10 +123,6 @@ internal sealed class TableBlock<T> : IBlock
             _ => "",
         };
 
-    // Column-aware overrides (date-only stripping, percentage as "0.00 %", byte-to-GB/MB
-    // conversion, DateTimeOffset); for everything else fall back to the shared
-    // BlockFormat helper. The engine passes raw byte counts for GB/MB columns so
-    // the JSON writer can expose bytes directly — only Excel/HTML divide here.
     private static string FormatCell(object? value, ColumnKind kind) => value switch
     {
         DateTime d when kind == ColumnKind.DateOnly => d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
