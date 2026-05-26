@@ -1,6 +1,6 @@
 type=cli
-description=Report tool for Proxmox VE — exports full infrastructure inventory to Excel, HTML or JSON
-long-description=Exports full infrastructure inventory to Excel, HTML or JSON — the RVTools for Proxmox VE.
+description=Proxmox VE inventory report — Excel/HTML/JSON, network diagram, compliance
+long-description=Exports the full Proxmox VE infrastructure inventory to Excel, HTML or JSON, plus an SVG network topology diagram. Includes per-resource Health Score (Node/VM/CT/Storage) and a built-in compliance assessment against 9 standards: ISO 27001, NIS2, CIS Controls, AgID, PCI DSS, GDPR, DORA, NIST CSF, ISO 27017. The RVTools for Proxmox VE.
 license=GPL-3.0-only
 winget-id=Corsinvest.cv4pve.report
 pkg-identifier=it.corsinvest.cv4pve-report
