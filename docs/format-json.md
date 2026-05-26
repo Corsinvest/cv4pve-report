@@ -45,7 +45,12 @@ Report_20260506_120000.zip
 ├── cluster-ha.json
 ├── cluster-pools.json
 ├── cluster-log.json
-└── cluster-tasks.json
+├── cluster-tasks.json
+│
+├── compliance.json            ← Compliance overview (only when any Compliance.* flag is set)
+└── compliance/
+    ├── iso27001.json          ← per-standard detail file
+    └── nis2.json
 ```
 
 ---

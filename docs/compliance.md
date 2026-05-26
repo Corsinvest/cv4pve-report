@@ -72,22 +72,16 @@ The score reflects the **automated subset** the report can verify — it is not 
 
 ## Output
 
-The compliance section is rendered consistently in every format:
-
-| Format | Layout |
-|---|---|
-| **HTML** | Dedicated `Compliance` sidebar group with an **Overview** page plus one page per enabled pack under `compliance/<pack>.html` |
-| **Excel** | Dedicated `Compliance` worksheet (overview) plus one `Compliance <PackId>` worksheet per enabled pack |
-| **JSON** | `compliance.json` (overview) plus `compliance/<pack>.json` (detail) |
-
-Each pack page contains:
+Every enabled standard produces an **overview entry** (with score and severity counters) and a **per-pack page** containing:
 
 - **Info** — pack id, title, controls/findings totals, overall score
 - **Disclaimer** — scope and limits of the automated assessment
 - **Controls** — one row per control: status (✓/✗/◐/—), score, checks, findings, skipped, highest severity
-- **Checks** — one row per *check outcome* (PASS / FAIL / N/A); when a check produces multiple findings, each finding gets its own row with severity, scope, title, details and remediation hint
+- **Checks** — one row per *check outcome* (PASS / FAIL / N/A); when a check produces multiple findings, each one gets its own row with severity, scope, title, details and remediation hint
 
-All tables are filterable — in HTML and Excel the standard column headers let you isolate `FAIL` rows or focus on `High`/`Critical` severities natively.
+All tables are filterable — the column headers let you isolate `FAIL` rows or focus on `High`/`Critical` severities natively.
+
+Per-format file paths, sheet ordering and rendering specifics are in the format references: [`format-html.md`](format-html.md) · [`format-xlsx.md`](format-xlsx.md) · [`format-json.md`](format-json.md).
 
 ## Limits
 

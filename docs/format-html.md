@@ -48,6 +48,11 @@ Report_20260506_120000.zip
 ├── cluster-log.html
 ├── cluster-tasks.html
 │
+├── compliance.html            ← Compliance overview (only when any Compliance.* flag is set)
+├── compliance/
+│   ├── iso27001.html          ← per-standard detail page
+│   └── nis2.html
+│
 └── assets/
     ├── style.css              ← stylesheet (light + dark)
     ├── app.js                 ← shared behaviour (theme, sidebar, lazy groups, export)
