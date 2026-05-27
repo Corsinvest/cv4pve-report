@@ -85,7 +85,13 @@ internal sealed partial class XlsxReportWriter
             ws.Cell(row, 1).Style.Font.SetUnderline(XLFontUnderlineValues.Single);
             ws.Cell(row, 1).Style.Font.SetFontColor(XLColor.Blue);
 
-            var actualSheet = _workbook.Worksheets.FirstOrDefault(s => s.Name.StartsWith(stat.Name[..Math.Min(stat.Name.Length, MaxSheetNameLength)]))?.Name ?? stat.Name;
+            // Prefer an exact match first so a section name doesn't resolve to a sibling sheet
+            // that merely shares its prefix (e.g. "Cluster" must not match "Cluster Access").
+            // Fall back to a prefix search for sheets whose name got truncated to 31 chars.
+            var truncatedName = stat.Name[..Math.Min(stat.Name.Length, MaxSheetNameLength)];
+            var actualSheet = _workbook.Worksheets.FirstOrDefault(s => s.Name == truncatedName)?.Name
+                              ?? _workbook.Worksheets.FirstOrDefault(s => s.Name.StartsWith(truncatedName))?.Name
+                              ?? stat.Name;
             ws.Cell(row, 1).SetHyperlink(new XLHyperlink($"'{actualSheet}'!A1"));
             ws.Cell(row, 2).Value = stat.Description;
             ws.Cell(row, 3).Value = stat.Count;
