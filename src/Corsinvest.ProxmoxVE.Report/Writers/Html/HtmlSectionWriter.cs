@@ -16,13 +16,19 @@ internal sealed class HtmlSectionWriter(HtmlReportWriter parent, string name, st
     public IReadOnlyList<IBlock> Blocks => _blocks;
 
     public void AddBackLink(string label, string linkKey) { }
-    public void AddKeyValue(string title, IDictionary<string, object?> items) => _blocks.Add(new KeyValueBlock(title, items));
+
+    // First KV block in the section is the page header — title becomes the fixed "Info"
+    // heading (mirrors the JSON writer's i == 0 → "info" rule applied across all sections).
+    public void AddKeyValue(string title, IDictionary<string, object?> items)
+        => _blocks.Add(new KeyValueBlock(IsFirstKv() ? "Info" : title, items));
 
     public void AddKeyValueRow(params (string Title, IDictionary<string, object?> Items)[] blocks)
     {
         if (blocks.Length == 0) { return; }
         _blocks.Add(new KeyValueRowBlock(blocks));
     }
+
+    private bool IsFirstKv() => !_blocks.Any(b => b is KeyValueBlock or KeyValueRowBlock);
 
     public ITableHandle AddTable<T>(string? title, IEnumerable<T> data, TableOptions<T>? options = null)
     {

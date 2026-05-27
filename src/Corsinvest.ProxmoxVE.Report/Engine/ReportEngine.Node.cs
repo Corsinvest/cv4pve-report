@@ -76,7 +76,7 @@ public partial class ReportEngine
             {
                 d.Item.Node,
                 d.Item.Status,
-                HealthScore = HealthScore.For(d.Item),
+                HealthScore = d.Item.HealthScoreCalculated,
                 Uptime = FormatHelper.UptimeInfo(d.Item.Uptime),
                 d.Item.CpuSize,
                 CpuCpus = d.Status?.CpuInfo.Cpus,

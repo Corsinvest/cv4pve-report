@@ -139,7 +139,7 @@ All three formats expose **the same data** using the same logical layout — one
 
 ## Health Score
 
-Each row in the Nodes / VMs / Containers / Storages overviews carries a **0–100 Health Score** that summarises the resource's pressure (higher = healthier). Excel and HTML render it as a colour-coded badge / green-yellow-red colour scale so the worst offenders pop visually; JSON exposes the raw number under a `health` key for `jq` queries and snapshot diffs. The formula matches [`cv4pve-admin`](https://github.com/Corsinvest/cv4pve-admin) so the same resource shows the same score across tools:
+Each row in the Nodes / VMs / Containers / Storages overviews carries a **0–100 Health Score** that summarises the resource's pressure (higher = healthier). Excel and HTML render it as a colour-coded badge / green-yellow-red colour scale so the worst offenders pop visually; JSON exposes the raw number under a `health` key for `jq` queries and snapshot diffs. The score is computed as:
 
 | Resource | Formula |
 |---|---|

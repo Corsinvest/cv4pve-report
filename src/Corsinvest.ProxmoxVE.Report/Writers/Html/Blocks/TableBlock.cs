@@ -67,7 +67,7 @@ internal sealed class TableBlock<T> : IBlock
     {
         var dataType = col.Kind switch
         {
-            ColumnKind.Number or ColumnKind.Percentage or ColumnKind.GB or ColumnKind.MB => " data-type=\"number\"",
+            ColumnKind.Number or ColumnKind.Percentage or ColumnKind.GB or ColumnKind.MB or ColumnKind.HealthScore => " data-type=\"number\"",
             ColumnKind.DateTime or ColumnKind.DateOnly => " data-type=\"date\"",
             _ => "",
         };

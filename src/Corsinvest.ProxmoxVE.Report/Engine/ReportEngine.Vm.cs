@@ -189,7 +189,7 @@ public partial class ReportEngine
                 item.VmId,
                 item.Name,
                 item.Status,
-                HealthScore = HealthScore.For(item),
+                HealthScore = item.HealthScoreCalculated,
                 item.Pool,
                 Tags = ToNewLine(item.Tags, ";"),
                 item.HaState,

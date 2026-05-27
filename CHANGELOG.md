@@ -6,7 +6,13 @@
 
 ### What's new
 
-- **Health Score column on Nodes / VMs / Containers / Storages.** Each row now carries a single 0–100 health number that summarises the resource's resource pressure (Node: weighted CPU/RAM/Disk; running VM/CT: weighted CPU/RAM; Storage: Disk usage). Higher is healthier. HTML renders it as a colour-coded badge (green ≥ 80, yellow ≥ 60, red below); Excel applies a green-yellow-red colour scale so the worst offenders pop visually and you can sort the column to surface them; JSON exposes the raw number under a `health` key. Stopped VMs / unavailable values are emitted as null / blank. Same formula as `cv4pve-admin` so the number means the same thing across tools.
+- **Health Score column on Nodes / VMs / Containers / Storages.** Each row now carries a single 0–100 health number that summarises the resource's resource pressure (Node: weighted CPU/RAM/Disk; running VM/CT: weighted CPU/RAM; Storage: Disk usage). Higher is healthier. HTML renders it as a colour-coded badge (green ≥ 80, yellow ≥ 60, red below); Excel applies a green-yellow-red colour scale so the worst offenders pop visually and you can sort the column to surface them; JSON exposes the raw number under a `health` key. Stopped VMs / unavailable values are emitted as null / blank.
+
+### Fixes
+
+- **HTML detail pages now use a consistent `Info` heading.** The first key/value block of every section (Cluster, per-node, …) is the page header; it now renders under the fixed `Info` heading like the VM/CT pages already did, instead of repeating the page title (`Cluster`, `cc01`). This mirrors the JSON writer's `i == 0 → "info"` rule, so the same block is named consistently across HTML and JSON.
+- **Excel Summary hyperlinks resolve to the exact sheet.** The Contents table on the `Summary` sheet matched the target sheet by name prefix, so a section could link to a sibling that merely shares its prefix (e.g. `Cluster` could land on `Cluster Access`). It now prefers an exact match and falls back to a prefix search only for names truncated by Excel's 31-character sheet-name limit.
+- **HTML Health Score column now sorts numerically.** The header was missing the `data-type="number"` hint, so clicking it sorted the score as text (1, 10, 100, 2…). It now sorts as a number.
 
 ---
 
