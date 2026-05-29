@@ -11,7 +11,7 @@ namespace Corsinvest.ProxmoxVE.Report.Writers.Xlsx;
 internal sealed partial class XlsxReportWriter : IReportWriter
 {
     private readonly XLWorkbook _workbook = new();
-    private readonly Dictionary<string, int> _usedSheetNames = [];
+    private readonly UniqueNameAllocator _sheetNames = new(StringComparer.OrdinalIgnoreCase);
     private readonly ReportInfo _info;
     private string? _networkDiagramSvg;
 
@@ -76,19 +76,7 @@ internal sealed partial class XlsxReportWriter : IReportWriter
 
     public void Dispose() => _workbook.Dispose();
 
-    private string SafeSheetName(string candidate)
-    {
-        var name = candidate.Length <= MaxSheetNameLength ? candidate : candidate[..MaxSheetNameLength];
-        if (!_usedSheetNames.TryGetValue(name, out var count))
-        {
-            _usedSheetNames[name] = 1;
-            return name;
-        }
-        count++;
-        _usedSheetNames[name] = count;
-        var suffix = $"_{count}";
-        return name[..Math.Min(name.Length, MaxSheetNameLength - suffix.Length)] + suffix;
-    }
+    private string SafeSheetName(string candidate) => _sheetNames.Allocate(candidate, MaxSheetNameLength);
 
     private void ReorderSheets()
     {

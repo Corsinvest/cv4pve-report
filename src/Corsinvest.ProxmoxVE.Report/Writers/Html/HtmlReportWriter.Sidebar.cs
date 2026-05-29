@@ -87,13 +87,13 @@ internal sealed partial class HtmlReportWriter
     /// expansion (no navigation). The first child is "Overview" — a link to the
     /// parent page (e.g. storages.html). Subsequent children are the detail pages.
     /// </summary>
-    private static void AppendGroup(StringBuilder sb,
-                                    HashSet<string> known,
-                                    Dictionary<string, string> displayNames,
-                                    string parent,
-                                    IReadOnlyList<string> children,
-                                    string? parentLabel = null,
-                                    IReadOnlyDictionary<string, string>? childLabels = null)
+    private void AppendGroup(StringBuilder sb,
+                             HashSet<string> known,
+                             Dictionary<string, string> displayNames,
+                             string parent,
+                             IReadOnlyList<string> children,
+                             string? parentLabel = null,
+                             IReadOnlyDictionary<string, string>? childLabels = null)
     {
         if (!known.Contains(parent)) { return; }
 
@@ -102,7 +102,7 @@ internal sealed partial class HtmlReportWriter
 
         if (visibleChildren.Count == 0)
         {
-            sb.AppendLine($"""        <a href="{HtmlEncoder.PageHref(parent)}">{HtmlEncoder.Text(label)}</a>""");
+            sb.AppendLine($"""        <a href="{HtmlEncoder.Attr(FileFor(parent))}">{HtmlEncoder.Text(label)}</a>""");
             return;
         }
 
@@ -110,7 +110,7 @@ internal sealed partial class HtmlReportWriter
 
         sb.AppendLine("        <details open>");
         sb.AppendLine($"""          <summary>{HtmlEncoder.Text(label)} <span class="count">({totalEntries})</span></summary>""");
-        sb.AppendLine($"""          <a href="{HtmlEncoder.PageHref(parent)}">Overview</a>""");
+        sb.AppendLine($"""          <a href="{HtmlEncoder.Attr(FileFor(parent))}">Overview</a>""");
         foreach (var child in visibleChildren)
         {
             var text = childLabels is not null && childLabels.TryGetValue(child, out var shortLabel)
@@ -119,7 +119,7 @@ internal sealed partial class HtmlReportWriter
                             ? dn
                             : child;
 
-            sb.AppendLine($"""          <a href="{HtmlEncoder.PageHref(child)}">{HtmlEncoder.Text(text)}</a>""");
+            sb.AppendLine($"""          <a href="{HtmlEncoder.Attr(FileFor(child))}">{HtmlEncoder.Text(text)}</a>""");
         }
         sb.AppendLine("        </details>");
     }
@@ -128,10 +128,10 @@ internal sealed partial class HtmlReportWriter
     /// Renders a synthetic group: the summary is text only (not a link), children below.
     /// Used for "Performance" which has no overview page of its own.
     /// </summary>
-    private static void AppendSyntheticGroup(StringBuilder sb,
-                                             HashSet<string> known,
-                                             string label,
-                                             IReadOnlyList<string> children)
+    private void AppendSyntheticGroup(StringBuilder sb,
+                                      HashSet<string> known,
+                                      string label,
+                                      IReadOnlyList<string> children)
     {
         var visibleChildren = children.Where(known.Contains).ToList();
         if (visibleChildren.Count == 0) { return; }
@@ -140,15 +140,15 @@ internal sealed partial class HtmlReportWriter
         sb.AppendLine($"""          <summary>{HtmlEncoder.Text(label)} <span class="count">({visibleChildren.Count})</span></summary>""");
         foreach (var child in visibleChildren)
         {
-            sb.AppendLine($"""          <a href="{HtmlEncoder.PageHref(child)}">{HtmlEncoder.Text(child)}</a>""");
+            sb.AppendLine($"""          <a href="{HtmlEncoder.Attr(FileFor(child))}">{HtmlEncoder.Text(child)}</a>""");
         }
         sb.AppendLine("        </details>");
     }
 
-    private static void AppendFlat(StringBuilder sb, HashSet<string> known, string name)
+    private void AppendFlat(StringBuilder sb, HashSet<string> known, string name)
     {
         if (!known.Contains(name)) { return; }
-        sb.AppendLine($"""        <a href="{HtmlEncoder.PageHref(name)}">{HtmlEncoder.Text(name)}</a>""");
+        sb.AppendLine($"""        <a href="{HtmlEncoder.Attr(FileFor(name))}">{HtmlEncoder.Text(name)}</a>""");
     }
 
     /// <summary>Sorting key for "VM 100" / "CT 200" entries — sorts by numeric id.</summary>
@@ -166,7 +166,7 @@ internal sealed partial class HtmlReportWriter
     /// scales with the cluster (Nodes/VMs/Containers) to avoid duplicating thousands
     /// of links in every page.
     /// </summary>
-    private static void AppendLazyGroup(StringBuilder sb,
+    private void AppendLazyGroup(StringBuilder sb,
                                         HashSet<string> known,
                                         string parent,
                                         IReadOnlyList<string> children)
@@ -177,7 +177,7 @@ internal sealed partial class HtmlReportWriter
 
         if (visibleChildren.Count == 0)
         {
-            sb.AppendLine($"""        <a href="{HtmlEncoder.PageHref(parent)}">{HtmlEncoder.Text(parent)}</a>""");
+            sb.AppendLine($"""        <a href="{HtmlEncoder.Attr(FileFor(parent))}">{HtmlEncoder.Text(parent)}</a>""");
             return;
         }
 
@@ -185,7 +185,7 @@ internal sealed partial class HtmlReportWriter
 
         sb.AppendLine($"""        <details data-group="{HtmlEncoder.Attr(parent)}">""");
         sb.AppendLine($"""          <summary>{HtmlEncoder.Text(parent)} <span class="count">({totalEntries})</span></summary>""");
-        sb.AppendLine($"""          <a href="{HtmlEncoder.PageHref(parent)}">Overview</a>""");
+        sb.AppendLine($"""          <a href="{HtmlEncoder.Attr(FileFor(parent))}">Overview</a>""");
         sb.AppendLine("""          <div class="group-children" data-loaded="false"></div>""");
         sb.AppendLine("        </details>");
     }
@@ -219,7 +219,7 @@ internal sealed partial class HtmlReportWriter
             for (var i = 0; i < list.Count; i++)
             {
                 var section = list[i];
-                var href = HtmlEncoder.PageFileName(section);
+                var href = FileFor(section);
                 var label = displayNames.TryGetValue(section, out var dn) ? dn : section;
                 sb.Append("    {\"href\":\"").Append(JsString(href))
                   .Append("\",\"label\":\"").Append(JsString(label)).Append("\"}");
