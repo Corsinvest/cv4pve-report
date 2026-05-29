@@ -24,6 +24,8 @@ internal sealed partial class JsonReportWriter(ReportInfo info) : IReportWriter
     private readonly List<JsonSectionWriter> _sections = [];
     private readonly DateTime _generatedAt = DateTime.UtcNow;
     private readonly ReportInfo _info = info;
+    private readonly UniqueNameAllocator _fileNames = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _sectionFiles = new(StringComparer.Ordinal);
     private List<SectionStat> _stats = [];
     private Settings? _settings;
     private string? _networkDiagramSvg;
@@ -34,8 +36,21 @@ internal sealed partial class JsonReportWriter(ReportInfo info) : IReportWriter
 
     public ISectionWriter AddSection(SectionId id)
     {
-        Links[id.Key] = id.Key;
-        if (LinkKey.ForSection(id.Key) is { } sectionKey) { Links[sectionKey] = id.Key; }
+        // Allocate a collision-free file path now so two sections with names that
+        // slug to the same string still produce distinct files.
+        var fileName = _fileNames.Allocate(JsonFileName(id.Key));
+        _sectionFiles[id.Key] = fileName;
+
+        // Pre-existing Links pointing at the section's logical name (registered by the
+        // engine in LoadResourcesAsync, e.g. Links[LinkKey.Node("cc02")] = "Node cc02")
+        // are rewritten to the actual file path so the consumer can use the value directly.
+        foreach (var key in Links.Where(kv => kv.Value == id.Key).Select(kv => kv.Key).ToList())
+        {
+            Links[key] = fileName;
+        }
+
+        Links[id.Key] = fileName;
+        if (LinkKey.ForSection(id.Key) is { } sectionKey) { Links[sectionKey] = fileName; }
 
         var section = new JsonSectionWriter(id.Key);
         _sections.Add(section);
@@ -56,7 +71,7 @@ internal sealed partial class JsonReportWriter(ReportInfo info) : IReportWriter
 
         foreach (var section in _sections)
         {
-            var path = JsonFileName(section.Name);
+            var path = _sectionFiles[section.Name];
             var payload = SectionPayload(section);
             await WriteJsonEntryAsync(zip, path, payload);
         }

@@ -6,11 +6,9 @@
 
 ### Fixes
 
-- **Hostnames with dashes no longer collapse in HTML/JSON file paths.** A node named `pve-host01` produced `pvehost01.html` / `pvehost01.json` (dash dropped) because the slug routine treated only letters and digits as safe. It now keeps existing dashes, so the filenames match what an operator types.
-
-### Internal
-
-- **Unit tests.** A new `tests/Corsinvest.ProxmoxVE.Report.Tests` xUnit project covers the writer helpers (`ColumnConvention`, `HtmlEncoder`, `LinkKey`, `UnitFormat`) — 41 tests across net8/net9/net10. The existing `build.yml` workflow already runs `dotnet test` so they run on every PR.
+- **Hostnames with dashes are kept in HTML and JSON file names.** A node called `pve-host01` used to produce `pvehost01.html` and `pvehost01.json` — the dash was dropped. The file name now matches the hostname you actually use.
+- **Links between HTML pages now work.** Clicking a node, VM or container in an overview table opened a 404 instead of the matching detail page. The links go to the right page again.
+- **Two nodes with similar names no longer share the same report page.** When two nodes ended up with the same file name (e.g. `cc.01` and `cc-01`), the second one used to overwrite the first one's HTML/JSON file silently. Each section now gets its own file.
 
 ---
 

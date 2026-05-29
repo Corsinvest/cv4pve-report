@@ -13,8 +13,16 @@ internal sealed partial class HtmlReportWriter(ReportInfo info) : IReportWriter
     private readonly List<HtmlSectionWriter> _sections = [];
     private readonly DateTime _generatedAt = DateTime.Now;
     private readonly ReportInfo _info = info;
+    private readonly UniqueNameAllocator _pageFiles = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _sectionFiles = new(StringComparer.Ordinal);
     private string _coverHtml = "";
     private string? _networkDiagramSvg;
+
+    /// <summary>Returns the (collision-free) file path for a section name. Falls back to the raw slug for sections that haven't been registered yet.</summary>
+    internal string FileFor(string sectionName)
+        => _sectionFiles.TryGetValue(sectionName, out var f)
+            ? f
+            : HtmlEncoder.PageFileName(sectionName);
 
     public Dictionary<string, string> Links { get; } = [];
 
@@ -22,9 +30,6 @@ internal sealed partial class HtmlReportWriter(ReportInfo info) : IReportWriter
 
     public ISectionWriter AddSection(SectionId id)
     {
-        Links[id.Key] = id.Key;
-        if (LinkKey.ForSection(id.Key) is { } sectionKey) { Links[sectionKey] = id.Key; }
-
         var displayName = id switch
         {
             SectionId.Vm v => string.IsNullOrWhiteSpace(v.DisplayLabel)
@@ -39,7 +44,23 @@ internal sealed partial class HtmlReportWriter(ReportInfo info) : IReportWriter
             _ => id.Key,
         };
 
-        var section = new HtmlSectionWriter(this, id.Key, displayName);
+        // Allocate a collision-free file path now so two sections with names that
+        // slug to the same string (e.g. "Node cc.01" + "Node cc-01") still get distinct files.
+        var fileName = _pageFiles.Allocate(HtmlEncoder.PageFileName(id.Key));
+        _sectionFiles[id.Key] = fileName;
+
+        // Pre-existing Links pointing at the section's logical name (registered by the
+        // engine on LoadResourcesAsync, e.g. Links[LinkKey.Node("cc02")] = "Node cc02")
+        // get rewritten to the actual file path so the renderer can use the value directly.
+        foreach (var key in Links.Where(kv => kv.Value == id.Key).Select(kv => kv.Key).ToList())
+        {
+            Links[key] = fileName;
+        }
+
+        Links[id.Key] = fileName;
+        if (LinkKey.ForSection(id.Key) is { } sectionKey) { Links[sectionKey] = fileName; }
+
+        var section = new HtmlSectionWriter(this, id.Key, displayName, fileName);
         _sections.Add(section);
         return section;
     }
@@ -54,8 +75,8 @@ internal sealed partial class HtmlReportWriter(ReportInfo info) : IReportWriter
 
         foreach (var section in _sections)
         {
-            var fileName = HtmlEncoder.PageFileName(section.Name);
-            var depth = HtmlEncoder.PageDepth(section.Name);
+            var fileName = section.FileName;
+            var depth = fileName.Count(c => c == '/');
             var body = section.RenderBody(fileName);
             await ZipHelpers.WriteTextEntryAsync(zip, fileName, RenderPage(section.DisplayName, sidebarHtml, body, depth));
         }

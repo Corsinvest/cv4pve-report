@@ -8,11 +8,13 @@ using Corsinvest.ProxmoxVE.Report.Writers.Html.Blocks;
 
 namespace Corsinvest.ProxmoxVE.Report.Writers.Html;
 
-internal sealed class HtmlSectionWriter(HtmlReportWriter parent, string name, string displayName) : ISectionWriter
+internal sealed class HtmlSectionWriter(HtmlReportWriter parent, string name, string displayName, string fileName) : ISectionWriter
 {
     private readonly List<IBlock> _blocks = [];
     public string Name { get; } = name;
     public string DisplayName { get; } = displayName;
+    /// <summary>Final, collision-free file path inside the zip (e.g. <c>nodes/cc01.html</c>).</summary>
+    public string FileName { get; } = fileName;
     public IReadOnlyList<IBlock> Blocks => _blocks;
 
     public void AddBackLink(string label, string linkKey) { }

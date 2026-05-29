@@ -115,7 +115,7 @@ internal sealed class TableBlock<T> : IBlock
             && mapper(row) is { } linkKey
             && links.TryGetValue(linkKey, out var target))
         {
-            return $"""<td{classAttr}><a href="{HtmlEncoder.PageHref(target)}">{text}</a></td>""";
+            return $"""<td{classAttr}><a href="{HtmlEncoder.Attr(target)}">{text}</a></td>""";
         }
 
         return $"<td{classAttr}>{text}</td>";

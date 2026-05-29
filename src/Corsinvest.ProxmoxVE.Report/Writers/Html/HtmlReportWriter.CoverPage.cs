@@ -14,7 +14,7 @@ internal sealed partial class HtmlReportWriter
 
         var rows = string.Concat(statsList.Select(s => $"""
                   <tr>
-                    <td><a href="{HtmlEncoder.PageHref(s.Name)}">{HtmlEncoder.Text(s.Name)}</a></td>
+                    <td><a href="{HtmlEncoder.Attr(FileFor(s.Name))}">{HtmlEncoder.Text(s.Name)}</a></td>
                     <td>{HtmlEncoder.Text(s.Description)}</td>
                     <td class="num">{s.Count}</td>
                     <td class="num">{FormatDuration(s.Duration)}</td>
