@@ -25,6 +25,9 @@
         <None Include="..\..\README.md" Pack="true" PackagePath="" />
     </ItemGroup>
     <ItemGroup>
+        <InternalsVisibleTo Include="Corsinvest.ProxmoxVE.Report.Tests" />
+    </ItemGroup>
+    <ItemGroup>
         <PackageReference Include="Corsinvest.ProxmoxVE.Api.Extension" />
         <PackageReference Include="ClosedXML" />
     </ItemGroup>

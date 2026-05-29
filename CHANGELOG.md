@@ -2,6 +2,18 @@
 
 ---
 
+## [Unreleased]
+
+### Fixes
+
+- **Hostnames with dashes no longer collapse in HTML/JSON file paths.** A node named `pve-host01` produced `pvehost01.html` / `pvehost01.json` (dash dropped) because the slug routine treated only letters and digits as safe. It now keeps existing dashes, so the filenames match what an operator types.
+
+### Internal
+
+- **Unit tests.** A new `tests/Corsinvest.ProxmoxVE.Report.Tests` xUnit project covers the writer helpers (`ColumnConvention`, `HtmlEncoder`, `LinkKey`, `UnitFormat`) — 41 tests across net8/net9/net10. The existing `build.yml` workflow already runs `dotnet test` so they run on every PR.
+
+---
+
 ## [2.5.0] — 2026-05-27
 
 ### What's new
