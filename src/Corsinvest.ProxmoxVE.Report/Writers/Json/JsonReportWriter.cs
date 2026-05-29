@@ -99,7 +99,7 @@ internal sealed partial class JsonReportWriter(ReportInfo info) : IReportWriter
         var sb = new StringBuilder(name.Length);
         foreach (var c in name.ToLowerInvariant())
         {
-            if (char.IsLetterOrDigit(c)) { sb.Append(c); }
+            if (char.IsLetterOrDigit(c) || c == '-') { sb.Append(c); }
             else if (c == ' ' || c == '_' || c == '/' || c == '\\') { sb.Append('-'); }
             else if (c == '.' || c == ':') { sb.Append('-'); }
         }

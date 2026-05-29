@@ -79,7 +79,7 @@ internal static class HtmlEncoder
         var slug = new StringBuilder(name.Length);
         foreach (var item in name.ToLowerInvariant())
         {
-            if (char.IsLetterOrDigit(item)) { slug.Append(item); }
+            if (char.IsLetterOrDigit(item) || item == '-') { slug.Append(item); }
             else if (item == ' ' || item == '_' || item == '/' || item == '\\') { slug.Append('-'); }
             else if (item == '.' || item == ':') { slug.Append('-'); }
         }
