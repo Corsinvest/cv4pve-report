@@ -30,13 +30,14 @@ For each Proxmox node, the diagram shows a horizontal chain from physical hardwa
 
 - **Columns** grow to fit the widest box in each column, so everything aligns vertically.
 - **Rows** grow in height to fit multi-line labels without clipping.
-- **Arrows** are orthogonal and always flow left-to-right (from physical hardware toward guests); arrows entering the same target are staggered to avoid overlapping vertical segments.
+- **Row order** is stable across runs: nodes, bridges, NICs and storages are sorted by name, VMs/CTs by numeric id (`105` before `1000`, `vmbr2` before `vmbr10`), with gateway VMs first under each bridge. The order is then refined to reduce crossing arrows, and only changes when that actually removes crossings.
+- **Arrows** are orthogonal and always flow left-to-right (from physical hardware toward guests); arrows entering the same target are staggered to avoid overlapping vertical segments. A VM with NICs on several bridges gets an arrow from each of them.
 
 ## Colours
 
 | Colour | Meaning |
 |--------|---------|
-| 🟦 Blue (`#4A90D9`) | Physical NIC (eth / InfiniBand) |
+| 🟦 Blue (`#4A90D9`) | Physical NIC (eth / InfiniBand / OVSPort) |
 | 🟥 Red (`#E74C3C`) | Physical NIC with a gateway configured directly on the host |
 | 🟪 Purple (`#7B68EE`) | Bond (link aggregation) |
 | 🟩 Green (`#27AE60`) | Bridge (Linux bridge or OVSBridge) |
@@ -57,8 +58,10 @@ Additional lines inside the box vary by type:
 
 - **NIC** — `DOWN` (if inactive), type (if not eth), IP/GW (for standalone NICs with an IP on the host), MTU
 - **Bond** — `DOWN`, mode (e.g. 802.3ad), policy, miimon, `← slaves`, MTU
-- **Bridge** — `DOWN`, type (if OVSBridge), IP/IP6, GW/GW6, MTU, VLANs, VLAN-aware, Ports, OVS Bonds
-- **VM/CT** — hostname (if the QEMU agent reports it), one line per NIC in compact form `netX → bridge [VLAN N] [IP:X.X.X.X/NN] [GW:X.X.X.X]`
+- **Bridge** — `DOWN`, type (if OVSBridge), IP/IP6, GW/GW6, MTU, VLANs, VLAN-aware, Ports, OVS Bonds, OVS Ports, `IntPort` (OVS internal ports with their address, e.g. the host management IP)
+- **VM/CT** — hostname (if the QEMU agent reports it), one line per NIC, sorted `net0, net1, … net10`, in compact form `netX [(guest name)] → bridge [VLAN N] [trunks N-M] [IP:X.X.X.X/NN] [GW:X.X.X.X]`. The guest interface name (e.g. `Ethernet`, `ens18`) is added when the QEMU agent reports it.
+
+Arrow labels show the NIC's VLAN tag, or its trunk list when the port is a trunk.
 - **Storage** — `Shared`, `Server: host/ip`, `Target: export/datastore/pool/path`, `Content: ...`
 
 Every `<rect>` also carries a `<title>` tooltip with the full record from the Proxmox API for items that don't fit the box.
@@ -77,7 +80,7 @@ Storages are rendered in a dedicated strip below the topology, separated by a da
 
 Each storage box:
 
-- Connects to the bridge whose `Cidr` matches the subnet of the storage's `server` (or `monhost` for Ceph).
+- Connects to the bridge whose subnet matches the storage's `server` (or any address in `monhost` for Ceph). The bridge subnet comes from its own `cidr`, from `address` + `netmask` when `cidr` is missing, or from an OVS internal port sitting on it.
 - Falls back to "no arrow" when the server is a hostname (no subnet to match) or no bridge covers its subnet.
 - Is coloured **grey** when `Disable: true`, keeping the same visual language as inactive NICs.
 
