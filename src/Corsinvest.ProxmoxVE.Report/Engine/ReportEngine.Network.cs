@@ -91,6 +91,7 @@ public partial class ReportEngine
                         row.Network.MacAddress,
                         row.Network.Bridge,
                         row.Network.Tag,
+                        row.Network.Trunks,
                         row.Network.Model,
                         FirewallFlag = ToX(row.Network.Firewall),
                         row.Network.IpAddress,

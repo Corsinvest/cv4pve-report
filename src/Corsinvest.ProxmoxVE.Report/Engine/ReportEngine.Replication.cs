@@ -4,6 +4,7 @@
  */
 
 using Corsinvest.ProxmoxVE.Api.Extension;
+using Corsinvest.ProxmoxVE.Api.Extension.Utils;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Report.Helpers;
 using Corsinvest.ProxmoxVE.Report.Writers;
@@ -18,7 +19,7 @@ public partial class ReportEngine
 
         var nodes = GetResources(ClusterResourceType.Node)
                               .Where(a => !a.IsUnknown)
-                              .OrderBy(a => a.Id)
+                              .OrderBy(a => a.Id, NaturalStringComparer.Instance)
                               .ToList();
 
         if (nodes.Count == 0) { return 0; }
@@ -57,7 +58,7 @@ public partial class ReportEngine
                     }).ToList());
         });
 
-        var rows = results.OrderBy(r => r.Node).SelectMany(r => r.rows).ToList();
+        var rows = results.OrderBy(r => r.Node, NaturalStringComparer.Instance).SelectMany(r => r.rows).ToList();
 
         using var sw = _writer.AddSection("Replication");
         sw.AddTable(null,

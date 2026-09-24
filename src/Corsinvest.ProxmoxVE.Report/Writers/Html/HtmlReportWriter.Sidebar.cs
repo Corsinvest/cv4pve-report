@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
+using Corsinvest.ProxmoxVE.Api.Extension.Utils;
 using System.Text;
 
 namespace Corsinvest.ProxmoxVE.Report.Writers.Html;
@@ -68,7 +69,7 @@ internal sealed partial class HtmlReportWriter
                     ["Cluster Access", "Cluster SDN", "Cluster HA", "Cluster Pools", "Cluster Log", "Cluster Tasks"],
                     childLabels: clusterChildLabels);
 
-        AppendLazyGroup(sb, sectionNames, "Nodes", [.. sectionNames.Where(n => n.StartsWith("Node ")).Order()]);
+        AppendLazyGroup(sb, sectionNames, "Nodes", [.. sectionNames.Where(n => n.StartsWith("Node ")).Order(NaturalStringComparer.Instance)]);
         AppendLazyGroup(sb, sectionNames, "VMs", [.. sectionNames.Where(n => n.StartsWith("VM ")).OrderBy(VmIdSortKey)]);
         AppendLazyGroup(sb, sectionNames, "Containers", [.. sectionNames.Where(n => n.StartsWith("CT ")).OrderBy(VmIdSortKey)]);
         AppendGroup(sb, sectionNames, displayNames, "Storages", ["Storage Content", "Backups", "Disks", "Partitions", "Snapshots"], "Storage");
@@ -202,7 +203,7 @@ internal sealed partial class HtmlReportWriter
 
         var groups = new (string Name, IEnumerable<string> Children)[]
         {
-            ("Nodes",      sectionNames.Where(n => n.StartsWith("Node ")).Order()),
+            ("Nodes",      sectionNames.Where(n => n.StartsWith("Node ")).Order(NaturalStringComparer.Instance)),
             ("VMs",        sectionNames.Where(n => n.StartsWith("VM ")).OrderBy(VmIdSortKey)),
             ("Containers", sectionNames.Where(n => n.StartsWith("CT ")).OrderBy(VmIdSortKey)),
         };

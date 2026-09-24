@@ -18,7 +18,7 @@ public partial class ReportEngine
 
         var resources = GetResources(ClusterResourceType.Vm)
                                 .Where(a => !a.IsUnknown)
-                                .OrderBy(a => a.Id)
+                                .OrderBy(a => a.Id, NaturalStringComparer.Instance)
                                 .ToList();
 
         if (resources.Count == 0) { return 0; }
@@ -59,7 +59,7 @@ public partial class ReportEngine
             return (item, rows);
         });
 
-        var rows = results.OrderBy(r => r.item.Id).SelectMany(r => r.rows).ToList();
+        var rows = results.OrderBy(r => r.item.Id, NaturalStringComparer.Instance).SelectMany(r => r.rows).ToList();
 
         using var sw = _writer.AddSection("Snapshots");
         sw.AddTable(null,

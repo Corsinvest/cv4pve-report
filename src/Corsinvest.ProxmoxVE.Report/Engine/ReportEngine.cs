@@ -231,6 +231,12 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
             ? "VM"
             : "CT";
 
+    // Configured NICs first (net0, net1, ... net10), guest-only interfaces after.
+    private static List<VmNetworkRow> SortNetworks(IEnumerable<VmNetworkRow> rows)
+        => [.. rows.OrderBy(a => string.IsNullOrEmpty(a.Network.Id))
+                   .ThenBy(a => a.Network.Id, NaturalStringComparer.Instance)
+                   .ThenBy(a => a.Network.Name, NaturalStringComparer.Instance)];
+
     private Task<TResult[]> RunParallelAsync<T, TResult>(IEnumerable<T> source, Func<T, Task<TResult>> func)
     {
         var semaphore = new SemaphoreSlim(settings.MaxParallelRequests);

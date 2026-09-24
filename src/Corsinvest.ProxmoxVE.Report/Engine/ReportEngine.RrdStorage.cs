@@ -4,6 +4,7 @@
  */
 
 using Corsinvest.ProxmoxVE.Api.Extension;
+using Corsinvest.ProxmoxVE.Api.Extension.Utils;
 using Corsinvest.ProxmoxVE.Report.Helpers;
 using Corsinvest.ProxmoxVE.Report.Writers;
 
@@ -15,7 +16,7 @@ public partial class ReportEngine
     {
         if (!settings.Storage.RrdData.Enabled) { return 0; }
 
-        var filtered = _uniqueStorages.OrderBy(a => a.Id).ToList();
+        var filtered = _uniqueStorages.OrderBy(a => a.Id, NaturalStringComparer.Instance).ToList();
         if (filtered.Count == 0) { return 0; }
 
         var results = await RunParallelAsync(filtered, async item =>
@@ -36,7 +37,7 @@ public partial class ReportEngine
                     }).ToList());
         });
 
-        var rows = results.OrderBy(r => r.item.Id).SelectMany(r => r.rows).ToList();
+        var rows = results.OrderBy(r => r.item.Id, NaturalStringComparer.Instance).SelectMany(r => r.rows).ToList();
 
         using var sw = _writer.AddSection("RRD Storage");
         sw.AddTable(null,

@@ -5,6 +5,7 @@
 
 using System.Text.RegularExpressions;
 using Corsinvest.ProxmoxVE.Api.Extension;
+using Corsinvest.ProxmoxVE.Api.Extension.Utils;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Report.Helpers;
 using Corsinvest.ProxmoxVE.Report.Writers;
@@ -54,7 +55,7 @@ public partial class ReportEngine
 
         var filtered = GetResources(ClusterResourceType.Node)
                                  .Where(a => !a.IsUnknown)
-                                 .OrderBy(a => a.Id)
+                                 .OrderBy(a => a.Id, NaturalStringComparer.Instance)
                                  .ToList();
 
         if (filtered.Count == 0) { return 0; }

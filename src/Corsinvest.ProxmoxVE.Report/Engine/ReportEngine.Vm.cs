@@ -4,6 +4,7 @@
  */
 
 using Corsinvest.ProxmoxVE.Api.Extension;
+using Corsinvest.ProxmoxVE.Api.Extension.Utils;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Vm;
 using Corsinvest.ProxmoxVE.Api.Shared.Utils;
@@ -101,10 +102,12 @@ public partial class ReportEngine
                                                  hostname,
                                                  new()
                                                  {
+                                                     Id = configNet?.Id,
                                                      Name = net.Name,
                                                      MacAddress = net.HardwareAddress?.ToUpperInvariant(),
                                                      Bridge = configNet?.Bridge,
                                                      Tag = configNet?.Tag,
+                                                     Trunks = configNet?.Trunks,
                                                      Model = configNet?.Model,
                                                      Firewall = configNet?.Firewall ?? false,
                                                      Gateway = configNet?.Gateway,
@@ -156,7 +159,7 @@ public partial class ReportEngine
             AgentRunning = agentRunning,
             AgentVersion = agentVersion,
             AgentOsInfo = agentOsInfo,
-            Networks = networks,
+            Networks = SortNetworks(networks),
             FsInfo = fsInfo,
         };
     }
@@ -167,14 +170,14 @@ public partial class ReportEngine
 
         var resources = GetResources(ClusterResourceType.Vm)
                                   .Where(a => a.VmType == VmType.Qemu)
-                                  .OrderBy(a => a.Id)
+                                  .OrderBy(a => a.Id, NaturalStringComparer.Instance)
                                   .ToList();
 
         var items = new List<dynamic>();
         var pt = new ProgressTracker(_progress, resources.Count);
 
         var results = (await RunParallelAsync(resources, item => FetchVmDataAsync(item, pt)))
-                            .OrderBy(d => d.Item.Id).ToList();
+                            .OrderBy(d => d.Item.Id, NaturalStringComparer.Instance).ToList();
 
         foreach (var d in results)
         {
@@ -325,7 +328,7 @@ public partial class ReportEngine
 
         if (config.ExtensionData != null)
         {
-            foreach (var (key, value) in config.ExtensionData.OrderBy(a => a.Key))
+            foreach (var (key, value) in config.ExtensionData.OrderBy(a => a.Key, NaturalStringComparer.Instance))
             {
                 configKv.TryAdd(key, value);
             }

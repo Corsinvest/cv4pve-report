@@ -4,6 +4,7 @@
  */
 
 using Corsinvest.ProxmoxVE.Api.Extension;
+using Corsinvest.ProxmoxVE.Api.Extension.Utils;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Node;
 using Corsinvest.ProxmoxVE.Api.Shared.Utils;
@@ -60,13 +61,13 @@ public partial class ReportEngine
         var items = new List<dynamic>();
 
         var filtered = GetResources(ClusterResourceType.Node)
-                                 .OrderBy(a => a.Id)
+                                 .OrderBy(a => a.Id, NaturalStringComparer.Instance)
                                  .ToList();
 
         var pt = new ProgressTracker(_progress, filtered.Count);
 
         var results = (await RunParallelAsync(filtered, item => FetchNodeDataAsync(item, pt)))
-                            .OrderBy(a => a.Item.Id).ToList();
+                            .OrderBy(a => a.Item.Id, NaturalStringComparer.Instance).ToList();
 
         foreach (var d in results)
         {
@@ -261,7 +262,7 @@ public partial class ReportEngine
             {
                 pt.Step("Disks");
                 sw.AddTable("Disks",
-                            disksData.OrderBy(a => a.DevPath)
+                            disksData.OrderBy(a => a.DevPath, NaturalStringComparer.Instance)
                                      .Select(a => new
                                      {
                                          DevicePath = $"{new string(' ', string.IsNullOrEmpty(a.Parent) ? 0 : 2)}{a.DevPath}",

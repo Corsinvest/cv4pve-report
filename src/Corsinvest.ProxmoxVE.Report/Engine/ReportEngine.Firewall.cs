@@ -4,6 +4,7 @@
  */
 
 using Corsinvest.ProxmoxVE.Api.Extension;
+using Corsinvest.ProxmoxVE.Api.Extension.Utils;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Common;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Vm;
@@ -106,7 +107,7 @@ public partial class ReportEngine
                 return (scope: item.Node, rules);
             });
 
-        foreach (var (scope, rules) in nodeFirewallResults.OrderBy(r => r.scope))
+        foreach (var (scope, rules) in nodeFirewallResults.OrderBy(r => r.scope, NaturalStringComparer.Instance))
         {
             AppendRules("node", scope, "", rules);
         }
@@ -141,7 +142,7 @@ public partial class ReportEngine
                         ipSets: ipSetsTask.Result);
             });
 
-        foreach (var (scopeType, scope, scopeName, rules, aliases, ipSets) in guestFirewallResults.OrderBy(r => r.scope))
+        foreach (var (scopeType, scope, scopeName, rules, aliases, ipSets) in guestFirewallResults.OrderBy(r => r.scope, NaturalStringComparer.Instance))
         {
             AppendRules(scopeType, scope, scopeName, rules);
             AppendAliases(scopeType, scope, scopeName, aliases);

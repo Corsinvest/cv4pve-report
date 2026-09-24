@@ -5,6 +5,7 @@
 
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Vm;
+using Corsinvest.ProxmoxVE.Api.Extension.Utils;
 using Corsinvest.ProxmoxVE.Report.Writers;
 
 namespace Corsinvest.ProxmoxVE.Report;
@@ -57,7 +58,7 @@ public partial class ReportEngine
                 a.Format,
             };
         }))
-        .OrderBy(a => a.Node)
+        .OrderBy(a => a.Node, NaturalStringComparer.Instance)
         .ThenBy(a => a.VmId)
         .ThenBy(a => a.Id)
         .ToList();

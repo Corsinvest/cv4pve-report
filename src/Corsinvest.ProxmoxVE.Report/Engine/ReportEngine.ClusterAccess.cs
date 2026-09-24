@@ -59,7 +59,8 @@ public partial class ReportEngine
                     {
                         User = t.UserId,
                         TfaTypes = string.Join(", ", t.Entries?.Select(e => e.Type).Distinct() ?? []),
-                        TfaCount = t.Entries?.Count() ?? 0
+                        TfaCount = t.Entries?.Count() ?? 0,
+                        TfaDisabledCount = t.Entries?.Count(e => !e.Enable) ?? 0
                     }));
 
         sw.AddTable("Groups",

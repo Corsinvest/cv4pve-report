@@ -4,7 +4,9 @@
  */
 
 using Corsinvest.ProxmoxVE.Api.Extension;
+using Corsinvest.ProxmoxVE.Api.Extension.Utils;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
+using Corsinvest.ProxmoxVE.Api.Shared.Models.Node;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Vm;
 using Corsinvest.ProxmoxVE.Api.Shared.Utils;
 using Corsinvest.ProxmoxVE.Report.Helpers;
@@ -34,8 +36,19 @@ public partial class ReportEngine
         var networks = new List<VmNetworkRow>();
         if (config != null)
         {
+            var live = item.IsRunning
+                        ? await GetCtLiveInterfacesAsync(item)
+                        : [];
+
             foreach (var net in config.Networks)
             {
+                if (!string.IsNullOrEmpty(net.MacAddress)
+                    && live.TryGetValue(net.MacAddress, out var iface))
+                {
+                    net.IpAddress = LiveAddress(net.IpAddress, iface, "inet");
+                    net.IpAddress6 = LiveAddress(net.IpAddress6, iface, "inet6");
+                }
+
                 networks.Add(new(item.VmId,
                                  item.Name,
                                  item.Node,
@@ -51,22 +64,62 @@ public partial class ReportEngine
         {
             Item = item,
             Config = config,
-            Networks = networks
+            Networks = SortNetworks(networks)
         };
+    }
+
+    // Live addresses of a running container, keyed by MAC. The endpoint is missing on
+    // older PVE releases: the config values are kept and no issue is raised.
+    private async Task<Dictionary<string, VmLxcInterface>> GetCtLiveInterfacesAsync(ClusterResource item)
+    {
+        try
+        {
+            return (await client.Nodes[item.Node].Lxc[item.VmId].Interfaces.GetAsync())
+                        .Where(a => !string.IsNullOrEmpty(a.MacAddress))
+                        .GroupBy(a => a.MacAddress, StringComparer.OrdinalIgnoreCase)
+                        .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    // Config says "dhcp"/"auto" (or nothing): show the address actually assigned, keeping the mode.
+    private static string? LiveAddress(string? configured, VmLxcInterface iface, string family)
+    {
+        static bool IsLinkLocal(string? ip) => (ip ?? "").StartsWith("fe80", StringComparison.OrdinalIgnoreCase);
+
+        var ipv6 = family == "inet6";
+        var addresses = iface.IpAddresses
+                             .Where(a => a.IpAddressType == (ipv6 ? "ipv6" : "ipv4") && !IsLinkLocal(a.IpAddress))
+                             .Select(a => $"{a.IpAddress}/{a.Prefix}")
+                             .ToList();
+        var single = ipv6 ? iface.Inet6 : iface.Inet;
+        if (addresses.Count == 0 && !string.IsNullOrEmpty(single) && !IsLinkLocal(single))
+        {
+            addresses.Add(single);
+        }
+        if (addresses.Count == 0) { return configured; }
+
+        var live = addresses.JoinAsString(Environment.NewLine);
+        return configured is "dhcp" or "auto" or "manual"
+                ? $"{live} ({configured})"
+                : string.IsNullOrEmpty(configured) ? live : configured;
     }
 
     private async Task<int> AddContainersDataAsync()
     {
         var resources = GetResources(ClusterResourceType.Vm)
                                   .Where(a => a.VmType == VmType.Lxc)
-                                  .OrderBy(a => a.Id)
+                                  .OrderBy(a => a.Id, NaturalStringComparer.Instance)
                                   .ToList();
 
         var items = new List<dynamic>();
         var pt = new ProgressTracker(_progress, resources.Count);
 
         var results = (await RunParallelAsync(resources, item => FetchCtDataAsync(item, pt)))
-                            .OrderBy(d => d.Item.Id).ToList();
+                            .OrderBy(d => d.Item.Id, NaturalStringComparer.Instance).ToList();
 
         foreach (var d in results)
         {
@@ -187,7 +240,7 @@ public partial class ReportEngine
 
         if (config.ExtensionData != null)
         {
-            foreach (var (key, value) in config.ExtensionData.OrderBy(a => a.Key))
+            foreach (var (key, value) in config.ExtensionData.OrderBy(a => a.Key, NaturalStringComparer.Instance))
             {
                 configKv.TryAdd(key, value);
             }
