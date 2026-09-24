@@ -77,7 +77,9 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
                                         .GroupBy(a => a.Shared
                                                         ? $"shared:{a.Storage}"
                                                         : $"{a.Node}:{a.Storage}")
-                                        .Select(g => g.First())];
+                                        .Select(g => g.First())
+                                        .OrderBy(a => StorageNode(a), NaturalStringComparer.Instance)
+                                        .ThenBy(a => a.Storage, NaturalStringComparer.Instance)];
 
         _vmIds = [.. (await client.GetVmsAsync(settings.Guest.Ids)).Select(a => a.VmId)];
 
@@ -270,6 +272,12 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
 
     private static string ToNewLine(string? value, string character = ",")
         => value?.Replace(character, Environment.NewLine) ?? "";
+
+    // PVE returns list options (e.g. storage content) in no fixed order.
+    private static string ToSortedNewLine(string? value, char separator = ',')
+        => (value ?? "").Split(separator, StringSplitOptions.RemoveEmptyEntries)
+                        .Order(NaturalStringComparer.Instance)
+                        .JoinAsString(Environment.NewLine);
 
     private static DateTime? FromUnixTime(long seconds)
         => seconds == 0

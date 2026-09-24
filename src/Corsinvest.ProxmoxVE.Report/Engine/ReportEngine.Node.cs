@@ -71,7 +71,7 @@ public partial class ReportEngine
 
         foreach (var d in results)
         {
-            _pendingNodeNetworkRows.AddRange(d.Networks.Select(a => (d.Item.Node, a)));
+            _pendingNodeNetworkRows.AddRange(d.Networks.OrderBy(a => a.Interface, NaturalStringComparer.Instance).Select(a => (d.Item.Node, a)));
 
             items.Add(new
             {

@@ -4,7 +4,6 @@
  */
 
 using Corsinvest.ProxmoxVE.Api.Extension;
-using Corsinvest.ProxmoxVE.Api.Extension.Utils;
 using Corsinvest.ProxmoxVE.Report.Helpers;
 using Corsinvest.ProxmoxVE.Report.Writers;
 
@@ -16,7 +15,7 @@ public partial class ReportEngine
     {
         if (!settings.Storage.IncludeContent && !settings.Storage.IncludeBackups) { return 0; }
 
-        var filtered = _uniqueStorages.Where(a => !a.IsUnknown).OrderBy(a => a.Id, NaturalStringComparer.Instance).ToList();
+        var filtered = _uniqueStorages.Where(a => !a.IsUnknown).ToList();
         if (filtered.Count == 0) { return 0; }
 
         static double? StorageUsagePct(long size, ulong storageSize)
@@ -87,7 +86,7 @@ public partial class ReportEngine
 
             return (item, contentRows, backupRows);
         });
-        var ordered = results.OrderBy(r => r.item.Id, NaturalStringComparer.Instance).ToList();
+        var ordered = results.ToList();
 
         // VmId in these tables is a string (FormatVmId converts it). Build the link by
         // column name explicitly rather than via the long-typed WithVmIdLink shorthand.

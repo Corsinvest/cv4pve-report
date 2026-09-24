@@ -4,6 +4,7 @@
  */
 
 using Corsinvest.ProxmoxVE.Api.Extension;
+using Corsinvest.ProxmoxVE.Api.Extension.Utils;
 using Corsinvest.ProxmoxVE.Report.Helpers;
 using Corsinvest.ProxmoxVE.Report.Writers;
 
@@ -29,7 +30,7 @@ public partial class ReportEngine
         await Task.WhenAll(usersTask, tfaTask, groupsTask, rolesTask, aclTask, domainsTask);
 
         sw.AddTable("Users",
-                    usersTask.Result.Select(a => new
+                    usersTask.Result.OrderBy(a => a.Id, NaturalStringComparer.Instance).Select(a => new
                     {
                         a.Id,
                         EnableFlag = ToX(a.Enable),
@@ -45,7 +46,8 @@ public partial class ReportEngine
                     }));
 
         sw.AddTable("API Tokens",
-                    usersTask.Result.SelectMany(a => (a.Tokens ?? []).Select(t => new
+                    usersTask.Result.OrderBy(a => a.Id, NaturalStringComparer.Instance)
+                                    .SelectMany(a => (a.Tokens ?? []).OrderBy(t => t.Id, NaturalStringComparer.Instance).Select(t => new
                     {
                         User = a.Id,
                         TokenId = t.Id,
@@ -55,7 +57,7 @@ public partial class ReportEngine
                     })));
 
         sw.AddTable("Two-Factor Authentication",
-                    tfaTask.Result.Select(t => new
+                    tfaTask.Result.OrderBy(t => t.UserId, NaturalStringComparer.Instance).Select(t => new
                     {
                         User = t.UserId,
                         TfaTypes = string.Join(", ", t.Entries?.Select(e => e.Type).Distinct() ?? []),
@@ -64,7 +66,7 @@ public partial class ReportEngine
                     }));
 
         sw.AddTable("Groups",
-                    groupsTask.Result.Select(a => new
+                    groupsTask.Result.OrderBy(a => a.Id, NaturalStringComparer.Instance).Select(a => new
                     {
                         a.Id,
                         a.Users,
@@ -72,7 +74,7 @@ public partial class ReportEngine
                     }));
 
         sw.AddTable("Roles",
-                    rolesTask.Result.Select(a => new
+                    rolesTask.Result.OrderBy(a => a.Id, NaturalStringComparer.Instance).Select(a => new
                     {
                         a.Id,
                         Privileges = ToNewLine(a.Privileges),
@@ -80,7 +82,10 @@ public partial class ReportEngine
                     }));
 
         sw.AddTable("ACL",
-                    aclTask.Result.Select(a => new
+                    aclTask.Result.OrderBy(a => a.Path, NaturalStringComparer.Instance)
+                                  .ThenBy(a => a.UsersGroupid, NaturalStringComparer.Instance)
+                                  .ThenBy(a => a.Roleid, NaturalStringComparer.Instance)
+                                  .Select(a => new
                     {
                         a.Path,
                         UsersOrGroup = a.UsersGroupid,
@@ -90,7 +95,7 @@ public partial class ReportEngine
                     }));
 
         sw.AddTable("Domains",
-                    domainsTask.Result.Select(a => new
+                    domainsTask.Result.OrderBy(a => a.Realm, NaturalStringComparer.Instance).Select(a => new
                     {
                         a.Realm,
                         a.Type,

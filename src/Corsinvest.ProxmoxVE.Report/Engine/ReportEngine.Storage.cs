@@ -4,7 +4,6 @@
  */
 
 using Corsinvest.ProxmoxVE.Api.Extension;
-using Corsinvest.ProxmoxVE.Api.Extension.Utils;
 using Corsinvest.ProxmoxVE.Report.Writers;
 
 namespace Corsinvest.ProxmoxVE.Report;
@@ -13,7 +12,7 @@ public partial class ReportEngine
 {
     private Task<int> AddStoragesDataAsync()
     {
-        var filtered = _uniqueStorages.OrderBy(a => a.Id, NaturalStringComparer.Instance).ToList();
+        var filtered = _uniqueStorages.ToList();
 
         foreach (var a in filtered)
         {
@@ -29,7 +28,7 @@ public partial class ReportEngine
                         a.Status,
                         HealthScore = a.HealthScoreCalculated,
                         a.PluginType,
-                        Content = ToNewLine(a.Content),
+                        Content = ToSortedNewLine(a.Content),
                         SharedFlag = ToX(a.Shared),
                         DiskSizeGB = a.DiskSize,
                         DiskUsageGB = a.DiskUsage,
