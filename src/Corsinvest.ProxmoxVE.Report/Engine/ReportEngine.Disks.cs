@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
+using Corsinvest.ProxmoxVE.Api.Extension.Utils;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Vm;
 using Corsinvest.ProxmoxVE.Report.Writers;
@@ -57,7 +58,7 @@ public partial class ReportEngine
                 a.Format,
             };
         }))
-        .OrderBy(a => a.Node)
+        .OrderBy(a => a.Node, NaturalStringComparer.Instance)
         .ThenBy(a => a.VmId)
         .ThenBy(a => a.Id)
         .ToList();

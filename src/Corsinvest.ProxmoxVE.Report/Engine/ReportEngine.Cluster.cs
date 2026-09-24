@@ -4,6 +4,7 @@
  */
 
 using Corsinvest.ProxmoxVE.Api.Extension;
+using Corsinvest.ProxmoxVE.Api.Extension.Utils;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
 using Corsinvest.ProxmoxVE.Api.Shared.Utils;
 using Corsinvest.ProxmoxVE.Report.Helpers;
@@ -32,19 +33,21 @@ public partial class ReportEngine
 
         ReportGlobal("Cluster: Status");
         sw.AddTable("Status",
-                    allClusterStatus.Select(a => new
-                    {
-                        a.Id,
-                        a.Name,
-                        IsOnlineFlag = ToX(a.IsOnline),
-                        a.Type,
-                        a.Nodes,
-                        a.Version,
-                        a.Quorate,
-                        Level = NodeHelper.DecodeLevelSupport(a.Level),
-                        a.IpAddress,
-                        a.NodeId,
-                    }));
+                    allClusterStatus.OrderBy(a => a.Type != "cluster")
+                                    .ThenBy(a => a.Name, NaturalStringComparer.Instance)
+                                    .Select(a => new
+                                    {
+                                        a.Id,
+                                        a.Name,
+                                        IsOnlineFlag = ToX(a.IsOnline),
+                                        a.Type,
+                                        a.Nodes,
+                                        a.Version,
+                                        a.Quorate,
+                                        Level = NodeHelper.DecodeLevelSupport(a.Level),
+                                        a.IpAddress,
+                                        a.NodeId,
+                                    }));
 
         ReportGlobal("Cluster: Fetching data");
 
@@ -138,11 +141,11 @@ public partial class ReportEngine
 
         ReportGlobal("Cluster: Storages");
         sw.AddTable("Storages",
-                    _storageConfigs.Select(a => new
+                    _storageConfigs.OrderBy(a => a.Storage, NaturalStringComparer.Instance).Select(a => new
                     {
                         a.Storage,
                         a.Type,
-                        ContentWrap = ToNewLine(a.Content),
+                        ContentWrap = ToSortedNewLine(a.Content),
                         SharedFlag = ToX(a.Shared),
                         DisableFlag = ToX(a.Disable),
                         a.Nodes,
