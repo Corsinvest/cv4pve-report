@@ -63,7 +63,7 @@ Files are written in this order. Conditional files (`if …`) are only present w
 | 5 | **nodes.json** + **nodes/`<name>`.json** | Node overview list + per-node detail file | always |
 | 6 | **vms.json** + **vms/`<id>`.json** | VM overview list + per-VM detail file | always |
 | 7 | **containers.json** + **containers/`<id>`.json** | Container overview list + per-CT detail file | always |
-| 8 | **network.json** | Node interfaces + VM/CT NICs (MAC, bridge, VLAN, IPs, model) | always |
+| 8 | **network.json** | Node interfaces + VM/CT NICs (MAC, bridge, VLAN, trunks, IPs, model) | always |
 | 9 | **storage-content.json** | Storage files/images with size and VM ID links | `Storage.IncludeContent` |
 | 10 | **backups.json** | Backup files across all storages | `Storage.IncludeBackups` |
 | 11 | **disks.json** | Global VM/CT disk inventory | `Guest.IncludeDisks` |

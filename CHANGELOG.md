@@ -2,6 +2,26 @@
 
 ---
 
+## [2.6.0] — 2026-09-24
+
+### What's new
+
+- **Containers show the IP they actually have.** Running containers now report the addresses assigned right now, read from Proxmox without any agent. A container configured with `dhcp` used to show just `dhcp`; it now shows `10.0.0.5/24 (dhcp)`. Older Proxmox releases that lack this information keep showing the configured value.
+- **Trunk ports in the Network sheet and diagram.** VM Networks has a new `Trunks` column, and the network diagram shows trunk ports on the NIC line and on the arrow (`net1 → vmbr1 trunks 1-4095`).
+- **VM NICs read through the guest agent keep their Proxmox name.** They now read `net0 (Ethernet) → vmbr1`, like containers, instead of just `Ethernet → vmbr1`.
+- **Two-Factor Authentication shows disabled entries.** New `TfaDisabledCount` column in Cluster Access.
+- **Same order on every run.** Rows used to follow whatever order Proxmox returned, or a plain text sort where `qemu/1000` came before `qemu/105`. Every table is now sorted, numbers inside names included (`105` before `1000`, `vmbr2` before `vmbr10`, `net2` before `net10`): VMs, containers, nodes, storages, snapshots, RRD, disks, replication, firewall, syslog, cluster status, users, roles, ACL, host network interfaces and the HTML sidebar. Two reports of an unchanged cluster now differ only in live values, so snapshot diffs show real changes.
+
+### Fixes
+
+- **Network diagram: a VM on several bridges is linked to all of them.** Only the first bridge used to get an arrow.
+- **Network diagram: VMs listed by numeric id.** `CT 105` no longer lands between `VM 1030` and `VM 1104`, and NIC lines inside a box always read `net0`, `net1`, …
+- **Network diagram: Open vSwitch bridges are wired correctly.** A physical port attached to an OVS bridge (declared on the port or in the bridge's port list) now shows up and links to the bridge, so the bridge is no longer mistaken for an internal-only network. OVS internal ports show their address on the bridge and are used to link network storages.
+- **Network diagram: storages on older network configs get their arrow.** The storage-to-bridge match now also works when the bridge has `address` + `netmask` instead of `cidr`, and when a Ceph `monhost` lists several addresses.
+- **Shared storages keep their position.** A shared storage was placed according to whichever node it happened to be read from; it is now sorted by name with the other shared storages.
+
+---
+
 ## [2.5.1] — 2026-06-01
 
 ### Fixes

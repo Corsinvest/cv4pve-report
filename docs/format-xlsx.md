@@ -29,7 +29,7 @@ Sheets are written in this order. Conditional sheets (`if …`) are only present
 | 5 | **Nodes** | Node overview → links to per-node detail sheets | always |
 | 6 | **VMs** | VM overview → links to per-VM detail sheets | always |
 | 7 | **Containers** | Container overview → links to per-CT detail sheets | always |
-| 8 | **Network** | Node interfaces + VM/CT NICs (MAC, bridge, VLAN, IPs, model) | always |
+| 8 | **Network** | Node interfaces + VM/CT NICs (MAC, bridge, VLAN, trunks, IPs, model) | always |
 | 9 | **Storage Content** | Storage files/images with size and VM ID links | `Storage.IncludeContent` |
 | 10 | **Backups** | Backup files across all storages | `Storage.IncludeBackups` |
 | 11 | **Disks** | Global VM/CT disk inventory | `Guest.IncludeDisks` |

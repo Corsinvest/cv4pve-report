@@ -60,6 +60,7 @@ RVTools is a pure inventory tool for VMware — it exports infrastructure data t
 | RRD metrics (CPU / memory / disk / net) | | ✓ | |
 | Guest disk partitions (via agent) | ✓ | ✓ | |
 | Guest OS info / hostname (via agent) | | ✓ | |
+| Container IPs as assigned (DHCP included, no agent needed) | | ✓ | |
 | SMART data per disk | | ✓ | |
 | Backup job configuration | | ✓ | |
 | Replication status | | ✓ | |
@@ -71,6 +72,7 @@ RVTools is a pure inventory tool for VMware — it exports infrastructure data t
 | Syslog (all nodes, parsed into columns) | | ✓ | |
 | Cluster log & cluster tasks | | ✓ | |
 | Resilient collection (skip & report broken endpoints) | | ✓ | |
+| Stable row order across runs (diff-friendly snapshots) | | ✓ | |
 | **[Health Score](#health-score) per Node / VM / CT / Storage** | | ✓ | |
 | Health checks & diagnostics | | | ✓ |
 

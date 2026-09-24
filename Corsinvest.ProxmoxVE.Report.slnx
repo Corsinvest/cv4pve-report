@@ -3,4 +3,7 @@
     <Project Path="src\Corsinvest.ProxmoxVE.Report\Corsinvest.ProxmoxVE.Report.csproj" />
     <Project Path="src\Corsinvest.ProxmoxVE.Report.Console\Corsinvest.ProxmoxVE.Report.Console.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests\Corsinvest.ProxmoxVE.Report.Tests\Corsinvest.ProxmoxVE.Report.Tests.csproj" />
+  </Folder>
 </Solution>

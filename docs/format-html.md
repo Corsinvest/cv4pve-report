@@ -72,7 +72,7 @@ Pages appear in this order in the sidebar. Conditional pages (`if …`) are only
 | 6 | **Nodes** (`nodes.html` + `nodes/<name>.html`) | Node overview → per-node detail pages | always |
 | 7 | **VMs** (`vms.html` + `vms/<id>.html`) | VM overview → per-VM detail pages | always |
 | 8 | **Containers** (`containers.html` + `containers/<id>.html`) | Container overview → per-CT detail pages | always |
-| 9 | **Network** (`network.html`) | Node interfaces + VM/CT NICs (MAC, bridge, VLAN, IPs, model) | always |
+| 9 | **Network** (`network.html`) | Node interfaces + VM/CT NICs (MAC, bridge, VLAN, trunks, IPs, model) | always |
 | 10 | **Storage Content** (`storage-content.html`) | Storage files/images with size and VM ID links | `Storage.IncludeContent` |
 | 11 | **Backups** (`backups.html`) | Backup files across all storages | `Storage.IncludeBackups` |
 | 12 | **Disks** (`disks.html`) | Global VM/CT disk inventory | `Guest.IncludeDisks` |
