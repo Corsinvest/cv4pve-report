@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
-using Corsinvest.ProxmoxVE.Api.Extension.Utils;
 using System.Text;
+using Corsinvest.ProxmoxVE.Api.Extension.Utils;
 
 namespace Corsinvest.ProxmoxVE.Report.Writers.Html;
 

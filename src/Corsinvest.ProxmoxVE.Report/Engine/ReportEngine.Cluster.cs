@@ -36,18 +36,18 @@ public partial class ReportEngine
                     allClusterStatus.OrderBy(a => a.Type != "cluster")
                                     .ThenBy(a => a.Name, NaturalStringComparer.Instance)
                                     .Select(a => new
-                    {
-                        a.Id,
-                        a.Name,
-                        IsOnlineFlag = ToX(a.IsOnline),
-                        a.Type,
-                        a.Nodes,
-                        a.Version,
-                        a.Quorate,
-                        Level = NodeHelper.DecodeLevelSupport(a.Level),
-                        a.IpAddress,
-                        a.NodeId,
-                    }));
+                                    {
+                                        a.Id,
+                                        a.Name,
+                                        IsOnlineFlag = ToX(a.IsOnline),
+                                        a.Type,
+                                        a.Nodes,
+                                        a.Version,
+                                        a.Quorate,
+                                        Level = NodeHelper.DecodeLevelSupport(a.Level),
+                                        a.IpAddress,
+                                        a.NodeId,
+                                    }));
 
         ReportGlobal("Cluster: Fetching data");
 

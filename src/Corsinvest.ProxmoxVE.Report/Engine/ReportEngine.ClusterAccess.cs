@@ -48,13 +48,13 @@ public partial class ReportEngine
         sw.AddTable("API Tokens",
                     usersTask.Result.OrderBy(a => a.Id, NaturalStringComparer.Instance)
                                     .SelectMany(a => (a.Tokens ?? []).OrderBy(t => t.Id, NaturalStringComparer.Instance).Select(t => new
-                    {
-                        User = a.Id,
-                        TokenId = t.Id,
-                        Expire = FromUnixTime(t.Expire),
-                        PrivSeparatedFlag = ToX(t.Privsep == 1),
-                        CommentWrap = t.Comment
-                    })));
+                                    {
+                                        User = a.Id,
+                                        TokenId = t.Id,
+                                        Expire = FromUnixTime(t.Expire),
+                                        PrivSeparatedFlag = ToX(t.Privsep == 1),
+                                        CommentWrap = t.Comment
+                                    })));
 
         sw.AddTable("Two-Factor Authentication",
                     tfaTask.Result.OrderBy(t => t.UserId, NaturalStringComparer.Instance).Select(t => new
@@ -86,13 +86,13 @@ public partial class ReportEngine
                                   .ThenBy(a => a.UsersGroupid, NaturalStringComparer.Instance)
                                   .ThenBy(a => a.Roleid, NaturalStringComparer.Instance)
                                   .Select(a => new
-                    {
-                        a.Path,
-                        UsersOrGroup = a.UsersGroupid,
-                        a.Type,
-                        Id = a.Roleid,
-                        PropagateFlag = ToX(a.Propagate == 1),
-                    }));
+                                  {
+                                      a.Path,
+                                      UsersOrGroup = a.UsersGroupid,
+                                      a.Type,
+                                      Id = a.Roleid,
+                                      PropagateFlag = ToX(a.Propagate == 1),
+                                  }));
 
         sw.AddTable("Domains",
                     domainsTask.Result.OrderBy(a => a.Realm, NaturalStringComparer.Instance).Select(a => new
