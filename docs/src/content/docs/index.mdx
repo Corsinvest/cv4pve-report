@@ -120,6 +120,12 @@ A few rows of three pages of the report — node, VM and container names link to
 
 Some of the columns only. Health is the [0–100 score](/cv4pve-report/output/#health-score) of the resource; a
 stopped VM has none. Without a running guest agent, Os Version is the OS type set in the VM configuration.
+:::tip[Tested at scale]
+A production cluster of **25 nodes and about 2700 VMs** gets its full report in **about 7 minutes**
+with `MaxParallelRequests: 10`, and in [12.7 minutes](https://github.com/Corsinvest/cv4pve-report/issues/10#issuecomment-4422977335) with the default of 5 — measured by
+[its administrator](https://github.com/Corsinvest/cv4pve-report/issues/10#issuecomment-4432966790) on version 2.x, with the per-VM detail sheets off. See
+[Performance](/cv4pve-report/settings/#performance).
+:::
 
 ## Why
 
