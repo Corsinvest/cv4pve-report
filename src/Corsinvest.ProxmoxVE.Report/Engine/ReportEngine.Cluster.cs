@@ -75,7 +75,7 @@ public partial class ReportEngine
                         options.Keyboard,
                         options.MacPrefix,
                         DescriptionWrap = options.Description,
-                        AllowedTags = ToNewLine(string.Join(",", options.AllowedTags ?? [])),
+                        AllowedTags = ToNewLine((options.AllowedTags ?? []).JoinAsString(",")),
                         MigrationType = options.Migration?.Type,
                         MigrationNetwork = options.Migration?.Network,
                     }]);
@@ -135,9 +135,12 @@ public partial class ReportEngine
                         a.RemoveJob,
                     }).ToList(),
                     new TableOptions<dynamic>().WithReplicationLinks(nodeSelector: _ => null,
-                                                                     vmIdSelector: r => r.Guest is long g ? g : null,
+                                                                     vmIdSelector: _ => null,
                                                                      sourceSelector: r => (string?)r.Source,
-                                                                     targetSelector: r => (string?)r.Target));
+                                                                     targetSelector: r => (string?)r.Target)
+                                               .WithColumnLink("Guest", r => long.TryParse((string?)r.Guest, out var id) && id > 0
+                                                                                ? LinkKey.Vm(id)
+                                                                                : null));
 
         ReportGlobal("Cluster: Storages");
         sw.AddTable("Storages",

@@ -22,7 +22,7 @@ internal sealed class TableBlock<T> : IBlock
     /// <summary>Outgoing links: column name → mapper from row to link key.</summary>
     public IDictionary<string, Func<T, string?>>? ColumnLinks { get; init; }
 
-    public TableBlock(string? title, IList<T> rows)
+    public TableBlock(string? title, IList<T> rows, IReadOnlySet<string>? hiddenColumns = null)
     {
         Title = title;
         _rows = rows;
@@ -31,7 +31,7 @@ internal sealed class TableBlock<T> : IBlock
         var runtimeType = typeof(T) == typeof(object) && rows.Count > 0 && rows[0] != null
                             ? rows[0]!.GetType()
                             : typeof(T);
-        _columns = BuildColumns(runtimeType);
+        _columns = [.. BuildColumns(runtimeType).Where(c => hiddenColumns?.Contains(c.Name) != true)];
     }
 
     public string? Title { get; }

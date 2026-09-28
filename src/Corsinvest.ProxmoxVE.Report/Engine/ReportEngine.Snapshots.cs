@@ -36,7 +36,8 @@ public partial class ReportEngine
                 return (item, rows);
             }
 
-            foreach (var snapshot in snapshots)
+            // "current" is the Proxmox "You are here!" marker, not a real snapshot
+            foreach (var snapshot in snapshots.Where(a => a.Name != "current"))
             {
                 rows.Add(new
                 {

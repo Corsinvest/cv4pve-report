@@ -95,7 +95,7 @@ One row per guest NIC: VMs first, then containers, each in guest id order; withi
 
 Where the rows come from:
 
-- **Running VMs** with the QEMU guest agent enabled in their configuration, when `Guest.IncludeQemuAgent` is on and the agent answers within `Guest.QemuAgentTimeout`: one row per interface reported by the agent (`network-get-interfaces`), skipping interfaces with no MAC or an all-zero MAC. Each is matched by MAC address to the VM's `netN` configuration; interfaces with no match are marked **Is Internal**. A configured NIC that the agent does not report has no row.
+- **Running VMs** with the QEMU guest agent enabled in their configuration, when `Guest.IncludeQemuAgent` is on and the agent answers within `Guest.QemuAgentTimeout`: one row per interface reported by the agent (`network-get-interfaces`), skipping interfaces with no MAC or an all-zero MAC. Each is matched by MAC address to the VM's `netN` configuration; interfaces with no match are marked **Is Internal**. A configured NIC that the agent does not report gets a row from the configuration, as does every NIC when the agent returns no interfaces.
 - **Other VMs** (stopped, agent disabled or not answering): one row per `netN` entry of the VM configuration.
 - **Containers**: one row per `netN` entry of the container configuration. For running containers, an address configured as `dhcp`, `auto` or `manual`, or left empty, is replaced with the live one from `/nodes/{node}/lxc/{vmid}/interfaces` (matched by MAC, link-local IPv6 skipped), with the mode kept in brackets after it. Static addresses are shown as configured.
 
@@ -150,7 +150,7 @@ JSON key `firewallRules`.
 | Scope Type | `scopeType` | See the scope table above |
 | Scope | `scope` | See the scope table above |
 | Scope Name | `scopeName` | See the scope table above |
-| Positon | `positon` | Rule position |
+| Position | `position` | Rule position |
 | Type | `type` | Direction or type (in, out, group) |
 | Action | `action` | Action (ACCEPT, DROP, REJECT, or security group name) |
 | Enable | `enable` | Flag: rule enabled |

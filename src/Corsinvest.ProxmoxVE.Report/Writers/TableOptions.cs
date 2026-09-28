@@ -26,4 +26,10 @@ internal sealed record TableOptions<T>
     /// (e.g. row => $"node:{row.Node}"). Return null to leave the cell unlinked.
     /// </summary>
     public IDictionary<string, Func<T, string?>>? ColumnLinks { get; init; }
+
+    /// <summary>
+    /// Property names kept out of the Excel and HTML tables, typically helper values that
+    /// only feed <see cref="ColumnLinks"/>. JSON still emits them.
+    /// </summary>
+    public IReadOnlySet<string>? HiddenColumns { get; init; }
 }

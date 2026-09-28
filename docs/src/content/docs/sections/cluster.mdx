@@ -112,7 +112,7 @@ One row per storage replication job (`/cluster/replication`).
 |---|---|---|
 | Id | `id` | Job id |
 | Type | `type` | Job type |
-| Guest | `guest` | Guest id |
+| Guest | `guest` | Guest id, hyperlinked to the guest |
 | Source | `source` | Source node, hyperlinked to the node |
 | Target | `target` | Target node, hyperlinked to the node |
 | Schedule | `schedule` | Replication schedule |
@@ -415,7 +415,7 @@ The section has one untitled table, so `cluster-log.json` is a plain array of ro
 
 | Excel / HTML | JSON | Content |
 |---|---|---|
-| Time Date | `timeDate` | Time of the entry. Excel and HTML format this column as a date only; JSON holds the full date and time |
+| Time Date | `timeDate` | Date and time of the entry |
 | Node | `node` | Node, hyperlinked to the node |
 | User | `user` | User |
 | Severity Enum | `severityEnum` | Severity name (Panic, Alert, Critical, Error, Warning, Notice, Info, Debug) |

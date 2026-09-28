@@ -33,7 +33,7 @@ public partial class ReportEngine
                 ScopeType = scopeType,
                 Scope = scope,
                 ScopeName = scopeName,
-                a.Positon,
+                Position = a.Positon,
                 a.Type,
                 a.Action,
                 EnableFlag = ToX(a.Enable),

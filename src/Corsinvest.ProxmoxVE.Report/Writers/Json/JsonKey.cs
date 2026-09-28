@@ -24,6 +24,7 @@ internal static class JsonKey
     ///   "Root FS GB"        → "rootFS"
     ///   "On Boot"           → "onBoot"
     ///   "/etc/hosts"        → "etcHosts"
+    ///   "S.M.A.R.T. Data"   → "smartData"
     /// Convention suffixes (<c>GB</c>, <c>MB</c>, <c>%</c>) and symbols
     /// (parentheses / dashes / slashes) are dropped; the first word is lower-cased;
     /// subsequent words have their first letter upper-cased while the rest is
@@ -38,7 +39,9 @@ internal static class JsonKey
         if (trimmed.EndsWith(" GB", StringComparison.Ordinal)) { trimmed = trimmed[..^3]; }
         else if (trimmed.EndsWith(" MB", StringComparison.Ordinal)) { trimmed = trimmed[..^3]; }
 
-        var normalised = trimmed.Replace("%", " ")
+        // Dotted acronyms ("S.M.A.R.T.") collapse into one word.
+        var normalised = trimmed.Replace(".", "")
+                                .Replace("%", " ")
                                 .Replace("(", " ")
                                 .Replace(")", " ")
                                 .Replace("/", " ")
@@ -59,13 +62,21 @@ internal static class JsonKey
 
     /// <summary>
     /// Property-name → JSON key. The engine already authored property names in
-    /// PascalCase / camelCase (e.g. "VmId", "memoryUsageGB"), so the rules here
-    /// are simpler than for display strings: only the first character is folded
-    /// to lower-case.
+    /// PascalCase / camelCase (e.g. "VmId", "memoryUsageGB"), so only the leading
+    /// run of capitals is folded, like camelCase does: "IP" → "ip",
+    /// "IPAddress" → "ipAddress", "VmId" → "vmId".
     /// </summary>
     public static string FromPropertyName(string name)
     {
         if (string.IsNullOrEmpty(name) || char.IsLower(name[0])) { return name; }
-        return char.ToLowerInvariant(name[0]) + name[1..];
+
+        var upperRun = 0;
+        while (upperRun < name.Length && char.IsUpper(name[upperRun])) { upperRun++; }
+
+        // The last capital of an acronym run starts the next word ("IPAddress": the "A").
+        var lowerCount = upperRun > 1 && upperRun < name.Length && char.IsLower(name[upperRun])
+                            ? upperRun - 1
+                            : upperRun;
+        return name[..lowerCount].ToLowerInvariant() + name[lowerCount..];
     }
 }

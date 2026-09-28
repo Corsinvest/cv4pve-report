@@ -16,10 +16,11 @@ public class SettingsSyslog
     public bool Enabled { get; set; }
 
     /// <summary>
-    /// Maximum number of entries to return (0 = unlimited)
+    /// Maximum number of entries to return (0 = 500). Ignored when Since is set.
     /// </summary>
     public int MaxCount { get; set; } = 500;
 
+    // Without a limit, until alone makes the node read its whole journal and the call times out.
     internal int? Limit
         => SinceUnix.HasValue
             ? null
@@ -38,9 +39,9 @@ public class SettingsSyslog
     public DateOnly? Until { get; set; }
 
     internal int? SinceUnix
-            => Since.HasValue
-                ? (int)new DateTimeOffset(Since.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).ToUnixTimeSeconds()
-                : null;
+        => Since.HasValue
+            ? (int)new DateTimeOffset(Since.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).ToUnixTimeSeconds()
+            : null;
 
     internal int? UntilUnix
         => Until.HasValue

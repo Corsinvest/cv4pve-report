@@ -42,6 +42,9 @@ internal static class TableOptionsExtensions
         return options with { ColumnLinks = dict };
     }
 
+    public static TableOptions<T> WithHiddenColumns<T>(this TableOptions<T> options, params string[] columnNames)
+        => options with { HiddenColumns = new HashSet<string>([.. options.HiddenColumns ?? Enumerable.Empty<string>(), .. columnNames]) };
+
     public static TableOptions<T> WithRowKeys<T>(this TableOptions<T> options, Func<T, IEnumerable<string>> rowKeys)
         => options with { RegisterRowKeys = rowKeys };
 }

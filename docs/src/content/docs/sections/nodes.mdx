@@ -48,13 +48,13 @@ node's detail page.
 | Cpu Mhz | `cpuMhz` | CPU clock in MHz, as returned by the API. |
 | Cpu Hvm | `cpuHvm` | Hardware virtualization support flag, as returned by the API. |
 | Memory Size GB | `memorySize` | Total memory. |
-| Memory Usage GB | `memoryUsage` | Used memory. |
+| Memory Usage GB | `memoryUsageBytes` | Used memory. |
 | Memory Usage % | `memoryUsage` | Memory used / total. |
 | Swap Total GB | `swapTotal` | Swap size (0 when node status is not available). |
 | Swap Used GB | `swapUsed` | Swap in use. |
 | Swap Usage % | `swapUsage` | Swap used / total; empty when there is no swap. |
 | Disk Size GB | `diskSize` | Root disk size from `/cluster/resources`. |
-| Disk Usage GB | `diskUsage` | Root disk used. |
+| Disk Usage GB | `diskUsageBytes` | Root disk used. |
 | Disk Usage % | `diskUsage` | Root disk used / size. |
 | Root Fs Total GB | `rootFsTotal` | Root filesystem size from node status (0 when not available). |
 | Root Fs Used GB | `rootFsUsed` | Root filesystem used. |
@@ -75,12 +75,6 @@ node's detail page.
 | Dns1 | `dns1` | First DNS server. |
 | Dns2 | `dns2` | Second DNS server. |
 | Dns3 | `dns3` | Third DNS server. |
-
-:::note[Duplicate JSON keys]
-`Memory Usage GB` and `Memory Usage %` both become the JSON key `memoryUsage`, and so do
-`Disk Usage GB` / `Disk Usage %` (`diskUsage`). The percentage is written last, so in `nodes.json`
-these keys hold the fraction (0–1), not the byte count.
-:::
 
 :::note[Health score]
 The score comes from the Corsinvest API library: 100 − (CPU% × 0.4 + RAM% × 0.4 + Disk% × 0.2),
@@ -125,7 +119,7 @@ A key-value block titled with the node name in Excel and `Info` in HTML.
 | PVE Version | `pveVersion` | `pve-manager` version string. |
 | Version | `version` | `<version>-<release>` from `/nodes/{node}/version`. |
 | Subscription | `subscription` | Subscription product name. |
-| Subscription Expiry | `subscriptionExpiry` | Filled from the subscription `regdate` field (registration date). |
+| Subscription Expiry | `subscriptionExpiry` | Next due date of the subscription (`nextduedate`). |
 | Timezone | `timezone` | Node time zone. |
 | DNS Search | `dnsSearch` | DNS search domain. |
 | DNS 1 | `dns1` | First DNS server. |
@@ -200,7 +194,7 @@ The node's `/etc/hosts`, one row per non-empty, non-comment line.
 
 | Excel / HTML | JSON | Content |
 |---|---|---|
-| IP | `iP` | First field of the line. |
+| IP | `ip` | First field of the line. |
 | Hostnames | `hostnames` | Remaining fields, one per line. |
 
 ### Disks (JSON `disks`)
@@ -227,7 +221,7 @@ path. Partition rows are indented by two spaces in Device Path, Used and Type. O
 | By Id Link | `byIdLink` | `/dev/disk/by-id` link. |
 | Osd Id | `osdId` | Ceph OSD ID, if any. |
 
-### S.M.A.R.T. Data (JSON `s.m.a.r.t.Data`)
+### S.M.A.R.T. Data (JSON `smartData`)
 
 One row per SMART attribute for every whole disk (partitions skipped). Only when
 `Node.Detail.Disk.IncludeSmartData` is on (off by default). The report makes one
@@ -308,7 +302,7 @@ Only when `Node.Detail.IncludeApt` is on.
 | File Type | `fileType` | File format (list or sources). |
 | Enabled | `enabled` | Flag: repository enabled. |
 | Types | `types` | Repository types, one per line. |
-| UR Is | `uRIs` | Repository URIs, one per line. |
+| Uris | `uris` | Repository URIs, one per line. |
 | Suites | `suites` | Suites, one per line. |
 | Components | `components` | Components, one per line. |
 | Comment | `comment` | Comment, wrapped. |
@@ -385,7 +379,7 @@ greater than 0) and `Node.Detail.Tasks.Source` (`all` sends no source filter).
 |---|---|---|
 | Unique Task Id | `uniqueTaskId` | Task UPID. |
 | Type | `type` | Task type (for example `vzdump`, `qmstart`). |
-| Vm Id | `vmId` | Task object ID (the guest ID for guest tasks). |
+| Vm Id | `vmId` | Guest ID of guest tasks, hyperlinked to the guest. |
 | User | `user` | User who started the task. |
 | Status | `status` | Final status text. |
 | Status Ok | `statusOk` | Flag: status is `OK`. |

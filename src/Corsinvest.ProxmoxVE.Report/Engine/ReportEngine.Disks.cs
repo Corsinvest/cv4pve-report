@@ -60,7 +60,7 @@ public partial class ReportEngine
         }))
         .OrderBy(a => a.Node, NaturalStringComparer.Instance)
         .ThenBy(a => a.VmId)
-        .ThenBy(a => a.Id)
+        .ThenBy(a => a.Id, NaturalStringComparer.Instance)
         .ToList();
 
         using var sw = _writer.AddSection("Disks");

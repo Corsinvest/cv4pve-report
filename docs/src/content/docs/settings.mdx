@@ -61,8 +61,9 @@ cv4pve-report --host=pve1 --api-token='report@pve!report=UUID' --settings-file=s
 ```
 
 `create-settings` always writes `settings.json` in the current folder, overwriting it, and prints the
-values allowed for the RRD time frame and consolidation. In the file these two are numbers, not names —
-see [Node](#node). Setting names are case-sensitive. `--settings-file` goes **before** `export`, and
+values allowed for the RRD time frame and consolidation. In the file they are written as names
+(`"Day"`, `"Average"`); numbers are accepted too, so files made by older versions keep working. Setting
+names are case-sensitive. `--settings-file` goes **before** `export`, and
 wins over `--fast` and `--full`. A setting left out of the file takes its standard default.
 
 cv4pve-admin's [System Report](https://corsinvest.github.io/cv4pve-admin/modules/system-report/) module
@@ -103,12 +104,12 @@ Defaults are those of the standard profile.
 | `Node.Detail.IncludeApt` | `true` | APT repositories, available updates and package versions |
 | `Node.Detail.IncludeFirewallLog` | `true` | Firewall log of the node. Needs `Firewall.Enabled` |
 | `Node.RrdData.Enabled` | `true` | RRD Nodes section |
-| `Node.RrdData.TimeFrame` | `1` | `0` Hour, `1` Day, `2` Week, `3` Month, `4` Year. A name such as `"Day"` is rejected |
-| `Node.RrdData.Consolidation` | `0` | `0` Average, `1` Maximum |
+| `Node.RrdData.TimeFrame` | `Day` | `Hour`, `Day`, `Week`, `Month`, `Year` |
+| `Node.RrdData.Consolidation` | `Average` | `Average` or `Maximum` |
 | `Node.IncludeReplication` | `true` | Replication section |
 | `Node.Syslog.Enabled` | `false` | Syslog section |
-| `Node.Syslog.MaxCount` | `500` | Lines per node when `Since` is not set |
-| `Node.Syslog.Since` / `Until` | `null` | Date range, e.g. `"2026-09-01"`. With `Since`, `MaxCount` is not applied |
+| `Node.Syslog.MaxCount` | `500` | Lines per node. `0` means 500. Not applied when `Since` is set |
+| `Node.Syslog.Since` / `Until` | `null` | Date range in UTC, both days included, e.g. `"2026-09-01"` |
 
 ### Guest
 
@@ -119,10 +120,11 @@ Defaults are those of the standard profile.
 | `Guest.Detail.Tasks.Enabled` | `true` | Recent tasks of the guest |
 | `Guest.Detail.Tasks.OnlyErrors` | `false` | Only failed tasks |
 | `Guest.Detail.Tasks.MaxCount` | `0` | Tasks per guest. `0` = the API default |
+| `Guest.Detail.Tasks.Source` | `all` | `all`, `local` or `active` |
 | `Guest.Detail.IncludeFirewallLog` | `true` | Firewall log of the guest. Needs `Firewall.Enabled` |
 | `Guest.RrdData.Enabled` | `false` | RRD Guests section. Off by default: it grows with the number of guests |
-| `Guest.RrdData.TimeFrame` | `1` | As for nodes |
-| `Guest.RrdData.Consolidation` | `0` | As for nodes |
+| `Guest.RrdData.TimeFrame` | `Day` | As for nodes |
+| `Guest.RrdData.Consolidation` | `Average` | As for nodes |
 | `Guest.IncludeSnapshots` | `true` | Snapshots section |
 | `Guest.IncludeDisks` | `true` | Disks section |
 | `Guest.IncludePartitions` | `true` | Partitions section. Needs `IncludeQemuAgent` |
@@ -136,11 +138,11 @@ Defaults are those of the standard profile.
 | `Storage.IncludeContent` | `true` | Storage Content section |
 | `Storage.IncludeBackups` | `true` | Backups section |
 | `Storage.RrdData.Enabled` | `true` | RRD Storage section |
-| `Storage.RrdData.TimeFrame` | `1` | As for nodes |
-| `Storage.RrdData.Consolidation` | `0` | As for nodes |
+| `Storage.RrdData.TimeFrame` | `Day` | As for nodes |
+| `Storage.RrdData.Consolidation` | `Average` | As for nodes |
 | `Firewall.Enabled` | `true` | Firewall section, Firewall Options in the Cluster section, and the firewall logs in the detail sheets |
 | `Firewall.MaxCount` | `0` | Lines of each firewall log. `0` = no limit set by the report |
-| `Firewall.Since` / `Until` | `null` | Date range of the firewall logs |
+| `Firewall.Since` / `Until` | `null` | Date range of the firewall logs, in UTC, both days included |
 
 The [Sections](/cv4pve-report/sections/cluster/) pages say which setting controls each table.
 

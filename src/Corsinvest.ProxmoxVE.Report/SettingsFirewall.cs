@@ -37,11 +37,11 @@ public class SettingsFirewall
 
     internal int? SinceUnix
         => Since.HasValue
-            ? (int)new DateTimeOffset(Since.Value.ToDateTime(TimeOnly.MinValue)).ToUnixTimeSeconds()
+            ? (int)new DateTimeOffset(Since.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).ToUnixTimeSeconds()
             : null;
 
     internal int? UntilUnix
         => Until.HasValue
-            ? (int)new DateTimeOffset(Until.Value.ToDateTime(TimeOnly.MinValue)).ToUnixTimeSeconds()
+            ? (int)new DateTimeOffset(Until.Value.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero).ToUnixTimeSeconds()
             : null;
 }

@@ -161,7 +161,8 @@ public partial class ReportEngine
                                           .JoinAsString(Environment.NewLine),
                 OnBootFlag = ToX(d.Config?.OnBoot),
                 ConfigProtectionFlag = ToX(d.Config?.Protection),
-                DescriptionWrap = item.Description,
+                // ClusterResource.Description is overwritten by the SDK with "vmid (name)"
+                DescriptionWrap = d.Config?.Description,
                 d.Config?.Cores,
                 d.Config?.Swap,
                 UnprivilegedFlag = ToX(d.Config?.Unprivileged),
@@ -196,7 +197,8 @@ public partial class ReportEngine
 
     private async Task AddContainerDetailAsync(CtFetchData d, ProgressTracker pt)
     {
-        var config = d.Config!;
+        if (d.Config is not { } config) { return; }
+
         using var sw = _writer.AddSection(new SectionId.Container(d.Item.VmId, d.Item.Name ?? ""));
 
         sw.AddBackLink("Containers", LinkKey.ListContainers);
