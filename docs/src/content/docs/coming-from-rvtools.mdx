@@ -1,0 +1,94 @@
+---
+title: Coming from RVTools
+description: How the RVTools tabs map to the cv4pve-report sheets, and what is different on Proxmox VE.
+---
+
+If you used [RVTools](https://www.dell.com/en-us/shop/vmware/sl/rvtools) on vSphere, cv4pve-report does
+the same job for Proxmox VE: it reads the cluster through the API and writes one inventory, as an
+Excel workbook, a static HTML site or a JSON dataset. This page maps each RVTools tab to where the
+same data lives in the report, and lists what the report collects that RVTools has no tab for.
+
+The RVTools tab list and descriptions come from the official
+[RVTools documentation](https://downloads.dell.com/RVTools/Rvtools.pdf) (version 4.8.2).
+
+## What changes on Proxmox VE
+
+| vSphere | Proxmox VE | In the report |
+|---|---|---|
+| vCenter Server | No separate management server: every node serves the API and web UI for the whole [cluster](https://pve.proxmox.com/pve-docs/chapter-pvecm.html) | Point the report at any node |
+| ESXi host | Node | Nodes sheet, one `Node <name>` sheet per node |
+| Virtual machine | VM (QEMU/KVM) or LXC [container](https://pve.proxmox.com/pve-docs/chapter-pct.html) | Separate VMs and Containers sheets, one `VM <id>` / `CT <id>` sheet per guest |
+| VMware Tools | [QEMU guest agent](https://pve.proxmox.com/wiki/Qemu-guest-agent) (VMs only) | Hostname, OS, IPs and partitions of a VM need the agent; container data is read from the host |
+| Datastore | [Storage](https://pve.proxmox.com/pve-docs/chapter-pvesm.html), defined cluster-wide, shared or local to a node | Storages sheet; a shared storage is listed once |
+| Standard vSwitch / port group | Linux bridge (`vmbrN`) or Open vSwitch bridge per node; VLAN tag on the guest NIC or on a VLAN interface | Network sheet, Nodes Networks and VM Networks tables |
+| Distributed switch | [SDN](https://pve.proxmox.com/pve-docs/chapter-pvesdn.html) zones and VNets | Network and Cluster SDN sheets |
+| Resource pool | [Pool](https://pve.proxmox.com/pve-docs/chapter-pveum.html#pveum_pools): a group of VMs, containers and storages used for permissions, with no CPU or memory reservations or limits | Cluster Pools sheet |
+| License | Per-node [subscription](https://www.proxmox.com/en/products/proxmox-virtual-environment/pricing) | Subscription columns on the Nodes sheet |
+
+Proxmox VE has no equivalent for some vSphere objects (HBAs as inventory objects, multipathing
+state, vSAN, DRS, EVC, SRM placeholders), so a few RVTools tabs have nothing to map to.
+
+## RVTools tabs and where to find the data
+
+Sheet names are the Excel ones; the HTML and JSON outputs use the same sections.
+
+| RVTools tab | What it shows | In cv4pve-report |
+|---|---|---|
+| vInfo | One row per VM: power state, config and guest state, CPUs, memory, NICs, disks, IPs, HA settings, firmware, hardware version | [VMs](/cv4pve-report/sections/guests/#vms) and [Containers](/cv4pve-report/sections/guests/#containers) sheets: status, CPU, memory and disk size and usage, uptime, pool, tags, HA state, lock, template, hostname, OS, networks, IPs, on-boot, protection, BIOS, machine type |
+| vCPU | Per VM: CPUs, sockets, cores per socket, CPU usage, shares, reservation, limit, hot add | [VMs](/cv4pve-report/sections/guests/#vms) sheet: `Cores`, `Sockets`, `Cpu` (type), `Cpu Limit`, `Cpu Units`, `Numa`, CPU usage; `VM <id>` sheet adds vCPUs, affinity, hotplug. Containers sheet: `Cores` |
+| vMemory | Per VM: memory size, overhead, consumed, ballooned, swapped, active memory, shares, reservation, limit | [VMs](/cv4pve-report/sections/guests/#vms) sheet: memory size, usage, usage % of the VM and of the host, `Balloon`, `Hugepages`; `VM <id>` sheet adds `Shares`. Containers sheet adds `Swap` |
+| vDisk | Per virtual disk: capacity, path, thin/thick, persistence mode, controller, raw LUN | [Disks](/cv4pve-report/sections/guests/#disks) sheet: one row per VM/CT volume with storage, file name, size, format, cache, backup flag, unused flag, passthrough, preallocation, mount point (containers) |
+| vPartition | Per guest partition (needs VMware Tools): capacity, consumed, free | [Partitions](/cv4pve-report/sections/guests/#partitions) sheet: mount point, filesystem, total, used, used %, backing disks. VMs only, needs the QEMU guest agent running |
+| vNetwork | Per VM NIC: adapter type, network, switch, MAC, IPv4/IPv6 | [Network](/cv4pve-report/sections/network-firewall/#network) sheet, VM Networks table: NIC id, MAC, bridge, VLAN tag, trunks, model, firewall flag, IPv4/IPv6, gateway, MTU, rate limit. Covers VMs and containers |
+| vCD | Per VM CD-ROM device: device node, connected, device type | [Disks](/cv4pve-report/sections/guests/#disks) sheet, rows with `Kind` = `Cdrom` (and `CloudInit` for cloud-init drives), with the attached ISO |
+| vUSB | Per VM connected USB device: type, speed, auto connect | Partial: raw `usbN` entries in the Config table of each `VM <id>` sheet, and the Mapping USB table on the [Cluster](/cv4pve-report/sections/cluster/) sheet |
+| vSnapshot | Per snapshot: name, description, date, size, quiesced, state | [Snapshots](/cv4pve-report/sections/guests/#snapshots) sheet: VMs and containers, name, parent, date, "include RAM" flag, description. The size column is filled only when the report runs inside cv4pve-admin |
+| vTools | Per VM: Tools status, version, upgrade policy, heartbeat | [VMs](/cv4pve-report/sections/guests/#vms) sheet: `Agent Enabled`, `Agent Running`, `Agent Version`; the `VM <id>` sheet adds the Agent OS Info table |
+| vSource | The vCenter or ESXi server RVTools connected to: product, version, build | — The report does not describe the endpoint it connected to. The PVE version of each node is on the [Nodes](/cv4pve-report/sections/nodes/) sheet |
+| vRP | Per resource pool: VM counts, CPU and memory limits, reservations, shares, usage | [Cluster Pools](/cv4pve-report/sections/cluster/#cluster-pools) sheet: pool members (VMs, containers, storages). Proxmox pools have no limits or reservations, so those columns have no equivalent |
+| vCluster | Per cluster: hosts, CPU and memory resources, HA, admission control, DRS, DPM | [Cluster](/cv4pve-report/sections/cluster/) sheet: name, nodes, quorum, member status, options, backup jobs, storages; [Cluster HA](/cv4pve-report/sections/cluster/#cluster-ha) sheet for HA resources, groups (up to Proxmox VE 8) and status. No DRS/DPM in Proxmox VE |
+| vHost | Per host: CPU, memory, NICs, VMs, ESXi version, boot time, DNS, NTP, time zone, hardware, BIOS, certificate | [Nodes](/cv4pve-report/sections/nodes/) sheet: CPU model, sockets, cores, MHz, memory, swap, root FS, kernel, boot mode, Secure Boot, PVE version, subscription, time zone, DNS. Each `Node <name>` sheet adds services, `/etc/hosts`, SSL certificates, tasks. No hardware vendor, serial or BIOS data |
+| vHBA | Per host bus adapter: device, type, status, PCI address, driver, WWN | — Proxmox VE does not expose storage adapters. The Disks table on each `Node <name>` sheet lists the physical disks (vendor, model, serial, WWN) |
+| vNic | Per physical host NIC: driver, speed, duplex, MAC, vSwitch, PCI ID | Partial: [Network](/cv4pve-report/sections/network-firewall/#network) sheet, Nodes Networks table, rows of type `eth` with active flag and MTU; bond rows list their slave NICs. Driver, speed, duplex and PCI ID are not in the API |
+| vSwitch | Per standard vSwitch: ports, security policy, traffic shaping, teaming, MTU | [Network](/cv4pve-report/sections/network-firewall/#network) sheet, Nodes Networks table: bridge and bond rows with ports, VLAN awareness, STP, bond mode, hash policy, MTU. Also drawn in the [network diagram](/cv4pve-report/output/network-diagram/) |
+| vPort | Per port group: vSwitch, VLAN ID, security policy, shaping, teaming | [Network](/cv4pve-report/sections/network-firewall/#network) sheet: VLAN interfaces in Nodes Networks, and the bridge plus VLAN tag of each guest NIC in VM Networks |
+| dvSwitch | Per distributed switch: members, ports, MTU, LACP, CDP | [Network](/cv4pve-report/sections/network-firewall/#network) sheet, SDN Vnets table, and [Cluster SDN](/cv4pve-report/sections/cluster/#cluster-sdn) sheet: zones (type, MTU, nodes, bridge), vnets, controllers |
+| dvPort | Per distributed port group: VLAN, uplinks, policies | [Cluster SDN](/cv4pve-report/sections/cluster/#cluster-sdn) sheet: vnets (zone, tag, alias, VLAN aware) and subnets (gateway, SNAT, DHCP DNS) |
+| vSC+VMK | Per host VMkernel adapter: port group, MAC, IP, subnet, gateway | [Network](/cv4pve-report/sections/network-firewall/#network) sheet, Nodes Networks table: address, CIDR, gateway (IPv4 and IPv6) of each node interface or bridge |
+| vDatastore | Per datastore: type, capacity, provisioned, used, free, connected hosts | [Storages](/cv4pve-report/sections/storage/#storages) sheet: type, content types, shared flag, size, used, usage %. Storages table on the [Cluster](/cv4pve-report/sections/cluster/) sheet: configuration (nodes, path, server, export, pool, prune settings) |
+| vMultiPath | Per LUN and host: multipath policy, operational state, path states | — Multipathing is configured in the OS of each node and is not exposed by the Proxmox VE API |
+| vLicense | Per license: product, key, total and used, expiration, features | [Nodes](/cv4pve-report/sections/nodes/) sheet: subscription level, product name, registration date. Subscription keys are not exported |
+| vFileInfo | Every file on every datastore (optional, enabled with a preference or CLI switch) | [Storage Content](/cv4pve-report/sections/storage/#storage-content) sheet (ISO, templates, disk images) and [Backups](/cv4pve-report/sections/storage/#backups) sheet. These are the volumes Proxmox VE manages, not every file on the storage |
+| vHealth | Health check messages: 24 checks listed in the documentation, such as connected CD-ROM, active snapshot, outdated Tools, low disk or datastore space, zombie VMDK, NTP, SSH enabled, certificate expiry | — No checks in the report. It gives a [Health Score](/cv4pve-report/output/#health-score) per node, guest and storage, and an Issues sheet for API calls that failed. For checks use [cv4pve-diag](https://corsinvest.github.io/cv4pve-diag/) (see below) |
+
+## Only in cv4pve-report
+
+Data the report collects that has no RVTools tab.
+
+| Data | Where |
+|---|---|
+| Containers (LXC) as a first-class guest, with live IP addresses (DHCP included) read from the host | [Containers](/cv4pve-report/sections/guests/#containers), [Network](/cv4pve-report/sections/network-firewall/#network) |
+| Guest OS name, version and kernel from the QEMU guest agent | [VMs](/cv4pve-report/sections/guests/#vms), `VM <id>` sheets |
+| Network diagram (SVG): physical NICs, bonds, bridges, guests, SDN, network-backed storage per node | [Network diagram](/cv4pve-report/output/network-diagram/) |
+| Firewall options of the cluster; rules at cluster, node, VM and container level; aliases and IPSets of the cluster and of each guest; firewall logs per node and guest | [Firewall](/cv4pve-report/sections/network-firewall/#firewall), [Cluster](/cv4pve-report/sections/cluster/), detail sheets |
+| Backup jobs (schedule, mode, storage, next run) and backup files (size, protected, encrypted, verified) | [Cluster](/cv4pve-report/sections/cluster/), [Backups](/cv4pve-report/sections/storage/#backups) |
+| Replication jobs and their status (last and next sync, failures, errors, duration) | [Cluster](/cv4pve-report/sections/cluster/), [Replication](/cv4pve-report/sections/metrics-logs/#replication) |
+| Users, API tokens, two-factor authentication, groups, roles, ACL, authentication realms | [Cluster Access](/cv4pve-report/sections/cluster/#cluster-access) |
+| Metric servers and resource mappings (directory, PCI, USB) | [Cluster](/cv4pve-report/sections/cluster/) |
+| Node services, `/etc/hosts`, directory storages, ZFS pools and ZFS vdev status | `Node <name>` sheets ([Nodes](/cv4pve-report/sections/nodes/)) |
+| S.M.A.R.T. attributes per physical disk (off by default) | `Node <name>` sheets ([Nodes](/cv4pve-report/sections/nodes/)) |
+| APT repositories, pending updates and installed package versions | `Node <name>` sheets ([Nodes](/cv4pve-report/sections/nodes/)) |
+| SSL certificate details per node, with days until expiry | `Node <name>` sheets ([Nodes](/cv4pve-report/sections/nodes/)). RVTools shows the host certificate on vHost |
+| RRD history (CPU, memory, swap, disk, network, pressure stall) for nodes, storages and guests (guests off by default) | [RRD Nodes, RRD Storage, RRD Guests](/cv4pve-report/sections/metrics-logs/#rrd-nodes) |
+| Systemd journal per node, parsed into columns (off by default) | [Syslog](/cv4pve-report/sections/metrics-logs/#syslog) |
+| Cluster log (off by default) and cluster tasks; recent tasks per node and per guest | [Cluster Log, Cluster Tasks](/cv4pve-report/sections/cluster/#cluster-log), detail sheets |
+| Health Score per node, VM, container and storage | [Nodes](/cv4pve-report/sections/nodes/), [VMs, Containers](/cv4pve-report/sections/guests/#vms), [Storages](/cv4pve-report/sections/storage/#storages) |
+| Issues: API calls that failed during collection, with the error and a link to the affected object | Issues sheet, shown only when there is something to report |
+
+## Health checks: cv4pve-diag
+
+RVTools' vHealth tab runs a fixed set of checks against the vCenter configuration. cv4pve-report does
+not run checks: it records what is there. For health checks on Proxmox VE, use
+[cv4pve-diag](https://corsinvest.github.io/cv4pve-diag/), the dedicated diagnostic tool of the
+cv4pve suite. The two work side by side: cv4pve-report for the inventory, cv4pve-diag for the
+problems.

@@ -1,0 +1,69 @@
+---
+title: Getting started
+description: Install cv4pve-report, connect it to a Proxmox VE cluster and export your first report.
+---
+
+import CliInstall from '@corsinvest/cv4pve-docs-theme/components/CliInstall.astro';
+import CliConnection from '@corsinvest/cv4pve-docs-theme/components/CliConnection.astro';
+
+cv4pve-report runs **outside the cluster** — on your workstation, a management VM or a scheduled job —
+and talks only to the Proxmox VE REST API on port 8006. Nothing is installed on the nodes.
+
+## Installation
+
+<CliInstall repo="cv4pve-report" />
+
+## Connect to the cluster
+
+Create a dedicated user and API token first — see [Permissions](/cv4pve-report/permissions/). Then:
+
+```bash
+cv4pve-report --host=pve1.local --api-token='report@pve!report=UUID' export
+```
+
+<CliConnection user="report@pve" />
+
+## Run
+
+cv4pve-report has two commands:
+
+| Command | What it does |
+|---|---|
+| `export` | Reads the cluster and writes the report. |
+| `create-settings` | Writes `settings.json` in the current folder with the default settings (or those of `--fast` / `--full`), to edit and pass with `--settings-file` — see [Settings](/cv4pve-report/settings/). Needs no connection to the cluster. |
+
+Options of `export`:
+
+| Option | What it does |
+|---|---|
+| `--format` | `Xlsx` (default), `Html` or `Json` — see [Output](/cv4pve-report/output/). |
+| `--output`, `-o` | Path of the `.zip` to write. Default: `Report_YYYYMMDD_HHmmss.zip` in the current folder. If the path does not end in `.zip`, `.zip` is appended. An existing file is overwritten. |
+| `--fast` | Fast profile, overview tables only: no detail sheets, snapshots, disks, partitions, guest agent data, RRD, storage content, backups or firewall. For a quick look at a large cluster. |
+| `--full` | Full profile: adds SMART data, syslog, cluster log and guest RRD, reads a week of RRD history instead of a day, and limits the firewall log to the last 3 days. |
+
+Without `--fast` or `--full` the **standard** profile is used. The [profiles](/cv4pve-report/settings/#profiles)
+page lists exactly what each one turns on.
+
+```bash
+cv4pve-report --host=pve1 --api-token='report@pve!report=UUID' export                   # standard profile, Excel
+cv4pve-report --host=pve1 --api-token='report@pve!report=UUID' export --fast            # quick inventory of a large cluster
+cv4pve-report --host=pve1 --api-token='report@pve!report=UUID' export --full            # everything, for audits
+cv4pve-report --host=pve1 --api-token='report@pve!report=UUID' export --format Html -o cluster-2026-09
+
+# Your own selection of sections
+cv4pve-report create-settings --full        # then edit settings.json
+cv4pve-report --host=pve1 --api-token='report@pve!report=UUID' --settings-file=settings.json export
+```
+
+`--format`, `--output`, `--fast` and `--full` go **after** `export`. `--settings-file` goes **before**
+the command, with the connection options. A settings file always wins over `--fast` and `--full`.
+
+While it runs, the tool shows the section it is reading on one line. When the output is redirected — a
+scheduled job, a log file — it prints one line per step instead. At the end it prints
+`Report generated: <path>`.
+
+## Next
+
+The report is a `.zip` with the sections of the cluster, one sheet, page or file each:
+[Output](/cv4pve-report/output/) explains the formats and where to start reading, and
+[Sections](/cv4pve-report/sections/cluster/) every table and column.

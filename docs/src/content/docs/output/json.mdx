@@ -1,0 +1,200 @@
+---
+title: JSON
+description: The JSON dataset of cv4pve-report — file layout, shapes, raw values, jq recipes and snapshot diffs.
+---
+
+`--format Json` writes one JSON file per section, for scripts, CI pipelines, Power BI or anything that
+reads JSON. Values are raw — bytes, fractions, booleans — so nothing is lost to formatting.
+
+## Files in the zip
+
+```
+Report_20260928_101500.zip
+  metadata.json          report-wide info, always present
+  issues.json            only when an API call failed
+  network-diagram.svg
+  cluster.json
+  storages.json
+  nodes.json             overview of all nodes
+  nodes/pve01.json       one per node
+  vms.json
+  vms/100.json           one per VM
+  containers.json
+  containers/200.json    one per container
+  network.json
+  storage-content.json
+  backups.json
+  disks.json
+  partitions.json
+  snapshots.json
+  firewall.json
+  replication.json
+  rrd-nodes.json
+  rrd-storage.json
+  rrd-guests.json
+  syslog.json
+  cluster-access.json
+  cluster-sdn.json
+  cluster-ha.json
+  cluster-pools.json
+  cluster-log.json
+  cluster-tasks.json
+```
+
+A file is present only when its [section](/cv4pve-report/output/#sections) is. File names are the section
+name in lower case with dashes; node names keep their letters and digits, and dots, spaces and
+underscores become dashes (`pve01.example.com` → `nodes/pve01-example-com.json`). If two names end up
+the same, the second gets `_2`. The paths of a resource do not change from one report to the next, which makes
+[diffs](#snapshot-diffs) easy.
+
+## Shapes
+
+- **A section with a single table** is an array of rows: `vms.json`, `nodes.json`, `snapshots.json`,
+  `issues.json`, the RRD files and most other sections.
+  ```json
+  [
+    { "node": "pve01", "vmId": 100, "name": "dc01", "status": "running", "healthScore": 88, "...": "..." }
+  ]
+  ```
+- **A section with several blocks** is an object: detail files (`vms/100.json`, `nodes/pve01.json`),
+  `cluster.json`, `network.json`, `firewall.json`, `cluster-access.json`, `cluster-sdn.json` and
+  `cluster-ha.json`. A key/value block that comes first is under `info`; every other block is under its
+  title in camelCase (`SSL Certificates` → `sslCertificates`); a table without a title is under `rows`.
+  ```json
+  {
+    "info": { "...": "..." },
+    "config": { "...": "..." },
+    "tasks": [ { "...": "..." } ]
+  }
+  ```
+
+The [Sections](/cv4pve-report/sections/cluster/) pages give the JSON key of every table and column.
+
+## Values
+
+| Kind | Excel / HTML | JSON |
+|---|---|---|
+| Size — column ending in `GB` or `MB` | `16.00` in the unit of the header | Bytes: `17179869184`. The unit is dropped from the key: `Memory Size GB` → `memorySize` |
+| Percentage — column ending in `%` | `45.00%` | Fraction from 0 to 1: `0.45`. `Cpu Usage %` → `cpuUsage` |
+| Flag | Excel: `X` or empty. HTML: `✓` or `·` | `true` / `false` |
+| Multi-line text | Line breaks in the cell | String with `\n` (`\r\n` when the report runs on Windows) |
+| Date and time | Formatted date | ISO 8601 string |
+| Empty value | Empty cell | `null` or `""`: the key is always there |
+
+Keys are the column name in camelCase, without spaces or unit: `Vm Id` → `vmId`. The exception is
+`Health` → `healthScore`.
+
+:::caution[Size and percentage with the same name]
+Where a table has both the size and the percentage of the same measure — `Memory Usage GB` and
+`Memory Usage %`, `Disk Usage GB` and `Disk Usage %` — both map to the same key, and JSON keeps only the
+**fraction**. The bytes used can be computed from the size: `memorySize * memoryUsage`. The Sections pages
+mark every table where this happens.
+:::
+
+The `info` block of a detail file takes its keys from the labels on the page (`Memory GB` → `memory`,
+`VM ID` → `vmID`), so their spelling can differ from the table keys. Its values are raw too: sizes in bytes.
+
+## metadata.json
+
+```json
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-28T08:15:00.0000000Z",
+  "applicationName": "cv4pve-report",
+  "applicationVersion": "2.6.0",
+  "applicationUrl": "https://github.com/Corsinvest/cv4pve-report",
+  "filters": {
+    "nodes": "@all",
+    "guests": "@all",
+    "nodeRrd":    { "timeFrame": "Day", "consolidation": "Average" },
+    "guestRrd":   { "timeFrame": "Day", "consolidation": "Average" },
+    "storageRrd": { "timeFrame": "Day", "consolidation": "Average" }
+  },
+  "sections": [
+    { "name": "Cluster", "count": 1, "durationSeconds": 0.18 },
+    { "name": "Nodes", "count": 3, "durationSeconds": 1.42 }
+  ]
+}
+```
+
+`schemaVersion` changes when the structure of the files changes, so a script can check it before reading.
+`generatedAt` is UTC. `filters` holds the node and guest filters and, for each RRD section that is on, its
+time frame and consolidation. `sections` is the same list as the Summary: rows and seconds per section.
+
+## issues.json
+
+Present only when an API call failed. An array with one entry per failure:
+
+```json
+[
+  {
+    "severity": "Warning",
+    "section": "RRD Storage",
+    "message": "500 Internal Server Error — got wrong time resolution (60 != 1800) — GET /nodes/pve01/storage/local-ceph/rrddata",
+    "timestamp": "2026-09-28T10:15:14.1234567+02:00",
+    "linkKey": "node:pve01"
+  }
+]
+```
+
+`linkKey` names the resource the failure concerns (`node:<name>`, `vm:<id>`, …). See
+[Troubleshooting](/cv4pve-report/troubleshooting/#the-issues-page) for what the messages mean.
+
+A CI job can fail when the report is incomplete:
+
+```bash
+unzip -o Report.zip issues.json 2>/dev/null && [ "$(jq length issues.json)" -gt 0 ] && exit 1
+```
+
+## jq recipes
+
+```bash
+# Running VMs
+jq -r '.[] | select(.status == "running") | .name' vms.json
+
+# VMs with more than 16 GiB of memory
+jq '.[] | select(.memorySize > 16 * 1024 * 1024 * 1024) | {vmId, name, memoryGiB: (.memorySize / 1073741824)}' vms.json
+
+# Snapshots per guest ("current" is the live state, not a snapshot)
+jq 'map(select(.snapshot != "current")) | group_by(.vmId) | map({vmId: .[0].vmId, count: length})' snapshots.json
+
+# Certificates of a node expiring within 30 days
+jq '.sslCertificates[] | select(.daysUntilExpiry < 30) | {fileName, notAfter}' nodes/pve01.json
+
+# The network diagram, straight from the zip
+unzip -p Report.zip network-diagram.svg > diagram.svg
+```
+
+## Snapshot diffs
+
+Every table is [sorted](/cv4pve-report/output/#row-order) and every resource keeps its path, so two
+reports of the same cluster can be compared file by file: what was added, removed or changed between two
+dates.
+
+```bash
+# Every night
+cv4pve-report @/etc/cv4pve/report.conf export --format Json -o /var/backups/cv4pve/$(date +%F)
+
+# Later: what changed in a month
+unzip -q /var/backups/cv4pve/2026-08-28.zip -d old/
+unzip -q /var/backups/cv4pve/2026-09-28.zip -d new/
+diff -r old/ new/
+
+# Key by key, for one VM
+diff <(jq -S . old/vms/100.json) <(jq -S . new/vms/100.json)
+```
+
+`jq -S` sorts the keys, so the diff shows only real changes. Live values — usage, uptime, RRD — change on
+every run; compare the configuration blocks when you look for changes made by people.
+
+## Size
+
+Typical sizes, before compression:
+
+| Cluster | RRD off | RRD on |
+|---|---|---|
+| 5 nodes, 20 VMs | < 200 KB | < 1 MB |
+| 10 nodes, 200 VMs | ~ 1.5 MB | ~ 10 MB |
+| 25 nodes, 2700 VMs | ~ 5 MB | ~ 60 MB |
+
+JSON compresses well: the zip is typically 5–10× smaller.

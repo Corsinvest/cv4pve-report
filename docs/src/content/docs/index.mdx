@@ -1,0 +1,177 @@
+---
+title: cv4pve-report
+description: The RVTools for Proxmox VE — exports the whole cluster, nodes, VMs, containers, storage, network and access, to Excel, a static HTML site or JSON, with a network diagram.
+template: splash
+hero:
+  title: Know what is in your <span class="accent-mark">Proxmox VE</span> cluster
+  tagline: Runs outside the nodes, API only — the RVTools for Proxmox VE. One command exports nodes, VMs, containers, storage, network, firewall, HA, SDN, users and tokens to an Excel workbook, a static HTML site or a JSON dataset, with an SVG network diagram.
+  actions:
+    - text: Get started
+      link: /cv4pve-report/getting-started/
+      icon: right-arrow
+    - text: Coming from RVTools?
+      link: /cv4pve-report/coming-from-rvtools/
+      icon: right-arrow
+      variant: secondary
+    - text: See what it exports
+      link: /cv4pve-report/output/
+      variant: minimal
+---
+
+import { LinkCard, Tabs, TabItem } from '@astrojs/starlight/components';
+import FeatureGrid from '@corsinvest/cv4pve-docs-theme/components/FeatureGrid.astro';
+import TerminalTable from '@corsinvest/cv4pve-docs-theme/components/TerminalTable.astro';
+import CtaBand from '@corsinvest/cv4pve-docs-theme/components/CtaBand.astro';
+import proxmoxLogo from '../../assets/proxmox-logo.svg';
+
+export const features = [
+  { title: "The whole cluster in one file", text: "Cluster, nodes, VMs, containers, storages, network, firewall, replication, HA, SDN, pools, users, tokens and TFA, plus one detail sheet per node, VM and container.", href: 'output/' },
+  { title: "Excel, HTML or JSON", text: "A workbook with real Excel tables for filters and pivots, an offline HTML site to share, or one JSON file per section for scripts and diffs.", href: 'output/' },
+  { title: "Network diagram", text: "Every export includes an SVG of each node: physical NICs, bonds, bridges, the VMs and containers behind them and the network storages.", href: 'output/network-diagram/' },
+  { title: "Diff-friendly", text: "Every table is sorted, numbers inside names included, so two reports of an unchanged cluster differ only in live values.", href: 'output/json/#snapshot-diffs' },
+  { title: "Nothing silently missing", text: "A call that fails — a node down, a missing privilege, a broken RRD file — does not stop the report: it lands on an Issues page with the Proxmox error and the endpoint.", href: 'troubleshooting/#the-issues-page' },
+  { title: "Fast, standard or full", text: "Three profiles from a quick inventory of a large cluster to SMART, syslog and a week of RRD history — or a settings file that turns each section on or off.", href: 'settings/' },
+];
+
+```bash
+cv4pve-report --host=pve01 --api-token='report@pve!report=…' export --format Html
+```
+
+A few rows of three pages of the report — node, VM and container names link to their own pages:
+
+<Tabs>
+  <TabItem label="Cluster">
+
+<TerminalTable
+  command="cluster.html › Status"
+  columns={[
+    { label: 'Id', style: 'code' },
+    { label: 'Name' },
+    { label: 'Is Online' },
+    { label: 'Type', style: 'muted' },
+    { label: 'Nodes' },
+    { label: 'Quorate' },
+    { label: 'Level' },
+    { label: 'Ip Address' },
+    { label: 'Node Id' },
+  ]}
+  rows={[
+    ['cluster', 'pve-cluster', '·', 'cluster', '2', '1', 'None', '', ''],
+    ['node/pve01', 'pve01', '✓', 'node', '0', '0', 'Community', '10.0.0.11', '2'],
+    ['node/pve02', 'pve02', '✓', 'node', '0', '0', 'Community', '10.0.0.12', '1'],
+  ]}
+/>
+
+  </TabItem>
+  <TabItem label="Storages">
+
+<TerminalTable
+  command="storages.html"
+  columns={[
+    { label: 'Node', style: 'muted' },
+    { label: 'Storage', style: 'code' },
+    { label: 'Status' },
+    { label: 'Health', style: 'badge' },
+    { label: 'Plugin Type' },
+    { label: 'Shared' },
+    { label: 'Disk Size GB' },
+    { label: 'Disk Usage GB' },
+    { label: 'Disk Usage %' },
+  ]}
+  rows={[
+    ['(shared)', 'pbs01', 'available', '19', 'pbs', '✓', '3000.00', '2427.45', '80.91%'],
+    ['pve01', 'datapool', 'available', '80', 'zfspool', '·', '5068.38', '1015.68', '20.04%'],
+    ['pve01', 'local', 'available', '92', 'dir', '·', '361.85', '29.25', '8.08%'],
+    ['pve02', 'datapool', 'available', '75', 'zfspool', '·', '31689.63', '8021.70', '25.31%'],
+    ['pve02', 'local-zfs', 'available', '64', 'zfspool', '·', '214.09', '77.82', '36.35%'],
+  ]}
+  tones={{ '80': 'ok', '92': 'ok', '75': 'warning', '64': 'warning', '19': 'critical' }}
+/>
+
+  </TabItem>
+  <TabItem label="VMs">
+
+<TerminalTable
+  command="vms.html"
+  columns={[
+    { label: 'Node', style: 'muted' },
+    { label: 'Vm Id', style: 'code' },
+    { label: 'Name' },
+    { label: 'Status' },
+    { label: 'Health', style: 'badge' },
+    { label: 'Cpu Size' },
+    { label: 'Memory Size GB' },
+    { label: 'Memory Usage %' },
+    { label: 'Os Version' },
+    { label: 'Agent Running' },
+  ]}
+  rows={[
+    ['pve02', '203', 'test-debian', 'stopped', '—', '2', '4.00', '0.00%', 'Linux 5.x - 2.6 Kernel', '·'],
+    ['pve01', '1000', 'opnsense-01', 'running', '81', '4', '8.00', '35.13%', 'Linux 5.x - 2.6 Kernel', '·'],
+    ['pve01', '1006', 'dc01', 'running', '66', '4', '8.00', '65.09%', 'Windows Server 2022 Datacenter', '✓'],
+    ['pve02', '1012', 'mailstore', 'running', '76', '2', '4.00', '44.38%', 'Windows Server 2022 Standard', '✓'],
+    ['pve01', '1104', 'gitlab', 'running', '48', '4', '10.00', '95.03%', 'Ubuntu 22.04.5 LTS', '✓'],
+  ]}
+  tones={{ '81': 'ok', '66': 'warning', '76': 'warning', '48': 'critical' }}
+/>
+
+  </TabItem>
+</Tabs>
+
+Some of the columns only. Health is the [0–100 score](/cv4pve-report/output/#health-score) of the resource; a
+stopped VM has none. Without a running guest agent, Os Version is the OS type set in the VM configuration.
+
+## Why
+
+The Proxmox VE web interface shows one object at a time: a VM's hardware on one tab, its snapshots on
+another, the storage it lives on somewhere else. That is fine for daily work, but not when someone asks
+*how many VMs do we run, on which nodes, with how much memory, and who can log in?* — an auditor, a
+customer taking over the cluster, a capacity plan, a migration from VMware.
+
+cv4pve-report reads the whole cluster and writes it down in one file you can filter, share and keep.
+Take one every month and you have the history of the cluster: what was running, where, and when.
+
+## Where it fits
+
+The cv4pve suite follows the Unix philosophy: each tool does one thing and does it well. cv4pve-report
+exports everything the cluster contains, to read, share and keep. Its companion
+[cv4pve-diag](https://corsinvest.github.io/cv4pve-diag/) finds what is wrong. Two questions, two tools,
+used together.
+
+| | **cv4pve-report** | [cv4pve-diag](https://corsinvest.github.io/cv4pve-diag/) |
+|---|---|---|
+| **Question** | What do I have? | What is wrong? |
+| **Purpose** | Inventory and reporting | Diagnostics and health checks |
+| **Result** | The full inventory: nodes, VMs, containers, storage, network, users… | A list of problems, each with a code, a severity and the resource it concerns |
+| **Formats** | Excel, static HTML site, multi-file JSON, plus an SVG network diagram | Text, HTML, JSON, Markdown, Excel |
+| **Compliance** | — | Findings tagged with the controls of 18 standards |
+| **Access** | Proxmox VE API only, from outside the nodes | Proxmox VE API only, from outside the nodes |
+
+<LinkCard
+  title="Coming from RVTools?"
+  description="Each RVTools tab mapped to the sheet that holds the same data on Proxmox VE — and what the report adds."
+  href="/cv4pve-report/coming-from-rvtools/"
+/>
+
+Want reports on demand from a web interface, with their history? [cv4pve-admin](https://github.com/Corsinvest/cv4pve-admin)
+runs the same engine as its [System Report](https://corsinvest.github.io/cv4pve-admin/modules/system-report/) module.
+
+## Outside the nodes, API only
+
+cv4pve-report runs outside the cluster — on your workstation, a management VM or a scheduled job — and
+talks only to the Proxmox VE REST API. Nothing is installed on the nodes and no SSH or root shell is
+needed: an API token with the privileges listed in [Permissions](/cv4pve-report/permissions/) is enough.
+Any node gives the view of the whole cluster; give it more than one and it connects to the first one that
+answers, so it still runs while a node is down.
+
+## What it does for you
+
+<FeatureGrid items={features} />
+
+Part of the [cv4pve suite](https://www.corsinvest.it/en/cv4pve/): open source tools for Proxmox VE by Corsinvest, public since 2016.
+
+<CtaBand
+  title="Take your first report"
+  text="Download the binary, point it at any node, open the workbook."
+  proxmoxLogo={proxmoxLogo}
+/>

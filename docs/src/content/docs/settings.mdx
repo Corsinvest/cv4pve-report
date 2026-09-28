@@ -1,0 +1,197 @@
+---
+title: Settings
+description: Profiles, the settings.json file, which nodes and guests to include, and how to make cv4pve-report faster on large clusters.
+---
+
+What goes into the report is decided by a set of switches. Three profiles cover the common cases; a
+settings file lets you choose each switch yourself — for example to skip the detail sheets on a cluster
+with thousands of guests, or to add SMART data to the standard profile.
+
+## Profiles
+
+| Profile | How | For |
+|---|---|---|
+| **Fast** | `export --fast` | A quick inventory of a large cluster: overviews only |
+| **Standard** | `export` | Daily or monthly reports: everything except SMART, syslog, cluster log and guest RRD |
+| **Full** | `export --full` | Audits and capacity planning: everything, RRD on a week |
+
+What each profile turns on (from `Settings.cs`):
+
+| Setting | Fast | Standard | Full |
+|---|:-:|:-:|:-:|
+| `Cluster.Include` | ✓ | ✓ | ✓ |
+| `Cluster.Log.Enabled` | | | ✓ (`MaxCount` 1000) |
+| `Cluster.IncludeTasks` | ✓ | ✓ | ✓ |
+| `Node.Detail.Enabled` | | ✓ | ✓ |
+| `Node.Detail.Disk.IncludeDiskDetail` | | ✓ | ✓ |
+| `Node.Detail.Disk.IncludeSmartData` | | | ✓ |
+| `Node.Detail.IncludeApt` | | ✓ | ✓ |
+| `Node.Detail.Tasks.Enabled` | | ✓ | ✓ |
+| `Node.Detail.IncludeFirewallLog` | | ✓ | ✓ |
+| `Node.IncludeReplication` | ✓ | ✓ | ✓ |
+| `Node.Syslog.Enabled` | | | ✓ (`MaxCount` 1000) |
+| `Node.RrdData.Enabled` | | ✓ Day | ✓ Week |
+| `Guest.Detail.Enabled` | | ✓ | ✓ |
+| `Guest.Detail.Tasks.Enabled` | | ✓ | ✓ |
+| `Guest.Detail.IncludeFirewallLog` | | ✓ | ✓ |
+| `Guest.IncludeSnapshots` | | ✓ | ✓ |
+| `Guest.IncludeDisks` | | ✓ | ✓ |
+| `Guest.IncludePartitions` | | ✓ | ✓ |
+| `Guest.IncludeQemuAgent` | | ✓ | ✓ |
+| `Guest.RrdData.Enabled` | | | ✓ Week |
+| `Storage.IncludeContent` | | ✓ | ✓ |
+| `Storage.IncludeBackups` | | ✓ | ✓ |
+| `Storage.RrdData.Enabled` | | ✓ Day | ✓ Week |
+| `Firewall.Enabled` | | ✓ | ✓ (log: last 3 days, `MaxCount` 1000) |
+
+The Full profile sets `Firewall.Since` to three days before the run: it limits the firewall log in the
+detail sheets. Syslog in Full has no date limit, only `MaxCount` 1000.
+
+In Fast, the switches under `Node.Detail` and `Guest.Detail` keep their standard values in the file but
+have no effect: the detail sheets they belong to are off.
+
+## Your own settings file
+
+```bash
+cv4pve-report create-settings            # standard profile
+cv4pve-report create-settings --fast     # or start from fast
+cv4pve-report create-settings --full     # or from full
+# edit settings.json, then:
+cv4pve-report --host=pve1 --api-token='report@pve!report=UUID' --settings-file=settings.json export
+```
+
+`create-settings` always writes `settings.json` in the current folder, overwriting it, and prints the
+values allowed for the RRD time frame and consolidation. In the file these two are numbers, not names —
+see [Node](#node). Setting names are case-sensitive. `--settings-file` goes **before** `export`, and
+wins over `--fast` and `--full`. A setting left out of the file takes its standard default.
+
+cv4pve-admin's [System Report](https://corsinvest.github.io/cv4pve-admin/modules/system-report/) module
+uses the same settings, with a switch for each one in its web interface.
+
+## All settings
+
+Defaults are those of the standard profile.
+
+### General
+
+| Setting | Default | What it does |
+|---|---|---|
+| `MaxParallelRequests` | `5` | API requests running at the same time. `1` = one after the other. See [Performance](#performance) |
+| `ApiTimeout` | `0` | Timeout of each API request, in seconds. `0` keeps the default of the connection |
+
+### Cluster
+
+| Setting | Default | What it does |
+|---|---|---|
+| `Cluster.Include` | `true` | Cluster, Cluster Access, Cluster SDN, Cluster HA and Cluster Pools sections |
+| `Cluster.Log.Enabled` | `false` | Cluster Log section |
+| `Cluster.Log.MaxCount` | `0` | Entries of the cluster log. `0` = no limit set by the report |
+| `Cluster.IncludeTasks` | `true` | Cluster Tasks section |
+
+### Node
+
+| Setting | Default | What it does |
+|---|---|---|
+| `Node.Names` | `@all` | Nodes to include — see [Choosing nodes and guests](#choosing-nodes-and-guests) |
+| `Node.Detail.Enabled` | `true` | One detail sheet per node. Turn off on large clusters to save time and size |
+| `Node.Detail.Disk.IncludeDiskDetail` | `true` | Physical disks, ZFS pools and directory mounts in the node sheet |
+| `Node.Detail.Disk.IncludeSmartData` | `false` | SMART attributes of every disk. One API call per disk: slow on nodes with many disks |
+| `Node.Detail.Tasks.Enabled` | `true` | Recent tasks of the node |
+| `Node.Detail.Tasks.OnlyErrors` | `false` | Only failed tasks |
+| `Node.Detail.Tasks.MaxCount` | `0` | Tasks per node. `0` = the API default |
+| `Node.Detail.Tasks.Source` | `all` | `all`, `local` or `active` |
+| `Node.Detail.IncludeApt` | `true` | APT repositories, available updates and package versions |
+| `Node.Detail.IncludeFirewallLog` | `true` | Firewall log of the node. Needs `Firewall.Enabled` |
+| `Node.RrdData.Enabled` | `true` | RRD Nodes section |
+| `Node.RrdData.TimeFrame` | `1` | `0` Hour, `1` Day, `2` Week, `3` Month, `4` Year. A name such as `"Day"` is rejected |
+| `Node.RrdData.Consolidation` | `0` | `0` Average, `1` Maximum |
+| `Node.IncludeReplication` | `true` | Replication section |
+| `Node.Syslog.Enabled` | `false` | Syslog section |
+| `Node.Syslog.MaxCount` | `500` | Lines per node when `Since` is not set |
+| `Node.Syslog.Since` / `Until` | `null` | Date range, e.g. `"2026-09-01"`. With `Since`, `MaxCount` is not applied |
+
+### Guest
+
+| Setting | Default | What it does |
+|---|---|---|
+| `Guest.Ids` | `@all` | VMs and containers to include — see [Choosing nodes and guests](#choosing-nodes-and-guests) |
+| `Guest.Detail.Enabled` | `true` | One detail sheet per VM and container. Turn off on large clusters to save time and size |
+| `Guest.Detail.Tasks.Enabled` | `true` | Recent tasks of the guest |
+| `Guest.Detail.Tasks.OnlyErrors` | `false` | Only failed tasks |
+| `Guest.Detail.Tasks.MaxCount` | `0` | Tasks per guest. `0` = the API default |
+| `Guest.Detail.IncludeFirewallLog` | `true` | Firewall log of the guest. Needs `Firewall.Enabled` |
+| `Guest.RrdData.Enabled` | `false` | RRD Guests section. Off by default: it grows with the number of guests |
+| `Guest.RrdData.TimeFrame` | `1` | As for nodes |
+| `Guest.RrdData.Consolidation` | `0` | As for nodes |
+| `Guest.IncludeSnapshots` | `true` | Snapshots section |
+| `Guest.IncludeDisks` | `true` | Disks section |
+| `Guest.IncludePartitions` | `true` | Partitions section. Needs `IncludeQemuAgent` |
+| `Guest.IncludeQemuAgent` | `true` | Ask the QEMU guest agent of running VMs for OS, hostname, network and filesystems |
+| `Guest.QemuAgentTimeout` | `3` | Seconds to wait for the agent before treating it as not running |
+
+### Storage and firewall
+
+| Setting | Default | What it does |
+|---|---|---|
+| `Storage.IncludeContent` | `true` | Storage Content section |
+| `Storage.IncludeBackups` | `true` | Backups section |
+| `Storage.RrdData.Enabled` | `true` | RRD Storage section |
+| `Storage.RrdData.TimeFrame` | `1` | As for nodes |
+| `Storage.RrdData.Consolidation` | `0` | As for nodes |
+| `Firewall.Enabled` | `true` | Firewall section, Firewall Options in the Cluster section, and the firewall logs in the detail sheets |
+| `Firewall.MaxCount` | `0` | Lines of each firewall log. `0` = no limit set by the report |
+| `Firewall.Since` / `Until` | `null` | Date range of the firewall logs |
+
+The [Sections](/cv4pve-report/sections/cluster/) pages say which setting controls each table.
+
+## Choosing nodes and guests
+
+`Node.Names` takes `@all`, a node name, a comma-separated list, or names with `*` as wildcard:
+`pve1,pve2`, `pve*`. Case does not matter.
+
+`Guest.Ids` takes a comma-separated list, without spaces, of:
+
+| Pattern | Selects | Example |
+|---|---|---|
+| `@all` | Every VM and container | `@all` |
+| ID | One guest | `100` |
+| Name | One guest, by exact name | `web-server` |
+| `start:end` | IDs in the range, both included | `100:110` |
+| `%text%` | Guests whose name contains the text | `%web%` |
+| `@node-name` | Guests on a node | `@node-pve1` |
+| `@pool-name` | Guests in a pool and its nested pools | `@pool-production` |
+| `@tag-name` | Guests with a tag | `@tag-backup` |
+| `-` + any of the above | Excludes those guests | `@all,-100`, `@all,-@tag-test` |
+
+```
+@all,-@node-pve3          everything except the guests on pve3
+@pool-production,-@tag-test
+100:199,-150
+```
+
+Only the selected guests appear in the guest sections. Nodes, storages and cluster sections are not
+filtered by `Guest.Ids`. Both filters are shown on the Summary.
+
+## Performance
+
+The number of API calls grows with the number of guests and nodes: configuration, guest agent,
+snapshots, tasks and firewall log are read for each one. The switches that cut the most calls:
+
+- `Guest.Detail.Enabled: false` and `Node.Detail.Enabled: false` — no detail sheets.
+- `Guest.IncludeQemuAgent: false` — no agent calls; hostname, guest IPs and partitions stay empty, and the OS
+  column shows only the OS type from the VM configuration.
+- `Node.Detail.Disk.IncludeSmartData: false` — no call per disk.
+- `Guest.RrdData.Enabled: false` — the RRD history is the biggest part of the file.
+
+Or start from `--fast` and turn on only what you need.
+
+`MaxParallelRequests` sets how many requests run together. More is faster, but every request is a real
+call to the node you connected to: too many slow down its API and use more memory on both sides. Raise it
+step by step and watch the time on the Summary.
+
+If calls time out on a slow or distant cluster — they show up on the [Issues](/cv4pve-report/troubleshooting/#the-issues-page)
+page — raise `ApiTimeout`. If many VMs have the agent enabled but not running, each waits
+`QemuAgentTimeout` seconds: lower it to `1` for a quick run.
+
+To see which calls are slow, run with `--debug`: every API call is logged with its duration — see
+[Troubleshooting](/cv4pve-report/troubleshooting/).

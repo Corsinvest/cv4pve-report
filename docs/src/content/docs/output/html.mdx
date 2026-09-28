@@ -1,0 +1,78 @@
+---
+title: HTML
+description: The HTML report of cv4pve-report — an offline static site with sidebar, filters, sorting, light and dark theme, and standalone page export.
+---
+
+`--format Html` writes a static website in the zip. Extract it and open `index.html` in any browser: it
+works offline, with no server. Pick HTML to share the report with people who do not need to work on the
+data — a colleague, a customer, a ticket, a wiki.
+
+## Files in the zip
+
+```
+Report_20260928_101500.zip
+  index.html               Summary
+  issues.html              only when an API call failed
+  network-diagram.html     the diagram inside the report
+  network-diagram.svg
+  cluster.html
+  storages.html
+  nodes.html               overview of all nodes
+  nodes/pve01.html         one per node
+  vms.html
+  vms/100.html             one per VM
+  containers.html
+  containers/200.html      one per container
+  network.html
+  …                        one page per section, same names as the JSON files
+  assets/
+    style.css
+    app.js
+    table.js
+    sidebar-data.js
+    export-data.js
+```
+
+A page is present only when its [section](/cv4pve-report/output/#sections) is. Page names follow the same
+rules as the [JSON files](/cv4pve-report/output/json/#files-in-the-zip).
+
+## Reading the report
+
+- **Summary.** `index.html` has the date, the version, the filters applied and the contents: every section
+  with its description, row count and duration, linked.
+- **Sidebar.** The same on every page, with the current page highlighted. Nodes, VMs and containers are
+  groups you expand; their entries are loaded from `assets/sidebar-data.js` when you open the group, so the
+  pages stay small on clusters with thousands of guests. The search box shows the entries whose text contains
+  what you type — a name or an ID — and opens the groups that have a match.
+- **Links.** A node, VM or container in a table links to its page, a storage to the Storages page; the
+  Section column of Issues links to the page of the resource concerned.
+- **Index.** A page with two or more tables starts with links to each of them.
+- **Theme.** The sun/moon button switches between light and dark. The choice is remembered in the browser;
+  without one, the report follows the system setting.
+
+## Tables
+
+- **Row count** above every table, and the number of rows shown when a filter is on.
+- **Filter.** A `Filter rows…` box above every table. The toggle on its left switches between **contains**
+  (`~`, the default) and **exact** (`=`) — exact matches the whole cell and is useful for IDs, where `100`
+  would otherwise also match `1000`.
+- **Column filter.** The funnel icon in a column header opens a row of filters, one per column, each with
+  its own `~` / `=` toggle. All the filters apply together.
+- **Sort.** Click a header to sort ascending, again for descending, a third time to go back to the original
+  order. Numbers, sizes, percentages, Health and dates sort by value.
+- **Flags** show `✓` when true and `·` when false.
+- **Health** is a coloured badge — see [Health Score](/cv4pve-report/output/#health-score).
+
+For more than this — ranges, several conditions, pivots — use the [Excel](/cv4pve-report/output/excel/)
+format.
+
+## Export one page
+
+Every page except the network diagram has an **Export** button, top right. It downloads the page as a
+single file, `<page>-standalone.html`, with the styles and the table filters and sorting built in, and no
+sidebar. Links to other pages of the report are removed; links outside the report are kept. Attach it to a
+ticket or an email to send one VM or one node without the whole report.
+
+## Printing
+
+`Ctrl+P` prints the page without the sidebar, filters and buttons.
