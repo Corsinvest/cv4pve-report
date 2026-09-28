@@ -192,6 +192,9 @@ public partial class ReportEngine
 
             _pendingNetworkRows.AddRange(d.Networks);
 
+            // /cluster/resources always reports disk = 0 for QEMU guests: the agent knows the real usage
+            var agentDisk = GetAgentDiskUsage(d.FsInfo);
+
             items.Add(new
             {
                 item.Node,
@@ -212,8 +215,8 @@ public partial class ReportEngine
                 MemoryUsagePct = item.MemoryUsagePercentage,
                 HostMemoryUsagePct = item.HostMemoryUsage,
                 DiskSizeGB = item.DiskSize,
-                DiskUsageGB = item.DiskUsage,
-                DiskUsagePct = item.DiskUsagePercentage,
+                DiskUsageGB = agentDisk?.Used ?? item.DiskUsage,
+                DiskUsagePct = agentDisk?.Pct ?? item.DiskUsagePercentage,
                 Uptime = FormatHelper.UptimeInfo(item.Uptime),
                 d.Hostname,
                 OsName = d.AgentOsInfo?.Result?.Name,
@@ -273,6 +276,23 @@ public partial class ReportEngine
                         .WithVmIdLink(r => r.VmId is long id ? id : (long?)null));
 
         return resources.Count;
+    }
+
+    private static readonly HashSet<string> ReadOnlyImageFsTypes = new(["squashfs", "iso9660", "udf"], StringComparer.OrdinalIgnoreCase);
+
+    internal static (ulong Used, double Pct)? GetAgentDiskUsage(IEnumerable<VmQemuAgentGetFsInfo.ResultInfo> fsInfo)
+    {
+        // Read-only images (snap packages, CD-ROMs) are always full and not guest disk space.
+        // Same device mounted twice (bind mounts, btrfs subvolumes) must be counted once.
+        var filesystems = fsInfo.Where(a => a.TotalBytes > 0 && !ReadOnlyImageFsTypes.Contains(a.Type ?? ""))
+                                .DistinctBy(a => a.Name)
+                                .ToList();
+
+        var total = filesystems.Aggregate(0UL, (sum, a) => sum + a.TotalBytes);
+        if (total == 0) { return null; }
+
+        var used = filesystems.Aggregate(0UL, (sum, a) => sum + a.UsedBytes);
+        return (used, (double)used / total);
     }
 
     private async Task AddVmDetailAsync(VmFetchData d, ProgressTracker pt)
