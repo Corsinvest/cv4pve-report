@@ -10,6 +10,7 @@
 - **Settings files use names.** `create-settings` writes the RRD time frame and consolidation as names (`"Week"`, `"Average"`), and `--settings-file` reads names or numbers. Before, `create-settings` printed the names but a file using them was rejected, so only numbers worked.
 - **`--log-level` works.** It was ignored and only `--debug` changed the log output; now it behaves as in the other cv4pve tools.
 - **New product icon**, also used by the NuGet package.
+- **Library: `Settings.JsonOptions`.** The options the command line uses to write and read settings files, with enums as names, for applications that store the report settings themselves.
 
 ### Breaking changes (JSON only)
 
@@ -19,6 +20,7 @@
 ### Fixes
 
 - **Syslog failures are reported.** A node that timed out or could not be reached gave an empty Syslog with no trace; the failure now lands on the Issues page like every other call.
+- **A VM or container whose configuration cannot be read no longer stops the report**: it is listed without a detail page.
 - **Node detail no longer stops the report** when a status, version, subscription, time or DNS call fails, for example for a missing privilege: those values stay empty.
 - **Dates keep their time in Excel and HTML.** Cluster log, RRD, snapshot and storage content timestamps were shown as a date only.
 - **Description shows the notes of VMs and containers.** It showed `<vmid> (<name>)` instead.
