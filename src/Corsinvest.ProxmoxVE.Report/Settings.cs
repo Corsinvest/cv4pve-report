@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Common;
 
 namespace Corsinvest.ProxmoxVE.Report;
@@ -47,6 +49,15 @@ public class Settings
     /// </summary>
     public int ApiTimeout { get; set; } = 0;
 
+    /// <summary>
+    /// JSON options for reading and writing settings files (enums as names, numbers still accepted on read)
+    /// </summary>
+    public static JsonSerializerOptions JsonOptions { get; } = new()
+    {
+        WriteIndented = true,
+        Converters = { new JsonStringEnumConverter() }
+    };
+
     /// <summary>Fast profile — structure only, no heavy data.</summary>
     public static Settings Fast() => new()
     {
@@ -80,7 +91,7 @@ public class Settings
     /// <summary>Full profile — everything enabled, RRD on week timeframe.</summary>
     public static Settings Full()
     {
-        var lastWeek = DateOnly.FromDateTime(DateTime.Now.AddDays(-3));
+        var threeDaysAgo = DateOnly.FromDateTime(DateTime.Now.AddDays(-3));
         return new()
         {
             Cluster = new()
@@ -94,7 +105,7 @@ public class Settings
             Firewall = new()
             {
                 MaxCount = 1000,
-                Since = lastWeek
+                Since = threeDaysAgo
             },
             Node = new()
             {

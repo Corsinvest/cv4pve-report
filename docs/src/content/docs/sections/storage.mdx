@@ -42,13 +42,8 @@ node detail page; the **Storage** column links to this Storages page.
 | Content | `content` | Allowed content types, sorted, one per line. |
 | Shared | `shared` | Flag: shared storage. |
 | Disk Size GB | `diskSize` | Total size. |
-| Disk Usage GB | `diskUsage` | Used space. |
+| Disk Usage GB | `diskUsageBytes` | Used space. |
 | Disk Usage % | `diskUsage` | Used / total. |
-
-:::note[Duplicate JSON key]
-`Disk Usage GB` and `Disk Usage %` both become the JSON key `diskUsage`. The percentage is written
-last, so in `storages.json` `diskUsage` holds the fraction (0–1), not the byte count.
-:::
 
 :::note[Health score]
 For storages the score comes from the Corsinvest API library: 100 − (used / size × 100), clamped to
@@ -81,7 +76,7 @@ node detail page, **Storage** to the Storages page, **Vm Id** to the guest detai
 | Storage Usage % | `storageUsage` | Volume size / storage total size; empty when the storage size is 0. |
 | Vm Id | `vmId` | Owning guest ID, as text; empty when the volume has no owner. Links to the guest. |
 | Guest Name | `guestName` | Name of the owning guest, when it exists in the cluster. |
-| Creation Date | `creationDate` | Creation time. Excel and HTML show the date only; JSON keeps date and time. Volumes the API gives no creation time for (most disk images) show `1970-01-01`. |
+| Creation Date | `creationDate` | Creation time. Volumes the API gives no creation time for (most disk images) show `1970-01-01`. |
 | Notes | `notes` | Notes, wrapped. |
 | Parent | `parent` | Parent volume (linked clones, base images). |
 
@@ -110,7 +105,7 @@ page, **Storage** to the Storages page, **Vm Id** to the guest detail page.
 | Storage Usage % | `storageUsage` | Backup size / storage total size; empty when the storage size is 0. |
 | Vm Id | `vmId` | Backed-up guest ID, as text. Links to the guest. |
 | Guest Name | `guestName` | Name of the guest, when it still exists in the cluster; empty otherwise. |
-| Creation Date | `creationDate` | Backup time. Excel and HTML show the date only; JSON keeps date and time. |
+| Creation Date | `creationDate` | Backup time. |
 | Notes | `notes` | Backup notes, wrapped. |
 | Protected | `protected` | Flag: backup is protected from pruning and removal. |
 | Encrypted | `encrypted` | Flag: backup is encrypted. |

@@ -31,7 +31,8 @@ public partial class ReportEngine
                              a.Timestamp,
                              a.LinkKey,
                          }),
-                         new TableOptions<dynamic>().WithColumnLink("Section", r => (string?)r.LinkKey));
+                         new TableOptions<dynamic>().WithColumnLink("Section", r => (string?)r.LinkKey)
+                                                    .WithHiddenColumns("LinkKey"));
 
         stats.Insert(0, new("Issues", "Warnings and errors collected during report generation", _issues.All.Count, sw.Elapsed));
     }

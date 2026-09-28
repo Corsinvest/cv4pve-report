@@ -62,6 +62,7 @@ public partial class ReportEngine
 
         using var sw = _writer.AddSection("Syslog");
         ITableHandle? table = null;
+        var rowsCount = 0;
 
         foreach (var item in filtered)
         {
@@ -75,6 +76,7 @@ public partial class ReportEngine
                                     .ToSafeEnum(_issues, "Syslog", LinkKey.Node(item.Node));
 
             var rows = lines.Select(a => ParseSyslogLine(item.Node, a)).ToList();
+            rowsCount += rows.Count;
 
             if (table == null)
             {
@@ -86,6 +88,6 @@ public partial class ReportEngine
             }
         }
 
-        return filtered.Count;
+        return rowsCount;
     }
 }

@@ -128,7 +128,10 @@ internal sealed class SheetWriter(IXLWorksheet ws, Dictionary<string, string> sh
         }
     }
 
-    public IXLTable CreateTable<T>(string? title, IEnumerable<T> data, Action<IXLTable>? configure = null)
+    public IXLTable CreateTable<T>(string? title,
+                                   IEnumerable<T> data,
+                                   Action<IXLTable>? configure = null,
+                                   IReadOnlySet<string>? hiddenColumns = null)
     {
         if (title != null)
         {
@@ -138,13 +141,30 @@ internal sealed class SheetWriter(IXLWorksheet ws, Dictionary<string, string> sh
             Row++;
         }
 
-        var table = ws.Cell(Row, Col).InsertTable(data, true);
+        var rows = data as IList<T> ?? [.. data];
+        var table = ws.Cell(Row, Col).InsertTable(rows, true);
         table.AutoFilter.IsEnabled = true;
+
+        if (hiddenColumns is { Count: > 0 })
+        {
+            // Right to left so the remaining field indexes stay valid while deleting.
+            foreach (var field in table.Fields.Where(f => hiddenColumns.Contains(f.Name)).OrderByDescending(f => f.Index).ToList())
+            {
+                table.Column(field.Index + 1).Delete();
+            }
+        }
+
+        // Anonymous rows passed as dynamic expose no properties on typeof(T).
+        var rowType = typeof(T) == typeof(object) && rows.Count > 0 && rows[0] is { } first
+                        ? first.GetType()
+                        : typeof(T);
 
         foreach (var col in table.Fields)
         {
             var dataCol = table.DataRange.Column(col.Index + 1);
-            var (kind, displayName) = ColumnConvention.Parse(col.Name);
+            var (kind, displayName) = rowType.GetProperty(col.Name) is { } prop
+                                        ? ColumnConvention.Parse(prop)
+                                        : ColumnConvention.Parse(col.Name);
             col.HeaderCell.Value = displayName;
 
             switch (kind)

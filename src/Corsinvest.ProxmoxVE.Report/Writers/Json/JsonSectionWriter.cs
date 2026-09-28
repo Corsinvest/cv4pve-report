@@ -54,14 +54,23 @@ internal sealed class JsonSectionWriter(string name) : ISectionWriter
         if (row is null) { return new Dictionary<string, object?>(); }
 
         var props = row.GetType().GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-        var result = new Dictionary<string, object?>(props.Length);
+        var columns = props.Select(p =>
+                            {
+                                var (kind, _) = ColumnConvention.Parse(p);
+                                var (key, value) = TransformByConvention(p.Name, p.GetValue(row), kind);
+                                return (Kind: kind, Key: JsonKey.FromPropertyName(key), Value: value);
+                            })
+                           .ToList();
 
-        foreach (var p in props)
+        var keyCounts = columns.GroupBy(c => c.Key).ToDictionary(g => g.Key, g => g.Count());
+        var result = new Dictionary<string, object?>(columns.Count);
+
+        foreach (var (kind, key, value) in columns)
         {
-            var (kind, _) = ColumnConvention.Parse(p);
-            var raw = p.GetValue(row);
-            var (key, value) = TransformByConvention(p.Name, raw, kind);
-            result[JsonKey.FromPropertyName(key)] = value;
+            // MemoryUsageGB and MemoryUsagePct both strip to "memoryUsage": the size keeps
+            // its bytes under an explicit key, the percentage keeps the plain one.
+            var isSize = kind is ColumnKind.GB or ColumnKind.MB;
+            result[isSize && keyCounts[key] > 1 ? key + "Bytes" : key] = value;
         }
 
         return result;

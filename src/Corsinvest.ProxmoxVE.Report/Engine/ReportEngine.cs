@@ -318,7 +318,8 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
         pt.Step("Tasks");
         var rows = (await client.Nodes[node].Tasks.GetAsync(errors: TrueOrNull(settings.Guest.Detail.Tasks.OnlyErrors),
                                                              limit: IntOrNull(settings.Guest.Detail.Tasks.MaxCount),
-                                                             vmid: (int)vmId)
+                                                             vmid: (int)vmId,
+                                                             source: settings.Guest.Detail.Tasks.Source == "all" ? null : settings.Guest.Detail.Tasks.Source)
                                 .ToSafeEnum(_issues, "Guest Tasks", LinkKey.Vm(vmId)))
                        .Select(a => new
                        {

@@ -16,12 +16,14 @@ public class SettingsSyslog
     public bool Enabled { get; set; }
 
     /// <summary>
-    /// Maximum number of entries to return (0 = unlimited)
+    /// Maximum number of entries to return (0 = capped at 500).
+    /// Ignored when Since or Until is set.
     /// </summary>
     public int MaxCount { get; set; } = 500;
 
+    // The journal API rejects lastentries combined with since/until.
     internal int? Limit
-        => SinceUnix.HasValue
+        => Since.HasValue || Until.HasValue
             ? null
             : MaxCount > 0
                 ? MaxCount
@@ -38,9 +40,9 @@ public class SettingsSyslog
     public DateOnly? Until { get; set; }
 
     internal int? SinceUnix
-            => Since.HasValue
-                ? (int)new DateTimeOffset(Since.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).ToUnixTimeSeconds()
-                : null;
+        => Since.HasValue
+            ? (int)new DateTimeOffset(Since.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).ToUnixTimeSeconds()
+            : null;
 
     internal int? UntilUnix
         => Until.HasValue

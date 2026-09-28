@@ -41,12 +41,6 @@ the Fast profile turns all three off.
 Calls run up to `MaxParallelRequests` at a time. A resource whose call fails is skipped and listed
 on the Issues page.
 
-:::caution[Time Date shows the date only]
-The timestamp column is named **Time Date**, and names ending in `Date` are formatted as a date
-without time: Excel uses `dd/MM/yyyy` (the time is still in the cell value) and HTML prints
-`yyyy-MM-dd`. JSON keeps the full date and time in `timeDate`.
-:::
-
 ## RRD Nodes
 
 Excel sheet `RRD Nodes` · HTML `rrd-nodes.html` · JSON `rrd-nodes.json` · enabled by
@@ -64,7 +58,7 @@ state, sorted by node. The table has no title, so `rrd-nodes.json` is a plain ar
 | Io Wait % | `ioWait` | I/O wait. |
 | Loadavg | `loadavg` | Load average. |
 | Memory Size GB | `memorySize` | Total memory. |
-| Memory Usage GB | `memoryUsage` | Used memory. |
+| Memory Usage GB | `memoryUsageBytes` | Used memory. |
 | Memory Usage % | `memoryUsage` | Used / total memory. |
 | Swap Size GB | `swapSize` | Swap size. |
 | Swap Usage GB | `swapUsage` | Swap used. |
@@ -77,11 +71,6 @@ state, sorted by node. The table has no title, so `rrd-nodes.json` is a plain ar
 | Psi Io Full % | `psiIoFull` | I/O pressure stall, "full". |
 | Psi Mem Some % | `psiMemSome` | Memory pressure stall, "some". |
 | Psi Mem Full % | `psiMemFull` | Memory pressure stall, "full". |
-
-:::note[Duplicate JSON key]
-`Memory Usage GB` and `Memory Usage %` both become `memoryUsage`; the percentage is written last,
-so in JSON `memoryUsage` holds the fraction, not the byte count.
-:::
 
 ## RRD Storage
 
@@ -120,14 +109,14 @@ plain array of rows. **Vm Id** links to the guest detail page, **Node** to the n
 | Time Date | `timeDate` | Sample time. |
 | Cpu Usage % | `cpuUsage` | CPU usage. |
 | Memory Size GB | `memorySize` | Configured memory. |
-| Memory Usage GB | `memoryUsage` | Used memory. |
+| Memory Usage GB | `memoryUsageBytes` | Used memory. |
 | Memory Usage % | `memoryUsage` | Used / configured memory. |
 | Net In MB | `netIn` | Network received per second (API `netin`, a rate). |
 | Net Out MB | `netOut` | Network sent per second (API `netout`, a rate). |
 | Disk Read MB | `diskRead` | Disk read per second (API `diskread`, a rate). |
 | Disk Write MB | `diskWrite` | Disk written per second (API `diskwrite`, a rate). |
 | Disk Size GB | `diskSize` | Disk size. |
-| Disk Usage GB | `diskUsage` | Disk used. |
+| Disk Usage GB | `diskUsageBytes` | Disk used. |
 | Disk Usage % | `diskUsage` | Disk used / size. |
 | Psi Cpu Some % | `psiCpuSome` | CPU pressure stall, "some". Proxmox VE 9.0 or later; `0` on older releases, as for all Psi columns. |
 | Psi Cpu Full % | `psiCpuFull` | CPU pressure stall, "full". |
@@ -135,11 +124,6 @@ plain array of rows. **Vm Id** links to the guest detail page, **Node** to the n
 | Psi Io Full % | `psiIoFull` | I/O pressure stall, "full". |
 | Psi Mem Some % | `psiMemSome` | Memory pressure stall, "some". |
 | Psi Mem Full % | `psiMemFull` | Memory pressure stall, "full". |
-
-:::note[Duplicate JSON keys]
-`memoryUsage` and `diskUsage` each come from a GB column and a % column; the percentage is written
-last, so in JSON both hold the fraction, not the byte count.
-:::
 
 ## Syslog
 
@@ -152,14 +136,13 @@ from each node:
 
 | Setting | Effect |
 |---|---|
-| `Node.Syslog.Since` | Sent as `since`, midnight UTC of that date. When set, no entry limit is sent. |
+| `Node.Syslog.Since` | Sent as `since`, midnight UTC of that date. |
 | `Node.Syslog.Until` | Sent as `until`, end of that day (UTC). |
-| `Node.Syslog.MaxCount` | Sent as `lastentries` when `Since` is not set. Default 500; a value of 0 also sends 500. |
+| `Node.Syslog.MaxCount` | Sent as `lastentries` when neither `Since` nor `Until` is set — the API does not accept both. Default 500; a value of 0 also sends 500. |
 
 Each line is split with the pattern `<month day> <hh:mm:ss> <host> <service>[<pid>]: <message>`.
 A line that does not match keeps only the Node and the whole line in Message. The table has no
-title, so `syslog.json` is a plain array of rows. The cover page counts nodes for this section,
-not lines.
+title, so `syslog.json` is a plain array of rows. The Summary shows the number of lines.
 
 | Excel / HTML | JSON | Content |
 |---|---|---|

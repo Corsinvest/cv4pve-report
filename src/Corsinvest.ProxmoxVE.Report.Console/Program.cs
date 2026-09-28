@@ -13,14 +13,10 @@ const string settingsFileName = "settings.json";
 
 var app = ConsoleHelper.CreateApp("Report for Proxmox VE");
 
-var logLevel = app.DebugIsActive()
-                ? LogLevel.Debug
-                : LogLevel.Warning;
-
-var loggerFactory = ConsoleHelper.CreateLoggerFactory<Program>(logLevel);  //(app.GetLogLevelFromDebug());
+var loggerFactory = ConsoleHelper.CreateLoggerFactory<Program>(app.GetLogLevelFromDebug());
 var logger = loggerFactory.CreateLogger<Program>();
 
-var optSettingsFile = app.AddOption<string>("--settings-file", $"Settings file (default: {settingsFileName})")
+var optSettingsFile = app.AddOption<string>("--settings-file", "Settings file, e.g. created by create-settings")
                          .AddValidatorExistFile();
 
 var cmdCreateSettings = app.AddCommand("create-settings", $"Create settings file ({settingsFileName})");
@@ -35,7 +31,7 @@ cmdCreateSettings.SetAction((action) =>
                          ? Settings.Full()
                          : Settings.Standard();
 
-    File.WriteAllText(settingsFileName, JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true }));
+    File.WriteAllText(settingsFileName, JsonSerializer.Serialize(settings, Settings.JsonOptions));
     Console.Out.WriteLine(PrintEnum("RrdDataTimeFrame", typeof(RrdDataTimeFrame)));
     Console.Out.WriteLine(PrintEnum("RrdDataConsolidation", typeof(RrdDataConsolidation)));
     Console.Out.WriteLine($"Created: {settingsFileName}");
@@ -51,7 +47,7 @@ cmdExport.SetAction(async (action) =>
     var client = await app.ClientTryLoginAsync(loggerFactory);
     var settingsFile = action.GetValue(optSettingsFile);
     var settings = !string.IsNullOrWhiteSpace(settingsFile)
-                        ? JsonSerializer.Deserialize<Settings>(File.ReadAllText(settingsFile))!
+                        ? JsonSerializer.Deserialize<Settings>(File.ReadAllText(settingsFile), Settings.JsonOptions)!
                         : action.GetValue(optExportFast)
                             ? Settings.Fast()
                             : action.GetValue(optExportFull)

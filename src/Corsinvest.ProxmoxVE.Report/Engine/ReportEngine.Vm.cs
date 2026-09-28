@@ -87,7 +87,8 @@ public partial class ReportEngine
                         if (agentNetwork?.Result != null)
                         {
                             var netDict = config.Networks.Where(n => !string.IsNullOrEmpty(n.MacAddress))
-                                                         .ToDictionary(n => n.MacAddress, StringComparer.OrdinalIgnoreCase);
+                                                         .GroupBy(n => n.MacAddress, StringComparer.OrdinalIgnoreCase)
+                                                         .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
                             foreach (var net in agentNetwork.Result.Where(a => !string.IsNullOrEmpty(a.HardwareAddress)
                                                                                 && a.HardwareAddress != "00:00:00:00:00:00"))
@@ -135,9 +136,14 @@ public partial class ReportEngine
             }
         }
 
-        if (!item.IsUnknown && !agentRunning && config != null)
+        // Agent down, empty or partial: configured NICs it did not report still get a row
+        if (!item.IsUnknown && config != null)
         {
-            foreach (var net in config.Networks)
+            var reportedMacs = networks.Select(a => a.Network.MacAddress ?? "")
+                                       .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var net in config.Networks.Where(a => string.IsNullOrEmpty(a.MacAddress)
+                                                           || !reportedMacs.Contains(a.MacAddress)))
             {
                 networks.Add(new(item.VmId,
                                  item.Name,
@@ -225,7 +231,8 @@ public partial class ReportEngine
                                           .JoinAsString(Environment.NewLine),
                 OnBootFlag = ToX(d.Config?.OnBoot),
                 ConfigProtectionFlag = ToX(d.Config?.Protection),
-                DescriptionWrap = item.Description,
+                // ClusterResource.Description is overwritten by the SDK with "vmid (name)"
+                DescriptionWrap = d.Config?.Description,
                 d.Config?.Bios,
                 d.Config?.Boot,
                 d.Config?.Machine,
@@ -270,7 +277,8 @@ public partial class ReportEngine
 
     private async Task AddVmDetailAsync(VmFetchData d, ProgressTracker pt)
     {
-        var config = d.Config!;
+        if (d.Config is not { } config) { return; }
+
         using var sw = _writer.AddSection(new SectionId.Vm(d.Item.VmId, d.Item.Name ?? ""));
         sw.AddBackLink("VMs", LinkKey.ListVms);
 

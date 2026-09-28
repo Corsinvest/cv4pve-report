@@ -84,11 +84,10 @@ The [Sections](/cv4pve-report/sections/cluster/) pages give the JSON key of ever
 Keys are the column name in camelCase, without spaces or unit: `Vm Id` → `vmId`. The exception is
 `Health` → `healthScore`.
 
-:::caution[Size and percentage with the same name]
+:::note[Size and percentage of the same measure]
 Where a table has both the size and the percentage of the same measure — `Memory Usage GB` and
-`Memory Usage %`, `Disk Usage GB` and `Disk Usage %` — both map to the same key, and JSON keeps only the
-**fraction**. The bytes used can be computed from the size: `memorySize * memoryUsage`. The Sections pages
-mark every table where this happens.
+`Memory Usage %`, `Disk Usage GB` and `Disk Usage %` — the percentage keeps the plain key and the size
+gets `Bytes`: `memoryUsage` is the fraction, `memoryUsageBytes` the bytes.
 :::
 
 The `info` block of a detail file takes its keys from the labels on the page (`Memory GB` → `memory`,
@@ -155,8 +154,8 @@ jq -r '.[] | select(.status == "running") | .name' vms.json
 # VMs with more than 16 GiB of memory
 jq '.[] | select(.memorySize > 16 * 1024 * 1024 * 1024) | {vmId, name, memoryGiB: (.memorySize / 1073741824)}' vms.json
 
-# Snapshots per guest ("current" is the live state, not a snapshot)
-jq 'map(select(.snapshot != "current")) | group_by(.vmId) | map({vmId: .[0].vmId, count: length})' snapshots.json
+# Snapshots per guest
+jq 'group_by(.vmId) | map({vmId: .[0].vmId, count: length})' snapshots.json
 
 # Certificates of a node expiring within 30 days
 jq '.sslCertificates[] | select(.daysUntilExpiry < 30) | {fileName, notAfter}' nodes/pve01.json

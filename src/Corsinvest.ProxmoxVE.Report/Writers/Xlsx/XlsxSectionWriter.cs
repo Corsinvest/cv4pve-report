@@ -60,13 +60,13 @@ internal sealed class XlsxSectionWriter(SheetWriter inner) : ISectionWriter
     public ITableHandle AddTable<T>(string? title, IEnumerable<T> data, TableOptions<T>? options = null)
     {
         var dataList = data as IList<T> ?? [.. data];
-        var handle = new XlsxTableHandle(title ?? "");
+        var handle = new XlsxTableHandle(title ?? "") { HasHiddenColumns = options?.HiddenColumns is { Count: > 0 } };
 
         if (title != null) { _titledTableCount++; }
 
         _pending.Add((OpKind.Table, () =>
         {
-            var table = Inner.CreateTable(title, dataList);
+            var table = Inner.CreateTable(title, dataList, hiddenColumns: options?.HiddenColumns);
             handle.Table = table;
 
             if (options != null)
@@ -83,6 +83,10 @@ internal sealed class XlsxSectionWriter(SheetWriter inner) : ISectionWriter
     public void AppendData<T>(ITableHandle table, IEnumerable<T> data)
     {
         var xlsx = (XlsxTableHandle)table;
+
+        // ClosedXML appends by property position, which no longer matches once columns were removed.
+        if (xlsx.HasHiddenColumns) { throw new NotSupportedException("AppendData is not supported on tables with hidden columns."); }
+
         var dataList = data as IList<T> ?? [.. data];
         _pending.Add((OpKind.Append, () =>
         {

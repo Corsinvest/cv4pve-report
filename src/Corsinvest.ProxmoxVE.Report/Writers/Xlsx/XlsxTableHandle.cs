@@ -13,4 +13,6 @@ internal sealed class XlsxTableHandle(string title) : ITableHandle
 
     /// <summary>Set when the buffered <c>AddTable</c> action is replayed at <see cref="XlsxSectionWriter.Dispose"/>.</summary>
     public IXLTable? Table { get; set; }
+
+    public bool HasHiddenColumns { get; init; }
 }

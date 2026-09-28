@@ -7,7 +7,7 @@ using Corsinvest.ProxmoxVE.Report.Writers;
 
 namespace Corsinvest.ProxmoxVE.Report.Tests.Writers;
 
-internal class ColumnConventionTests
+public class ColumnConventionTests
 {
     [Theory]
     [InlineData("CpuUsagePct", ColumnKind.Percentage, "Cpu Usage %")]
@@ -16,11 +16,11 @@ internal class ColumnConventionTests
     [InlineData("DescriptionWrap", ColumnKind.Wrap, "Description")]
     [InlineData("EnableFlag", ColumnKind.Flag, "Enable")]
     [InlineData("StartDate", ColumnKind.DateOnly, "Start Date")]
-    public void Parse_RecognisesSuffixConventions(string input, ColumnKind expectedKind, string expectedLabel)
+    public void Parse_RecognisesSuffixConventions(string input, object expectedKind, string expectedLabel)
     {
         var (kind, label) = ColumnConvention.Parse(input);
 
-        Assert.Equal(expectedKind, kind);
+        Assert.Equal((ColumnKind)expectedKind, kind);
         Assert.Equal(expectedLabel, label);
     }
 
@@ -104,10 +104,38 @@ internal class ColumnConventionTests
         Assert.Equal(ColumnKind.GB, kind);
     }
 
+    [Theory]
+    [InlineData(nameof(SampleRow.TimeDate), "Time Date")]
+    [InlineData(nameof(SampleRow.CreationDate), "Creation Date")]
+    [InlineData(nameof(SampleRow.SnapshotDate), "Snapshot Date")]
+    public void Parse_PropertyInfo_DateSuffixOnDateTime_KeepsTime(string propertyName, string expectedLabel)
+    {
+        var prop = typeof(SampleRow).GetProperty(propertyName)!;
+
+        var (kind, label) = ColumnConvention.Parse(prop);
+
+        Assert.Equal(ColumnKind.DateTime, kind);
+        Assert.Equal(expectedLabel, label);
+    }
+
+    [Fact]
+    public void Parse_PropertyInfo_DateSuffixOnString_StaysDateOnly()
+    {
+        var prop = typeof(SampleRow).GetProperty(nameof(SampleRow.LabelDate))!;
+
+        var (kind, _) = ColumnConvention.Parse(prop);
+
+        Assert.Equal(ColumnKind.DateOnly, kind);
+    }
+
     private sealed class SampleRow
     {
         public int Count { get; set; }
         public DateTime Created { get; set; }
         public long MemoryGB { get; set; }
+        public DateTime TimeDate { get; set; }
+        public DateTime? CreationDate { get; set; }
+        public DateTimeOffset SnapshotDate { get; set; }
+        public string LabelDate { get; set; } = "";
     }
 }

@@ -45,6 +45,10 @@ internal static partial class ColumnConvention
     public static (ColumnKind Kind, string DisplayName) Parse(PropertyInfo p)
     {
         var result = Parse(p.Name);
+
+        // "...Date" properties carry a meaningful time (log/RRD timestamps, snapshot dates),
+        // so a real DateTime keeps it; only name-only labels stay DateOnly.
+        if (result.Kind == ColumnKind.DateOnly && IsDate(p.PropertyType)) { return (ColumnKind.DateTime, result.DisplayName); }
         if (result.Kind != ColumnKind.Text) { return result; }
         if (IsNumeric(p.PropertyType)) { return (ColumnKind.Number, result.DisplayName); }
         if (IsDate(p.PropertyType)) { return (ColumnKind.DateTime, result.DisplayName); }

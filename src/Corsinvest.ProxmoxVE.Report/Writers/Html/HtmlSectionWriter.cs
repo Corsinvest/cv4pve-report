@@ -35,7 +35,7 @@ internal sealed class HtmlSectionWriter(HtmlReportWriter parent, string name, st
     public ITableHandle AddTable<T>(string? title, IEnumerable<T> data, TableOptions<T>? options = null)
     {
         var rows = data as List<T> ?? [.. data];
-        var block = new TableBlock<T>(title, rows)
+        var block = new TableBlock<T>(title, rows, options?.HiddenColumns)
         {
             ColumnLinks = options?.ColumnLinks,
         };
