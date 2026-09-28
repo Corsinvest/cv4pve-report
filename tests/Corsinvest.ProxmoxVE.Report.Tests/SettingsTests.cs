@@ -41,9 +41,17 @@ public class SettingsTests
     }
 
     [Fact]
-    public void SyslogLimit_IsNullWhenUntilOnly()
+    public void SyslogLimit_IsKeptWhenUntilOnly()
     {
         var syslog = new SettingsSyslog { Until = new DateOnly(2026, 1, 10) };
+
+        Assert.Equal(500, syslog.Limit);
+    }
+
+    [Fact]
+    public void SyslogLimit_IsNullWhenSince()
+    {
+        var syslog = new SettingsSyslog { Since = new DateOnly(2026, 1, 1) };
 
         Assert.Null(syslog.Limit);
     }

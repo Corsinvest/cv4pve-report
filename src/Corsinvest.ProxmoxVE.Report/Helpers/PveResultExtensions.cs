@@ -58,6 +58,26 @@ internal static class PveResultExtensions
         catch (Exception ex) when (ex is not OperationCanceledException) { issues.Warning(section, ex.Message, linkKey); return ""; }
     }
 
+    /// <summary>
+    /// Awaits a raw Proxmox API call. Records HTTP errors as Issues and returns null on failure,
+    /// for SDK helpers that would hide the error behind an empty result.
+    /// </summary>
+    public static async Task<Result?> ToSafeResult(this Task<Result> task,
+                                                   IssueTracker issues,
+                                                   string section,
+                                                   string linkKey)
+    {
+        try
+        {
+            var r = await task;
+            if (r.IsSuccessStatusCode) { return r; }
+            var severity = ClassifyHttpStatus(r.StatusCode);
+            if (severity is { } s) { issues.Add(s, section, BuildMessage(r), linkKey); }
+            return null;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException) { issues.Warning(section, ex.Message, linkKey); return null; }
+    }
+
     private static void Record(IssueTracker issues, string section, string linkKey, PveResultException pex)
     {
         var severity = ClassifyHttpStatus(pex.Result.StatusCode);

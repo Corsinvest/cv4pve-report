@@ -16,14 +16,13 @@ public class SettingsSyslog
     public bool Enabled { get; set; }
 
     /// <summary>
-    /// Maximum number of entries to return (0 = capped at 500).
-    /// Ignored when Since or Until is set.
+    /// Maximum number of entries to return (0 = 500). Ignored when Since is set.
     /// </summary>
     public int MaxCount { get; set; } = 500;
 
-    // The journal API rejects lastentries combined with since/until.
+    // Without a limit, until alone makes the node read its whole journal and the call times out.
     internal int? Limit
-        => Since.HasValue || Until.HasValue
+        => SinceUnix.HasValue
             ? null
             : MaxCount > 0
                 ? MaxCount

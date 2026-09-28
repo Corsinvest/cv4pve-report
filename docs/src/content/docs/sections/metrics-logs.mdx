@@ -138,7 +138,7 @@ from each node:
 |---|---|
 | `Node.Syslog.Since` | Sent as `since`, midnight UTC of that date. |
 | `Node.Syslog.Until` | Sent as `until`, end of that day (UTC). |
-| `Node.Syslog.MaxCount` | Sent as `lastentries` when neither `Since` nor `Until` is set — the API does not accept both. Default 500; a value of 0 also sends 500. |
+| `Node.Syslog.MaxCount` | Sent as `lastentries` when `Since` is not set. Default 500; a value of 0 also sends 500. |
 
 Each line is split with the pattern `<month day> <hh:mm:ss> <host> <service>[<pid>]: <message>`.
 A line that does not match keeps only the Node and the whole line in Message. The table has no

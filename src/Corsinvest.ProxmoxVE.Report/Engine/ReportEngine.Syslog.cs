@@ -4,6 +4,7 @@
  */
 
 using System.Text.RegularExpressions;
+using Corsinvest.ProxmoxVE.Api;
 using Corsinvest.ProxmoxVE.Api.Extension;
 using Corsinvest.ProxmoxVE.Api.Extension.Utils;
 using Corsinvest.ProxmoxVE.Api.Shared.Models.Cluster;
@@ -68,12 +69,18 @@ public partial class ReportEngine
         {
             ReportGlobal($"Syslog: {item.Node}");
 
-            var lines = await client.Nodes[item.Node]
-                                    .Journal
-                                    .GetAsync(lastentries: settings.Node.Syslog.Limit,
+            // Raw call: the SDK's Journal.GetAsync returns an empty list when the call fails.
+            var result = await client.Nodes[item.Node]
+                                     .Journal
+                                     .Journal(lastentries: settings.Node.Syslog.Limit,
                                               since: settings.Node.Syslog.SinceUnix,
                                               until: settings.Node.Syslog.UntilUnix)
-                                    .ToSafeEnum(_issues, "Syslog", LinkKey.Node(item.Node));
+                                     .ToSafeResult(_issues, "Syslog", LinkKey.Node(item.Node));
+
+            var lines = result?.ToEnumerable()
+                               .OfType<string>()
+                               .Where(l => !string.IsNullOrWhiteSpace(l) && !l.StartsWith("s="))
+                               .ToList() ?? [];
 
             var rows = lines.Select(a => ParseSyslogLine(item.Node, a)).ToList();
             rowsCount += rows.Count;
