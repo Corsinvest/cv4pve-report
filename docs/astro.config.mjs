@@ -19,11 +19,13 @@ export default defineConfig({
           icon: { light: '/icon.svg', dark: '/icon-dark.svg' },
           // Banner on the home page: the same engine runs inside cv4pve-admin.
           admin: { module: 'system-report' },
+          // Visits, without cookies.
+          matomo: { url: 'https://matomo.corsinvest.it/', siteId: 5 },
           // Install-and-run panel in the home hero.
           install: {
             targets: ['linux', 'macos', 'windows'],
             run: ['--host=pve01', "--api-token='report@pve!report=…'", 'export'],
-            output: [{ text: 'Report generated: ./Report_20260928_101500.zip', tone: 'ok' }],
+            output: [{ text: 'Report generated: Report_20260928_101500.zip', tone: 'ok' }],
           },
         }),
       ],
