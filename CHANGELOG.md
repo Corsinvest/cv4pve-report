@@ -2,6 +2,40 @@
 
 ---
 
+## [2.7.0] — 2026-09-28
+
+### What's new
+
+- **Documentation site.** The documentation moved from Markdown files in the repository to [corsinvest.github.io/cv4pve-report](https://corsinvest.github.io/cv4pve-report/): getting started, permissions, every output format, every table and column with its JSON key, settings, and a page mapping each RVTools tab to the matching sheet. Every page was checked against the code and a real report.
+- **Settings files use names.** `create-settings` writes the RRD time frame and consolidation as names (`"Week"`, `"Average"`), and `--settings-file` reads names or numbers. Before, `create-settings` printed the names but a file using them was rejected, so only numbers worked.
+- **`--log-level` works.** It was ignored and only `--debug` changed the log output; now it behaves as in the other cv4pve tools.
+- **New product icon**, also used by the NuGet package.
+
+### Breaking changes (JSON only)
+
+- **Size and percentage of the same measure no longer overwrite each other.** `Memory Usage GB` and `Memory Usage %` both became `memoryUsage`, and the fraction silently replaced the bytes. The percentage keeps the plain key; the size is now `memoryUsageBytes` (also `diskUsageBytes`, `usedBytes`) in VMs, Containers, Nodes, Storages, Partitions, RRD Nodes and RRD Guests.
+- **Keys renamed:** `s.m.a.r.t.Data` → `smartData`, `iP` → `ip` (`/etc/hosts`), `positon` → `position` (firewall rules), `uRIs` → `uris` (APT repositories).
+
+### Fixes
+
+- **Syslog failures are reported.** A node that timed out or could not be reached gave an empty Syslog with no trace; the failure now lands on the Issues page like every other call.
+- **Node detail no longer stops the report** when a status, version, subscription, time or DNS call fails, for example for a missing privilege: those values stay empty.
+- **Dates keep their time in Excel and HTML.** Cluster log, RRD, snapshot and storage content timestamps were shown as a date only.
+- **Description shows the notes of VMs and containers.** It showed `<vmid> (<name>)` instead.
+- **Subscription Expiry shows the next due date**, not the registration date.
+- **Snapshots no longer list `current`**, the entry Proxmox VE returns for the running state.
+- **VM network rows from the configuration** when the guest agent runs but returns no interfaces, and for configured NICs the agent does not report. Two NICs with the same MAC no longer stop the guest agent data.
+- **Disks sorted as numbers:** `scsi2` before `scsi10`.
+- **Links that did nothing now work:** Guest in Cluster › Replication, Vm Id in the node Tasks table.
+- **Header typos:** `Positon` → `Position`, `UR Is` → `Uris`.
+- **The Summary counts syslog lines**, not nodes.
+- **The Issues table no longer shows the internal Link Key column** (`issues.json` keeps `linkKey`).
+- **`Guest.Detail.Tasks.Source` is applied**; it was ignored for guest tasks.
+- **Firewall `Since` / `Until` use UTC and include the `Until` day**, like Syslog.
+- **`--settings-file` help** no longer mentions a default file that does not exist.
+
+---
+
 ## [2.6.0] — 2026-09-24
 
 ### What's new
