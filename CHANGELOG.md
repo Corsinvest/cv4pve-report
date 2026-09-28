@@ -2,6 +2,14 @@
 
 ---
 
+## [2.7.1] — 2026-09-28
+
+### Fixes
+
+- **VM Disk Usage is no longer always 0.** Proxmox VE reports no disk usage for QEMU guests, so Disk Usage GB and Disk Usage % in the VMs table were always 0. When the guest agent is running they now come from the guest filesystems (`get-fsinfo`, the same data as the Partitions sheet): each device counted once, read-only images (snap packages, CD-ROMs) left out. Without the agent the value stays 0. ([#68](https://github.com/Corsinvest/cv4pve-report/issues/68))
+
+---
+
 ## [2.7.0] — 2026-09-28
 
 ### What's new
