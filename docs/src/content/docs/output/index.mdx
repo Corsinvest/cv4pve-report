@@ -1,0 +1,94 @@
+---
+title: Output
+description: The three formats of cv4pve-report, what is inside the zip, the sections in order and the setting that turns each one on.
+---
+
+Every `export` writes one `.zip`. The three formats hold **the same data in the same sections** — only
+the rendering differs — so pick the one that fits who reads it.
+
+| Format | Best for | Inside the zip |
+|---|---|---|
+| [**Excel**](/cv4pve-report/output/excel/) `--format Xlsx` *(default)* | Analysts and capacity planning: native filters, sorting and pivots in Excel or LibreOffice Calc | `report.xlsx`, one sheet per section and per node, VM and container |
+| [**HTML**](/cv4pve-report/output/html/) `--format Html` | Sharing: a static site that opens offline in any browser, with a sidebar, search, light and dark theme | `index.html`, one page per section and per node, VM and container, `assets/` |
+| [**JSON**](/cv4pve-report/output/json/) `--format Json` | Automation: scripts, CI, snapshot diffs, Power BI | `metadata.json`, one file per section and per node, VM and container |
+
+Every zip also contains `network-diagram.svg`, the [network diagram](/cv4pve-report/output/network-diagram/)
+of the cluster.
+
+## Where to start
+
+Open the **Summary** — the first sheet, or `index.html`. It lists every section with its row count and the
+time it took, and links to each one. If the report has an **Issues** page, part of the cluster could not
+be read — see [Troubleshooting](/cv4pve-report/troubleshooting/#the-issues-page).
+
+## Sections
+
+Sections come in this order: the cluster at a glance, then the inventory, then time series, then the
+cluster deep-dives. A section whose setting is off is left out. The [Sections](/cv4pve-report/sections/cluster/)
+pages list every table and column; [Settings](/cv4pve-report/settings/) explains each switch.
+
+| Section | What it holds | Written when |
+|---|---|---|
+| **Summary** | Date, application version, filters applied, every section with its row count and duration, linked | always |
+| **Issues** | API calls that failed while reading the cluster — see [Troubleshooting](/cv4pve-report/troubleshooting/#the-issues-page) | at least one call failed |
+| [**Cluster**](/cv4pve-report/sections/cluster/#cluster) | Status, options, firewall options, backup jobs, replication, storages, metric servers, mappings | `Cluster.Include` |
+| [**Storages**](/cv4pve-report/sections/storage/) | Every storage with size, usage and type | always |
+| [**Nodes**](/cv4pve-report/sections/nodes/) | Every node with hardware, subscription, DNS, kernel | always |
+| [**VMs**](/cv4pve-report/sections/guests/) | Every QEMU VM with guest agent info, OS, BIOS, CPU, memory, disks | always |
+| [**Containers**](/cv4pve-report/sections/guests/) | Every LXC container with hostname, swap, nameserver, privileges | always |
+| [**Network**](/cv4pve-report/sections/network-firewall/) | Node interfaces, SDN VNets and the NICs of every VM and container | always |
+| [**Storage Content**](/cv4pve-report/sections/storage/) | ISO images, templates, disk images | `Storage.IncludeContent` |
+| [**Backups**](/cv4pve-report/sections/storage/) | Backup files on every storage | `Storage.IncludeBackups` |
+| [**Disks**](/cv4pve-report/sections/guests/) | Disks of every VM and container | `Guest.IncludeDisks` |
+| [**Partitions**](/cv4pve-report/sections/guests/) | Filesystems seen inside running VMs by the guest agent | `Guest.IncludePartitions` |
+| [**Snapshots**](/cv4pve-report/sections/guests/) | Snapshots of every VM and container | `Guest.IncludeSnapshots` |
+| [**Firewall**](/cv4pve-report/sections/network-firewall/) | Firewall rules, aliases and IP sets of cluster, nodes, VMs and containers | `Firewall.Enabled` |
+| [**Replication**](/cv4pve-report/sections/metrics-logs/) | Replication jobs of every node: last and next sync, errors, duration | `Node.IncludeReplication` |
+| [**RRD Nodes**](/cv4pve-report/sections/metrics-logs/) | CPU, memory, swap, disk and network history of every node | `Node.RrdData.Enabled` |
+| [**RRD Storage**](/cv4pve-report/sections/metrics-logs/) | Size and usage history of every storage | `Storage.RrdData.Enabled` |
+| [**RRD Guests**](/cv4pve-report/sections/metrics-logs/) | CPU, memory, disk and network history of every VM and container | `Guest.RrdData.Enabled` |
+| [**Syslog**](/cv4pve-report/sections/metrics-logs/) | System journal of every node, split into date, time, host, service, PID and message | `Node.Syslog.Enabled` |
+| [**Cluster Access**](/cv4pve-report/sections/cluster/#cluster-access) | Users, API tokens, two-factor authentication, groups, roles, ACL, realms | `Cluster.Include` |
+| [**Cluster SDN**](/cv4pve-report/sections/cluster/#cluster-sdn) | SDN zones, VNets, controllers, IPAMs, subnets | `Cluster.Include` |
+| [**Cluster HA**](/cv4pve-report/sections/cluster/#cluster-ha) | HA resources, groups and status | `Cluster.Include` |
+| [**Cluster Pools**](/cv4pve-report/sections/cluster/#cluster-pools) | Pools with their VMs, containers and storages | `Cluster.Include` |
+| [**Cluster Log**](/cv4pve-report/sections/cluster/#cluster-log) | Cluster log with user, node, service and message | `Cluster.Log.Enabled` |
+| [**Cluster Tasks**](/cv4pve-report/sections/cluster/#cluster-tasks) | Recent tasks of the whole cluster with status, duration and node | `Cluster.IncludeTasks` |
+| **Node *name*** | One per online node: services, network, `/etc/hosts`, disks, SMART, ZFS, APT, firewall log, certificates, tasks | `Node.Detail.Enabled` |
+| **VM *id*** / **CT *id*** | One per VM and container: status, configuration (NICs and disks included), guest agent OS info (VMs), firewall log, tasks | `Guest.Detail.Enabled` |
+
+The Summary has no Backups row: backup files are counted in the Storage Content row.
+
+## Which nodes and guests
+
+`Node.Names` and `Guest.Ids` in the [settings](/cv4pve-report/settings/#choosing-nodes-and-guests) limit
+the report to part of the cluster — some nodes, a pool, a tag, a range of IDs. Both default to `@all`.
+The Summary shows the filters that were applied, so a partial report is never mistaken for a complete one.
+
+## Health Score
+
+The Nodes, VMs, Containers and Storages sections have a **Health** column: one number from 0 to 100
+that sums up how loaded the resource is right now. Higher is healthier. It lets you sort a list of
+hundreds of guests and see the busiest first.
+
+| Resource | Formula |
+|---|---|
+| Node | `100 − (CPU% × 0.4 + RAM% × 0.4 + Disk% × 0.2)` |
+| VM or container, running | `100 − (CPU% × 0.5 + RAM% × 0.5)` |
+| VM or container, stopped | none — not measurable |
+| Storage | `100 − Disk%` |
+
+The result is kept between 0 and 100 and rounded to one decimal. HTML shows it as a badge: green from
+80, yellow from 60, red below. Excel colours the column on a red–yellow–green scale with yellow at 60.
+JSON has the number under the `healthScore` key. The formula is the same one cv4pve-admin uses, so the two
+tools show the same score.
+
+The score is a snapshot of usage at the moment of the report, not a diagnosis. To find what is
+actually wrong, use [cv4pve-diag](https://corsinvest.github.io/cv4pve-diag/).
+
+## Row order
+
+Every table is sorted, and numbers inside names are compared as numbers: `105` before `1000`, `vmbr2`
+before `vmbr10`, `net2` before `net10`. Two reports of an unchanged cluster differ only in live values —
+usage, uptime, RRD — so comparing two of them shows real changes. See
+[snapshot diffs](/cv4pve-report/output/json/#snapshot-diffs).

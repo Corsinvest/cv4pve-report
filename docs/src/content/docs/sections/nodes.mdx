@@ -1,0 +1,394 @@
+---
+title: Nodes
+description: The Nodes overview and the per-node detail page, column by column, in Excel, HTML and JSON.
+---
+
+Use this part to compare hardware, kernel, PVE version, subscription and DNS across every node,
+then open one node for its services, interfaces, disks, SMART attributes, ZFS pools, APT state,
+certificates and task history.
+
+How to read the tables:
+
+- **Excel / HTML** is the column header, the same in both formats. **JSON** is the key in the JSON file.
+- **Sizes** — `GB` or `MB` in the header — are in that unit in Excel and HTML, and raw bytes in JSON.
+- **Percentages** — `%` in the header — are formatted as percentages in Excel and HTML; JSON has the raw
+  value, a fraction from 0 to 1 for usage columns.
+- **Flags** show `X` in Excel, `✓` or `·` in HTML, `true` or `false` in JSON.
+- **Multi-line cells** hold one value per line; in JSON they are a string with line breaks (`\n`, or
+  `\r\n` when the report was generated on Windows).
+- **Links** to other pages exist in Excel and HTML; JSON has the plain value. Empty values are `null`
+  or `""` in JSON.
+- **Dates and times** are in UTC.
+- How the JSON files are shaped: see [JSON](/cv4pve-report/output/json/#shapes).
+
+## Nodes
+
+Excel sheet `Nodes` · HTML `nodes.html` · JSON `nodes.json` · always generated; nodes filtered by
+`Node.Names` (see [Settings](/cv4pve-report/settings/)).
+
+One row per node, sorted by name. For every node that is online and known, the report calls
+`/nodes/{node}/status`, `/version`, `/subscription`, `/dns`, `/time` and `/network` in parallel.
+Offline or unknown nodes get a row with only the cluster-resource fields filled in.
+The interface list fetched here also feeds the Network section and the network diagram.
+
+The table has no title, so `nodes.json` is a plain array of rows. The **Node** column links to the
+node's detail page.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Node | `node` | Node name. Links to the node detail page. |
+| Status | `status` | Node status from `/cluster/resources`. |
+| Health | `healthScore` | Health score 0–100, higher is healthier (see the note below). |
+| Uptime | `uptime` | Uptime as formatted text. |
+| Cpu Size | `cpuSize` | Number of CPUs from `/cluster/resources`. |
+| Cpu Cpus | `cpuCpus` | Logical CPUs (`cpuinfo.cpus`). |
+| Cpu Sockets | `cpuSockets` | CPU sockets. |
+| Cpu Cores | `cpuCores` | Cores per socket. |
+| Cpu Model | `cpuModel` | CPU model string. |
+| Cpu Mhz | `cpuMhz` | CPU clock in MHz, as returned by the API. |
+| Cpu Hvm | `cpuHvm` | Hardware virtualization support flag, as returned by the API. |
+| Memory Size GB | `memorySize` | Total memory. |
+| Memory Usage GB | `memoryUsage` | Used memory. |
+| Memory Usage % | `memoryUsage` | Memory used / total. |
+| Swap Total GB | `swapTotal` | Swap size (0 when node status is not available). |
+| Swap Used GB | `swapUsed` | Swap in use. |
+| Swap Usage % | `swapUsage` | Swap used / total; empty when there is no swap. |
+| Disk Size GB | `diskSize` | Root disk size from `/cluster/resources`. |
+| Disk Usage GB | `diskUsage` | Root disk used. |
+| Disk Usage % | `diskUsage` | Root disk used / size. |
+| Root Fs Total GB | `rootFsTotal` | Root filesystem size from node status (0 when not available). |
+| Root Fs Used GB | `rootFsUsed` | Root filesystem used. |
+| Root Fs Usage % | `rootFsUsage` | Root filesystem used / total; empty when total is 0. |
+| Kernel Version | `kernelVersion` | Full kernel version string (`kversion`). |
+| Kernel Release | `kernelRelease` | Running kernel release. |
+| Boot Mode | `bootMode` | Boot mode (EFI or legacy BIOS). |
+| Secureboot | `secureboot` | Flag: Secure Boot enabled. |
+| Cgroup Mode | `cgroupMode` | cgroup mode reported by the cluster. |
+| Pve Version | `pveVersion` | `pve-manager` version string. |
+| Version Version | `versionVersion` | Version from `/nodes/{node}/version`. |
+| Version Release | `versionRelease` | Release from `/nodes/{node}/version`. |
+| Subscription | `subscription` | Subscription level: `None`, `Community`, `Basic`, `Standard` or `Premium`. |
+| Subscription Product Name | `subscriptionProductName` | Subscription product name. |
+| Subscription Reg Date | `subscriptionRegDate` | Subscription registration date, as text. |
+| Time | `time` | Node time zone. |
+| Dns Search | `dnsSearch` | DNS search domain. |
+| Dns1 | `dns1` | First DNS server. |
+| Dns2 | `dns2` | Second DNS server. |
+| Dns3 | `dns3` | Third DNS server. |
+
+:::note[Duplicate JSON keys]
+`Memory Usage GB` and `Memory Usage %` both become the JSON key `memoryUsage`, and so do
+`Disk Usage GB` / `Disk Usage %` (`diskUsage`). The percentage is written last, so in `nodes.json`
+these keys hold the fraction (0–1), not the byte count.
+:::
+
+:::note[Health score]
+The score comes from the Corsinvest API library: 100 − (CPU% × 0.4 + RAM% × 0.4 + Disk% × 0.2),
+clamped to 0–100 and rounded to one decimal. The HTML report colours it green from 80, yellow from
+60 and red below; Excel uses a red–yellow–green colour scale with 60 as the midpoint.
+:::
+
+## Node detail
+
+Excel sheet `Node <name>` · HTML `nodes/<name>.html` · JSON `nodes/<name>.json` · enabled by
+`Node.Detail.Enabled` (see [Settings](/cv4pve-report/settings/)).
+
+One page per node, created only for nodes that are online and known. In HTML and JSON the node name
+is lower-cased and dots, colons, spaces and underscores become `-`; the Excel sheet name is cut to
+31 characters. A name that collides with an existing one gets a `_2`, `_3`, … suffix. The Excel sheet
+and the HTML page have a back link to **Nodes**.
+
+In `nodes/<name>.json` the header block is under `info` and each table below is under the JSON key
+shown next to its title. Tables are written even when they are empty.
+
+### Header (key-value block, JSON `info`)
+
+A key-value block titled with the node name in Excel and `Info` in HTML.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Status | `status` | Node status. |
+| CPU Sockets | `cpuSockets` | CPU sockets. |
+| CPU Cores | `cpuCores` | Cores per socket. |
+| CPU Model | `cpuModel` | CPU model. |
+| CPU MHz | `cpuMHz` | CPU clock in MHz. |
+| Memory GB | `memory` | Total memory. |
+| Memory Used GB | `memoryUsed` | Used memory. |
+| Swap GB | `swap` | Swap size. |
+| Root FS GB | `rootFS` | Root filesystem size. |
+| Kernel | `kernel` | Kernel version string. |
+| Kernel Release | `kernelRelease` | Running kernel release. |
+| Boot Mode | `bootMode` | Boot mode. |
+| Secure Boot | `secureBoot` | Secure Boot enabled (`X` or empty in Excel, Yes/No in HTML, boolean in JSON). |
+| CPU HVM | `cpuHVM` | Hardware virtualization flag. |
+| Uptime | `uptime` | Uptime as formatted text. |
+| PVE Version | `pveVersion` | `pve-manager` version string. |
+| Version | `version` | `<version>-<release>` from `/nodes/{node}/version`. |
+| Subscription | `subscription` | Subscription product name. |
+| Subscription Expiry | `subscriptionExpiry` | Filled from the subscription `regdate` field (registration date). |
+| Timezone | `timezone` | Node time zone. |
+| DNS Search | `dnsSearch` | DNS search domain. |
+| DNS 1 | `dns1` | First DNS server. |
+| DNS 2 | `dns2` | Second DNS server. |
+| DNS 3 | `dns3` | Third DNS server. |
+
+### Services (JSON `services`)
+
+System services from `/nodes/{node}/services`.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Name | `name` | Service name. |
+| Service | `service` | Service identifier. |
+| State | `state` | State (for example `running`). |
+| Active State | `activeState` | systemd active state. |
+| Unit State | `unitState` | systemd unit state. |
+| Description | `description` | Description, wrapped. |
+
+### Network (JSON `network`)
+
+Network interfaces from `/nodes/{node}/network`. Each row is a link target, so the Network section
+can point to a specific interface.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Active | `active` | Flag: interface active. |
+| Auto Start | `autoStart` | Flag: brought up at boot. |
+| Exists | `exists` | Flag: interface exists on the system. |
+| Type | `type` | Interface type (bridge, bond, eth, vlan, OVS…). |
+| Interface | `interface` | Interface name. |
+| Link Type | `linkType` | Link type. |
+| Method | `method` | IPv4 method. |
+| Cidr | `cidr` | IPv4 CIDR. |
+| Address | `address` | IPv4 address. |
+| Netmask | `netmask` | IPv4 netmask. |
+| Gateway | `gateway` | IPv4 gateway. |
+| Method6 | `method6` | IPv6 method. |
+| Cidr6 | `cidr6` | IPv6 CIDR. |
+| Address6 | `address6` | IPv6 address. |
+| Netmask6 | `netmask6` | IPv6 prefix length. |
+| Gateway6 | `gateway6` | IPv6 gateway. |
+| Priority | `priority` | Interface order priority. |
+| Mtu | `mtu` | MTU. |
+| Bond Mode | `bondMode` | Bond mode. |
+| Bond Miimon | `bondMiimon` | Bond MII monitoring interval. |
+| Bond Primary | `bondPrimary` | Bond primary slave. |
+| Bond Xmit Hash Policy | `bondXmitHashPolicy` | Bond transmit hash policy. |
+| Slaves | `slaves` | Bond slaves. |
+| Bridge Stp | `bridgeStp` | Bridge STP setting. |
+| Bridge Vlan Aware | `bridgeVlanAware` | Bridge VLAN awareness (boolean, not a flag column). |
+| Bridge Vids | `bridgeVids` | Allowed VLAN IDs on the bridge. |
+| Bridge Fd | `bridgeFd` | Bridge forward delay. |
+| Bridge Ports | `bridgePorts` | Bridge ports. |
+| Vlan Id | `vlanId` | VLAN tag. |
+| Vlan Raw Device | `vlanRawDevice` | VLAN parent device. |
+| Vlan Protocol | `vlanProtocol` | VLAN protocol. |
+| Ovs Bridge | `ovsBridge` | OVS bridge. |
+| Ovs Bonds | `ovsBonds` | OVS bonds. |
+| Ovs Ports | `ovsPorts` | OVS ports. |
+| Ovs Options | `ovsOptions` | OVS options. |
+| Ovs Tag | `ovsTag` | OVS VLAN tag. |
+| Vxlan Id | `vxlanId` | VXLAN ID. |
+| Vxlan Local Tunnel Ip | `vxlanLocalTunnelIp` | VXLAN local tunnel IP. |
+| Vxlan Phys Dev | `vxlanPhysDev` | VXLAN physical device. |
+| Comments | `comments` | IPv4 comments, wrapped. |
+| Comments6 | `comments6` | IPv6 comments. |
+
+### /etc/hosts (JSON `etcHosts`)
+
+The node's `/etc/hosts`, one row per non-empty, non-comment line.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| IP | `iP` | First field of the line. |
+| Hostnames | `hostnames` | Remaining fields, one per line. |
+
+### Disks (JSON `disks`)
+
+Physical disks and partitions from `/nodes/{node}/disks/list` (with partitions), sorted by device
+path. Partition rows are indented by two spaces in Device Path, Used and Type. Only when
+`Node.Detail.Disk.IncludeDiskDetail` is on.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Device Path | `devicePath` | Device path, indented for partitions. |
+| Used | `used` | What uses the disk (LVM, ZFS, partitions…). |
+| Type | `type` | Disk type (hdd, ssd, nvme, partition…). |
+| Vendor | `vendor` | Vendor. |
+| Serial | `serial` | Serial number. |
+| Model | `model` | Model. |
+| Wwn | `wwn` | World Wide Name. |
+| Health | `health` | Health as reported by PVE. |
+| Gpt | `gpt` | GPT partition table (1/0). |
+| Wearout | `wearout` | SSD wear-out, as reported by PVE. |
+| Rpm | `rpm` | Rotation speed. |
+| Size GB | `size` | Disk size. |
+| Mounted | `mounted` | Flag: mounted. |
+| By Id Link | `byIdLink` | `/dev/disk/by-id` link. |
+| Osd Id | `osdId` | Ceph OSD ID, if any. |
+
+### S.M.A.R.T. Data (JSON `s.m.a.r.t.Data`)
+
+One row per SMART attribute for every whole disk (partitions skipped). Only when
+`Node.Detail.Disk.IncludeSmartData` is on (off by default). The report makes one
+`/nodes/{node}/disks/smart` call per disk, up to `MaxParallelRequests` at a time. When a call fails,
+the disk gets one row with Id `0`, Name `Error`, Value `-1` and the error message in Raw.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Disk | `disk` | Device path. |
+| Model | `model` | Disk model. |
+| Disk Type | `diskType` | Disk type. |
+| Disk Health | `diskHealth` | Health from the disk list. |
+| Smart Health | `smartHealth` | Health from the SMART call. |
+| Id | `id` | Attribute ID. |
+| Name | `name` | Attribute name. |
+| Value | `value` | Normalized value. |
+| Worst | `worst` | Worst normalized value. |
+| Threshold | `threshold` | Failure threshold. |
+| Flags | `flags` | Attribute flags. |
+| Raw | `raw` | Raw value. |
+| Fail | `fail` | Failure indicator. |
+
+### Directory (JSON `directory`)
+
+Directory mount points from `/nodes/{node}/disks/directory`. Only when
+`Node.Detail.Disk.IncludeDiskDetail` is on.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Device | `device` | Device. |
+| Path | `path` | Mount path. |
+| Type | `type` | Filesystem type. |
+| Options | `options` | Mount options. |
+| Unit File | `unitFile` | systemd mount unit file. |
+
+### ZFS Pools (JSON `zfsPools`)
+
+ZFS pools from `/nodes/{node}/disks/zfs`, with the status fields of each pool read from
+`/nodes/{node}/disks/zfs/{name}`. Only when `Node.Detail.Disk.IncludeDiskDetail` is on.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Name | `name` | Pool name. |
+| Size GB | `size` | Pool size. |
+| Free GB | `free` | Free space. |
+| Allocated GB | `allocated` | Allocated space. |
+| Fragmentation % | `fragmentation` | Fragmentation (API value divided by 100). |
+| Deduplication | `deduplication` | Deduplication ratio. |
+| Health | `health` | Pool health. |
+| Scan | `scan` | Last scrub/resilver status. |
+| Status | `status` | Pool status message. |
+| Action | `action` | Suggested action. |
+| Errors | `errors` | Error summary. |
+
+### ZFS Pool Status (JSON `zfsPoolStatus`)
+
+The vdev tree of each pool, flattened; Name is indented by two spaces per level. Only when
+`Node.Detail.Disk.IncludeDiskDetail` is on.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Pool Name | `poolName` | Pool the device belongs to. |
+| Name | `name` | vdev or device name, indented by depth. |
+| Health | `health` | Device state. |
+| Read | `read` | Read errors. |
+| Write | `write` | Write errors. |
+| Checksum | `checksum` | Checksum errors. |
+| Message | `message` | Status message. |
+
+### Apt Repository (JSON `aptRepository`)
+
+One row per repository entry in each APT source file, from `/nodes/{node}/apt/repositories`.
+Only when `Node.Detail.IncludeApt` is on.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| File Path | `filePath` | Source file path. |
+| File Type | `fileType` | File format (list or sources). |
+| Enabled | `enabled` | Flag: repository enabled. |
+| Types | `types` | Repository types, one per line. |
+| UR Is | `uRIs` | Repository URIs, one per line. |
+| Suites | `suites` | Suites, one per line. |
+| Components | `components` | Components, one per line. |
+| Comment | `comment` | Comment, wrapped. |
+
+### Apt Update (JSON `aptUpdate`)
+
+Pending package updates from `/nodes/{node}/apt/update`. Only when `Node.Detail.IncludeApt` is on.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Package | `package` | Package name. |
+| Version | `version` | Available version. |
+| Old Version | `oldVersion` | Installed version. |
+| Arch | `arch` | Architecture. |
+| Origin | `origin` | Repository origin. |
+| Section | `section` | Package section. |
+| Priority | `priority` | Package priority. |
+| Title | `title` | Short description. |
+| Description | `description` | Long description. |
+
+### Package Version (JSON `packageVersion`)
+
+Installed Proxmox-related package versions from `/nodes/{node}/apt/versions`. Only when
+`Node.Detail.IncludeApt` is on.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Package | `package` | Package name. |
+| Version | `version` | Version. |
+| Old Version | `oldVersion` | Previous version. |
+| Current State | `currentState` | Installation state. |
+| Arch | `arch` | Architecture. |
+| Origin | `origin` | Repository origin. |
+| Section | `section` | Package section. |
+| Priority | `priority` | Package priority. |
+| Title | `title` | Short description. |
+| Description | `description` | Long description. |
+
+### Firewall Logs (JSON `firewallLogs`)
+
+Node firewall log lines from `/nodes/{node}/firewall/log`. Only when both `Firewall.Enabled` and
+`Node.Detail.IncludeFirewallLog` are on. The call uses `Firewall.MaxCount` as limit (no limit
+parameter when 0) and `Firewall.Since` / `Firewall.Until`. A `no content` answer from the API gives
+an empty table.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Log | `log` | One log line. |
+
+### SSL Certificates (JSON `sslCertificates`)
+
+Node certificates from `/nodes/{node}/certificates/info`.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| File Name | `fileName` | Certificate file. |
+| Subject | `subject` | Subject. |
+| Issuer | `issuer` | Issuer. |
+| Fingerprint | `fingerprint` | Fingerprint. |
+| Public Key Type | `publicKeyType` | Key algorithm. |
+| Public Key Bits | `publicKeyBits` | Key size in bits. |
+| San | `san` | Subject Alternative Names, comma-separated. |
+| Not Before | `notBefore` | Validity start (date and time). |
+| Not After | `notAfter` | Validity end (date and time). |
+| Days Until Expiry | `daysUntilExpiry` | Whole days from now to Not After; negative when expired. |
+
+### Tasks (JSON `tasks`)
+
+Task history from `/nodes/{node}/tasks`. Only when `Node.Detail.Tasks.Enabled` is on. Filters:
+`Node.Detail.Tasks.OnlyErrors` (errors only), `Node.Detail.Tasks.MaxCount` (sent as limit when
+greater than 0) and `Node.Detail.Tasks.Source` (`all` sends no source filter).
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Unique Task Id | `uniqueTaskId` | Task UPID. |
+| Type | `type` | Task type (for example `vzdump`, `qmstart`). |
+| Vm Id | `vmId` | Task object ID (the guest ID for guest tasks). |
+| User | `user` | User who started the task. |
+| Status | `status` | Final status text. |
+| Status Ok | `statusOk` | Flag: status is `OK`. |
+| Start Time | `startTime` | Start date and time. |
+| End Time | `endTime` | End date and time. |
+| Duration | `duration` | Task duration. |

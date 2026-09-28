@@ -1,0 +1,441 @@
+---
+title: Cluster
+description: Columns and JSON keys of the Cluster, Cluster Access, Cluster SDN, Cluster HA, Cluster Pools, Cluster Log and Cluster Tasks sections.
+---
+
+These sections cover everything configured at datacenter level: quorum and membership, backup and replication jobs, storage definitions, users, tokens and ACLs, SDN, HA, pools, plus the cluster log and task history.
+Read them when you audit who can do what, check that backup jobs cover the right guests, or need a record of the datacenter configuration before a change.
+
+How to read the tables:
+
+- **Excel / HTML** is the column header, the same in both formats. **JSON** is the key in the JSON file.
+- **Sizes** — `GB` or `MB` in the header — are in that unit in Excel and HTML, and raw bytes in JSON.
+- **Percentages** — `%` in the header — are formatted as percentages in Excel and HTML; JSON has the raw
+  value, a fraction from 0 to 1 for usage columns.
+- **Flags** show `X` in Excel, `✓` or `·` in HTML, `true` or `false` in JSON.
+- **Multi-line cells** hold one value per line; in JSON they are a string with line breaks (`\n`, or
+  `\r\n` when the report was generated on Windows).
+- **Links** to other pages exist in Excel and HTML; JSON has the plain value. Empty values are `null`
+  or `""` in JSON.
+- **Dates and times** are in UTC.
+- How the JSON files are shaped: see [JSON](/cv4pve-report/output/json/#shapes).
+
+## Cluster
+
+Excel sheet `Cluster` · HTML `cluster.html` · JSON `cluster.json` · enabled by `Cluster.Include` (see [/cv4pve-report/settings/](/cv4pve-report/settings/)).
+
+Data comes from `/cluster/status`, `/cluster/options`, `/cluster/firewall/options`, `/cluster/backup`, `/cluster/replication`, `/storage`, `/cluster/metrics/server` and `/cluster/mapping/{dir,pci,usb}`.
+
+### Cluster
+
+Key/value block at the top of the section, titled Cluster in Excel and Info in HTML. In JSON it is the `info` object.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Name | `name` | Cluster name; `-` when `/cluster/status` has no `cluster` entry (standalone node) |
+| Nodes | `nodes` | Number of nodes reported by the cluster entry |
+| Version | `version` | Cluster configuration version |
+| Quorate | `quorate` | `Yes` or `No` |
+
+### Status
+
+One row per `/cluster/status` entry: the cluster entry first, then the nodes sorted by name.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Id | `id` | Entry id |
+| Name | `name` | Cluster or node name |
+| Is Online | `isOnline` | Flag: node is online |
+| Type | `type` | `cluster` or `node` |
+| Nodes | `nodes` | Node count (cluster entry) |
+| Version | `version` | Cluster configuration version (cluster entry) |
+| Quorate | `quorate` | Quorum value as returned by the API (number) |
+| Level | `level` | Subscription level decoded to its name (Community, Premium, Basic, ...) |
+| Ip Address | `ipAddress` | Node IP address |
+| Node Id | `nodeId` | Corosync node id |
+
+### Options
+
+A single row with the datacenter options (`/cluster/options`).
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Console | `console` | Default console viewer |
+| Keyboard | `keyboard` | Default keyboard layout |
+| Mac Prefix | `macPrefix` | Prefix for auto-generated MAC addresses |
+| Description | `description` | Datacenter notes (wrapped) |
+| Allowed Tags | `allowedTags` | Allowed tags, one per line |
+| Migration Type | `migrationType` | Migration type (secure / insecure) |
+| Migration Network | `migrationNetwork` | CIDR of the migration network |
+
+### Firewall Options
+
+A single row with the datacenter firewall options (`/cluster/firewall/options`). Present only when `Firewall.Enabled` is on.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Enable | `enable` | Datacenter firewall enabled (boolean) |
+| Policy In | `policyIn` | Default inbound policy |
+| Policy Out | `policyOut` | Default outbound policy |
+| Log Ratelimit | `logRatelimit` | Log rate limit setting |
+
+### Backup Jobs
+
+One row per scheduled backup job (`/cluster/backup`).
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Id | `id` | Job id |
+| Enabled | `enabled` | Job enabled (boolean) |
+| All | `all` | Job backs up all guests (boolean) |
+| Vm Id | `vmId` | Selected guest ids, one per line |
+| Mode | `mode` | Backup mode (snapshot / suspend / stop) |
+| Storage | `storage` | Target storage |
+| Start Time | `startTime` | Start time (legacy job format) |
+| Schedule | `schedule` | Calendar event schedule |
+| Day Of Week | `dayOfWeek` | Days of week (legacy job format) |
+| Compress | `compress` | Compression algorithm |
+| Type | `type` | Job type |
+| Mailto | `mailto` | Notification recipients |
+| Mail Notification | `mailNotification` | When mail is sent |
+| Notes Template | `notesTemplate` | Template for the backup notes |
+| Pool | `pool` | Pool whose members are backed up |
+| Node | `node` | Node the job is restricted to |
+| Quiet | `quiet` | Quiet flag of the job (boolean) |
+| Next Run | `nextRun` | Next scheduled run (date and time); empty when the API returns none |
+
+### Replication
+
+One row per storage replication job (`/cluster/replication`).
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Id | `id` | Job id |
+| Type | `type` | Job type |
+| Guest | `guest` | Guest id |
+| Source | `source` | Source node, hyperlinked to the node |
+| Target | `target` | Target node, hyperlinked to the node |
+| Schedule | `schedule` | Replication schedule |
+| Disable | `disable` | Flag: job disabled |
+| Rate | `rate` | Rate limit |
+| Comment | `comment` | Job comment |
+| Job Num | `jobNum` | Job number |
+| Remove Job | `removeJob` | Pending removal mode |
+
+### Storages
+
+One row per storage definition (`/storage`), sorted by name. This is the configuration view; usage figures are in the Storages section.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Storage | `storage` | Storage id |
+| Type | `type` | Storage type (dir, lvmthin, zfspool, nfs, rbd, pbs, ...) |
+| Content | `content` | Allowed content types, sorted, one per line |
+| Shared | `shared` | Flag: shared storage |
+| Disable | `disable` | Flag: storage disabled |
+| Nodes | `nodes` | Nodes the storage is restricted to |
+| Path | `path` | Filesystem path |
+| Mountpoint | `mountpoint` | Mount point |
+| Server | `server` | Server address (NFS, CIFS, PBS, ...) |
+| Export | `export` | NFS export |
+| Datastore | `datastore` | PBS datastore |
+| Pool | `pool` | Pool (ZFS, Ceph) |
+| Username | `username` | Username |
+| Monhost | `monhost` | Ceph monitor hosts |
+| Sparse | `sparse` | Sparse allocation setting |
+| Krbd | `krbd` | Kernel RBD setting |
+| Preallocation | `preallocation` | Preallocation mode |
+| Prune Backups | `pruneBackups` | Backup retention settings |
+
+### Metric Servers
+
+One row per external metric server (`/cluster/metrics/server`).
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Id | `id` | Server id |
+| Server | `server` | Server address |
+| Port | `port` | Port |
+| Type | `type` | Server type (graphite / influxdb / ...) |
+| Disable | `disable` | Flag: server disabled |
+
+### Mapping Dir
+
+One row per directory mapping (`/cluster/mapping/dir`). JSON key `mappingDir`.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Id | `id` | Mapping id |
+| Description | `description` | Description (wrapped) |
+| Map | `map` | Per-node map entries, one per line |
+
+### Mapping PCI
+
+One row per PCI resource mapping (`/cluster/mapping/pci`). JSON key `mappingPCI`. Same columns as Mapping Dir: Id (`id`), Description (`description`), Map (`map`).
+
+### Mapping USB
+
+One row per USB resource mapping (`/cluster/mapping/usb`). JSON key `mappingUSB`. Same columns as Mapping Dir: Id (`id`), Description (`description`), Map (`map`).
+
+## Cluster Access
+
+Excel sheet `Cluster Access` · HTML `cluster-access.html` · JSON `cluster-access.json` · enabled by `Cluster.Include` (see [/cv4pve-report/settings/](/cv4pve-report/settings/)).
+
+Data comes from `/access/users` (with `full`), `/access/tfa`, `/access/groups`, `/access/roles`, `/access/acl` and `/access/domains`. Every table is sorted by its first column.
+
+### Users
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Id | `id` | User id (`user@realm`) |
+| Enable | `enable` | Flag: account enabled |
+| Firstname | `firstname` | First name |
+| Lastname | `lastname` | Last name |
+| Email | `email` | Email |
+| Groups | `groups` | Groups the user belongs to |
+| Keys | `keys` | Two-factor keys field |
+| Totp Locked | `totpLocked` | Flag: TOTP locked after too many failed attempts |
+| Tfa Locked Until | `tfaLockedUntil` | Date and time until which TFA is locked; empty when not locked |
+| Expire | `expire` | Account expiry date and time; empty when the account never expires |
+| Comment | `comment` | Comment (wrapped) |
+
+### API Tokens
+
+One row per API token of each user. JSON key `apiTokens`.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| User | `user` | Owner user id |
+| Token Id | `tokenId` | Token name |
+| Expire | `expire` | Expiry date and time; empty when the token never expires |
+| Priv Separated | `privSeparated` | Flag: privilege separation enabled |
+| Comment | `comment` | Comment (wrapped) |
+
+### Two-Factor Authentication
+
+One row per user with TFA entries. JSON key `twoFactorAuthentication`.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| User | `user` | User id |
+| Tfa Types | `tfaTypes` | Distinct TFA types, comma separated |
+| Tfa Count | `tfaCount` | Number of TFA entries |
+| Tfa Disabled Count | `tfaDisabledCount` | Number of disabled TFA entries |
+
+### Groups
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Id | `id` | Group id |
+| Users | `users` | Group members |
+| Comment | `comment` | Comment |
+
+### Roles
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Id | `id` | Role id |
+| Privileges | `privileges` | Privileges, one per line |
+| Special | `special` | Flag: built-in role |
+
+### ACL
+
+One row per ACL entry, sorted by path, then user/group, then role. JSON key `acl`.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Path | `path` | ACL path (`/`, `/vms/100`, `/storage/local`, ...) |
+| Users Or Group | `usersOrGroup` | User, group or token the entry applies to |
+| Type | `type` | Entry type (user / group / token) |
+| Id | `id` | Role id granted |
+| Propagate | `propagate` | Flag: entry propagates to child paths |
+
+### Domains
+
+One row per authentication realm.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Realm | `realm` | Realm id |
+| Type | `type` | Realm type (pam, pve, ldap, ad, openid) |
+| Tfa | `tfa` | Realm-level TFA setting |
+| Comment | `comment` | Comment |
+
+## Cluster SDN
+
+Excel sheet `Cluster SDN` · HTML `cluster-sdn.html` · JSON `cluster-sdn.json` · enabled by `Cluster.Include` (see [/cv4pve-report/settings/](/cv4pve-report/settings/)).
+
+### Zones
+
+One row per SDN zone (`/cluster/sdn/zones`).
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Zone | `zone` | Zone id |
+| Type | `type` | Zone type (simple, vlan, qinq, vxlan, evpn) |
+| Mtu | `mtu` | MTU |
+| Nodes | `nodes` | Nodes the zone is restricted to |
+| Bridge | `bridge` | Bridge used by the zone |
+| Controller | `controller` | Controller (EVPN) |
+| Ipam | `ipam` | IPAM plugin |
+| Dns | `dns` | DNS plugin |
+| State | `state` | Pending state of the zone configuration |
+
+### Vnets
+
+One row per VNet (`/cluster/sdn/vnets`).
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Vnet | `vnet` | VNet id |
+| Zone | `zone` | Zone the VNet belongs to |
+| Type | `type` | Object type |
+| Tag | `tag` | VLAN or VXLAN tag |
+| Alias | `alias` | Alias |
+| Vlan Aware | `vlanAware` | VLAN-aware setting |
+| State | `state` | Pending state of the VNet configuration |
+
+### Controllers
+
+One row per SDN controller (`/cluster/sdn/controllers`).
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Controller | `controller` | Controller id |
+| Type | `type` | Controller type (evpn, bgp, isis, faucet) |
+| Asn | `asn` | Autonomous system number |
+| Peers | `peers` | Peer addresses |
+| Node | `node` | Node (BGP / ISIS controllers) |
+| State | `state` | Pending state of the controller configuration |
+
+### Ipams
+
+One row per IPAM (`/cluster/sdn/ipams`).
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Ipam | `ipam` | IPAM id |
+| Type | `type` | IPAM type (pve, netbox, phpipam) |
+
+### Subnets
+
+One row per subnet of every VNet (`/cluster/sdn/vnets/{vnet}/subnets`).
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Vnet | `vnet` | VNet the subnet belongs to |
+| Subnet | `subnet` | Subnet id |
+| Type | `type` | Object type |
+| Gateway | `gateway` | Gateway address |
+| Snat | `snat` | Source NAT setting |
+| Dhcp Dns Server | `dhcpDnsServer` | DNS server handed out by DHCP |
+| Dns Zone Prefix | `dnsZonePrefix` | DNS zone prefix |
+
+## Cluster HA
+
+Excel sheet `Cluster HA` · HTML `cluster-ha.html` · JSON `cluster-ha.json` · enabled by `Cluster.Include` (see [/cv4pve-report/settings/](/cv4pve-report/settings/)).
+
+### Resources
+
+One row per HA-managed resource (`/cluster/ha/resources`).
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Sid | `sid` | Service id (`vm:100`, `ct:200`) |
+| Type | `type` | Resource type |
+| State | `state` | Requested state |
+| Group | `group` | HA group |
+| Failback | `failback` | Failback setting |
+| Max Restart | `maxRestart` | Maximum restart attempts |
+| Max Relocate | `maxRelocate` | Maximum relocation attempts |
+| Comment | `comment` | Comment |
+
+### Groups
+
+One row per HA group (`/cluster/ha/groups`).
+
+:::note
+This table is written only when the Proxmox VE major version from `/version` is lower than 9. On Proxmox VE 9 and later the section has no Groups table.
+:::
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Group | `group` | Group id |
+| Nodes | `nodes` | Member nodes (with priority) |
+| Nofailback | `nofailback` | No-failback setting |
+| Restricted | `restricted` | Restricted setting |
+| Comment | `comment` | Comment |
+
+### Status
+
+One row per entry of the current HA manager status (`/cluster/ha/status/current`).
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Id | `id` | Entry id |
+| Type | `type` | Entry type (quorum, master, lrm, service) |
+| Status | `status` | Status text |
+| Node | `node` | Node |
+| Sid | `sid` | Service id (service entries) |
+| State | `state` | Service state |
+| Crm State | `crmState` | Cluster resource manager state |
+| Request State | `requestState` | Requested state |
+| Quorate | `quorate` | Flag: quorate |
+| Failback | `failback` | Flag: failback enabled |
+| Max Relocate | `maxRelocate` | Maximum relocation attempts |
+| Max Restart | `maxRestart` | Maximum restart attempts |
+| Timestamp | `timestamp` | Timestamp of the entry (date and time); empty when the API returns none |
+
+## Cluster Pools
+
+Excel sheet `Cluster Pools` · HTML `cluster-pools.html` · JSON `cluster-pools.json` · enabled by `Cluster.Include` (see [/cv4pve-report/settings/](/cv4pve-report/settings/)).
+
+### Pools
+
+One row per pool member: the report reads `/pools`, then `/pools/{poolid}` for each pool. A pool without members produces no row. This is the only table of the section, so `cluster-pools.json` is a plain array of rows.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Pool | `pool` | Pool id |
+| Type | `type` | Member type (qemu, lxc, storage) |
+| Node | `node` | Node of the member, hyperlinked to the node |
+| Vm Id | `vmId` | Guest id, hyperlinked to the guest (no link for storage members) |
+| Storage | `storage` | Storage id, hyperlinked to the Storages section |
+| Status | `status` | Member status |
+| Description | `description` | Member description (wrapped) |
+| Comment | `comment` | Pool comment (wrapped), repeated on each member row |
+
+## Cluster Log
+
+Excel sheet `Cluster Log` · HTML `cluster-log.html` · JSON `cluster-log.json` · enabled by `Cluster.Log.Enabled` (see [/cv4pve-report/settings/](/cv4pve-report/settings/)).
+
+This section does not depend on `Cluster.Include`. Entries come from `/cluster/log`; when `Cluster.Log.MaxCount` is greater than 0 it is passed as the `max` parameter, otherwise the API default applies.
+
+The section has one untitled table, so `cluster-log.json` is a plain array of rows.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Time Date | `timeDate` | Time of the entry. Excel and HTML format this column as a date only; JSON holds the full date and time |
+| Node | `node` | Node, hyperlinked to the node |
+| User | `user` | User |
+| Severity Enum | `severityEnum` | Severity name (Panic, Alert, Critical, Error, Warning, Notice, Info, Debug) |
+| Service | `service` | Service (log tag) |
+| Message | `message` | Log message |
+
+## Cluster Tasks
+
+Excel sheet `Cluster Tasks` · HTML `cluster-tasks.html` · JSON `cluster-tasks.json` · enabled by `Cluster.IncludeTasks` (see [/cv4pve-report/settings/](/cv4pve-report/settings/)).
+
+This section does not depend on `Cluster.Include`. Rows come from `/cluster/tasks`, called without filters. The section has one untitled table, so `cluster-tasks.json` is a plain array of rows.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Node | `node` | Node that ran the task, hyperlinked to the node |
+| Unique Task Id | `uniqueTaskId` | Task UPID |
+| Type | `type` | Task type (vzdump, qmstart, ...) |
+| User | `user` | User that started the task |
+| Status | `status` | Task exit status |
+| Status Ok | `statusOk` | Flag: status is `OK` |
+| Start Time | `startTime` | Start date and time |
+| End Time | `endTime` | End date and time |
+| Duration | `duration` | Task duration |

@@ -1,0 +1,60 @@
+---
+title: Permissions
+description: The Proxmox VE user, API token and privileges cv4pve-report needs — and why PVEAuditor alone cannot list backups.
+---
+
+cv4pve-report reads the cluster through the API, so what the report contains is exactly what its
+account is allowed to see. Use a dedicated user with an API token rather than `root@pam`.
+
+## User and token
+
+Create a [user](https://pve.proxmox.com/pve-docs/chapter-pveum.html#pveum_users) or an [API token](https://pve.proxmox.com/pve-docs/chapter-pveum.html#pveum_tokens) and [assign it](https://pve.proxmox.com/pve-docs/chapter-pveum.html#pveum_permission_management) the privileges below, on `/`.
+The built-in `PVEAuditor` role covers the first seven.
+
+:::caution[Tokens with privilege separation]
+A token with privilege separation (the default in the web UI) does **not** inherit the user's
+permissions: grant the role to the token too, or cv4pve-report sees an empty cluster.
+:::
+
+## Privileges
+
+| Privilege | On | Used for | Without it |
+|---|---|---|---|
+| `Sys.Audit` | `/` | Cluster, nodes, node detail, RRD Nodes, Cluster Access, Cluster HA, datacenter and node firewall rules, all tasks | Required: without it the report stops at the cluster status |
+| `VM.Audit` | `/vms` | VMs, containers, snapshots, disks, RRD Guests, replication | Guests are missing from the report |
+| `Datastore.Audit` | `/storage` | Storages, RRD Storage, ISO images and templates | Storages are missing from the report |
+| `Pool.Audit` | `/pool` | Cluster Pools, `@pool-…` in `Guest.Ids` | Pools are missing |
+| `SDN.Audit` | `/sdn` | Cluster SDN, SDN Vnets in Network, VNets in the network diagram | SDN is missing |
+| `Mapping.Audit` | `/mapping` | Mapping Dir, Mapping PCI and Mapping USB in the Cluster section | Mappings are missing |
+| `VM.GuestAgent.Audit` | `/vms` | Guest agent data: hostname, OS, IPs, partitions | A Warning per running VM with the agent enabled |
+| `Sys.Syslog` | `/` | Syslog, node firewall log, Cluster Log | Syslog and node firewall log: a Warning per node. Cluster Log: only the account's own entries |
+| `Sys.Modify` | `/nodes` | Apt Update: updates available on each node | A Warning per node |
+| `VM.Console` | `/vms` | Firewall log of VMs and containers | A Warning per guest |
+| `Datastore.AllocateSpace` + `VM.Backup` | `/storage`, `/vms` | Backups section | Backups are missing — see below |
+| `VM.Config.Disk` | `/vms` | Disk images in Storage Content | Disk images are missing — see below |
+
+On Proxmox VE 8 `VM.GuestAgent.Audit` does not exist: the guest agent needs `VM.Monitor`, which
+`PVEAuditor` does not include. `Sys.Syslog` is read-only but not in `PVEAuditor`. The last five are more than read-only: they
+also allow changing node settings, opening consoles, running backups and changing disks. If your policy
+requires a strictly read-only account, leave them out and turn off what needs them —
+`Node.Detail.IncludeApt`, `Guest.Detail.IncludeFirewallLog`, `Storage.IncludeBackups` in the
+[settings](/cv4pve-report/settings/) — so the Issues page stays clean.
+
+:::caution[PVEAuditor alone cannot list backups and disk images]
+Proxmox VE lists a backup volume only to a caller that has **both** `Datastore.AllocateSpace` on the
+storage and `VM.Backup` on the guest, and a disk image only with `Datastore.Audit` and `VM.Config.Disk`
+(see [`check_volume_access`](https://github.com/proxmox/pve-storage/blob/master/src/PVE/Storage.pm)).
+It does not return an error: it returns the list without those volumes. With `PVEAuditor` alone the
+Backups section is empty and Storage Content shows only ISO images and templates.
+:::
+
+## How missing privileges are reported
+
+Proxmox VE answers a request the caller is only partly entitled to by *filtering the response*, not
+by failing it. `/cluster/resources` drops the guests, storages and pools you cannot audit; a storage
+listing drops the volumes you cannot access. Both return `200 OK`, so a filtered result looks exactly
+like an empty one — a guest without `VM.Audit` simply does not appear in the report.
+
+A request that fails outright, such as the update list without `Sys.Modify`, becomes a **Warning** on the
+[Issues page](/cv4pve-report/troubleshooting/#the-issues-page), with the Proxmox error and the request;
+the rest of the report is still written.

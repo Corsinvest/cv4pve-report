@@ -1,0 +1,205 @@
+---
+title: Metrics and logs
+description: The RRD Nodes, RRD Storage, RRD Guests, Syslog and Replication sections, column by column, in Excel, HTML and JSON.
+---
+
+Use this part when a snapshot is not enough: the RRD sections give the load history behind the
+current numbers (CPU, memory, I/O wait, pressure stall, network, storage growth), Syslog gives the
+journal of every node in one sortable table, and Replication shows which storage replication jobs
+are late or failing.
+
+How to read the tables:
+
+- **Excel / HTML** is the column header, the same in both formats. **JSON** is the key in the JSON file.
+- **Sizes** — `GB` or `MB` in the header — are in that unit in Excel and HTML, and raw bytes in JSON.
+- **Percentages** — `%` in the header — are formatted as percentages in Excel and HTML; JSON has the raw
+  value, a fraction from 0 to 1 for usage columns.
+- **Flags** show `X` in Excel, `✓` or `·` in HTML, `true` or `false` in JSON.
+- **Multi-line cells** hold one value per line; in JSON they are a string with line breaks (`\n`, or
+  `\r\n` when the report was generated on Windows).
+- **Links** to other pages exist in Excel and HTML; JSON has the plain value. Empty values are `null`
+  or `""` in JSON.
+- **Dates and times** are in UTC.
+- How the JSON files are shaped: see [JSON](/cv4pve-report/output/json/#shapes).
+
+## RRD data: time frame and consolidation
+
+The three RRD sections read the same round-robin data the PVE web UI graphs. Each has its own
+settings block (see [Settings](/cv4pve-report/settings/)):
+
+| Section | Settings block | Default |
+|---|---|---|
+| RRD Nodes | `Node.RrdData` | on, `Day`, `Average` |
+| RRD Storage | `Storage.RrdData` | on, `Day`, `Average` |
+| RRD Guests | `Guest.RrdData` | **off**, `Day`, `Average` |
+
+`TimeFrame` is one of `Hour`, `Day`, `Week`, `Month`, `Year`; `Consolidation` is `Average` or
+`Maximum`. Both are passed to the API as-is, so each row is one RRD sample at the resolution PVE
+keeps for that time frame. The Full profile switches all three to `Week` and turns RRD Guests on;
+the Fast profile turns all three off.
+
+Calls run up to `MaxParallelRequests` at a time. A resource whose call fails is skipped and listed
+on the Issues page.
+
+:::caution[Time Date shows the date only]
+The timestamp column is named **Time Date**, and names ending in `Date` are formatted as a date
+without time: Excel uses `dd/MM/yyyy` (the time is still in the cell value) and HTML prints
+`yyyy-MM-dd`. JSON keeps the full date and time in `timeDate`.
+:::
+
+## RRD Nodes
+
+Excel sheet `RRD Nodes` · HTML `rrd-nodes.html` · JSON `rrd-nodes.json` · enabled by
+`Node.RrdData.Enabled`.
+
+Samples from `/nodes/{node}/rrddata` for every node that passes `Node.Names` and is not in unknown
+state, sorted by node. The table has no title, so `rrd-nodes.json` is a plain array of rows.
+**Node** links to the node detail page.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Node | `node` | Node name. |
+| Time Date | `timeDate` | Sample time. |
+| Cpu Usage % | `cpuUsage` | CPU usage. |
+| Io Wait % | `ioWait` | I/O wait. |
+| Loadavg | `loadavg` | Load average. |
+| Memory Size GB | `memorySize` | Total memory. |
+| Memory Usage GB | `memoryUsage` | Used memory. |
+| Memory Usage % | `memoryUsage` | Used / total memory. |
+| Swap Size GB | `swapSize` | Swap size. |
+| Swap Usage GB | `swapUsage` | Swap used. |
+| Root Size GB | `rootSize` | Root filesystem size. |
+| Root Usage GB | `rootUsage` | Root filesystem used. |
+| Net In MB | `netIn` | Network received per second (API `netin`, a rate). |
+| Net Out MB | `netOut` | Network sent per second (API `netout`, a rate). |
+| Psi Cpu Some % | `psiCpuSome` | CPU pressure stall, "some" (API `pressurecpusome`). Proxmox VE 9.0 or later; `0` on older releases, as for all Psi columns. |
+| Psi Io Some % | `psiIoSome` | I/O pressure stall, "some". |
+| Psi Io Full % | `psiIoFull` | I/O pressure stall, "full". |
+| Psi Mem Some % | `psiMemSome` | Memory pressure stall, "some". |
+| Psi Mem Full % | `psiMemFull` | Memory pressure stall, "full". |
+
+:::note[Duplicate JSON key]
+`Memory Usage GB` and `Memory Usage %` both become `memoryUsage`; the percentage is written last,
+so in JSON `memoryUsage` holds the fraction, not the byte count.
+:::
+
+## RRD Storage
+
+Excel sheet `RRD Storage` · HTML `rrd-storage.html` · JSON `rrd-storage.json` · enabled by
+`Storage.RrdData.Enabled`.
+
+Samples from `/nodes/{node}/storage/{storage}/rrddata` for every storage in the storage list (a
+shared storage once, through the node it was first listed on; local storages once per node). The
+table has no title, so `rrd-storage.json` is a plain array of rows. **Node** links to the node
+detail page; **Storage** links to the Storages page.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Node | `node` | Node name, or `(shared)`. |
+| Storage | `storage` | Storage ID. |
+| Time Date | `timeDate` | Sample time. |
+| Size GB | `size` | Storage total size. |
+| Used GB | `used` | Used space. |
+| Usage % | `usage` | Used / size; empty when size is 0. |
+
+## RRD Guests
+
+Excel sheet `RRD Guests` · HTML `rrd-guests.html` · JSON `rrd-guests.json` · enabled by
+`Guest.RrdData.Enabled` (off by default).
+
+Samples from `/nodes/{node}/qemu/{vmid}/rrddata` or `/nodes/{node}/lxc/{vmid}/rrddata` for every
+guest selected by `Guest.Ids`, sorted by guest. The table has no title, so `rrd-guests.json` is a
+plain array of rows. **Vm Id** links to the guest detail page, **Node** to the node detail page.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Node | `node` | Node hosting the guest. |
+| Type | `type` | `Qemu` or `Lxc`. |
+| Vm Id | `vmId` | Guest ID. |
+| Name | `name` | Guest name. |
+| Time Date | `timeDate` | Sample time. |
+| Cpu Usage % | `cpuUsage` | CPU usage. |
+| Memory Size GB | `memorySize` | Configured memory. |
+| Memory Usage GB | `memoryUsage` | Used memory. |
+| Memory Usage % | `memoryUsage` | Used / configured memory. |
+| Net In MB | `netIn` | Network received per second (API `netin`, a rate). |
+| Net Out MB | `netOut` | Network sent per second (API `netout`, a rate). |
+| Disk Read MB | `diskRead` | Disk read per second (API `diskread`, a rate). |
+| Disk Write MB | `diskWrite` | Disk written per second (API `diskwrite`, a rate). |
+| Disk Size GB | `diskSize` | Disk size. |
+| Disk Usage GB | `diskUsage` | Disk used. |
+| Disk Usage % | `diskUsage` | Disk used / size. |
+| Psi Cpu Some % | `psiCpuSome` | CPU pressure stall, "some". Proxmox VE 9.0 or later; `0` on older releases, as for all Psi columns. |
+| Psi Cpu Full % | `psiCpuFull` | CPU pressure stall, "full". |
+| Psi Io Some % | `psiIoSome` | I/O pressure stall, "some". |
+| Psi Io Full % | `psiIoFull` | I/O pressure stall, "full". |
+| Psi Mem Some % | `psiMemSome` | Memory pressure stall, "some". |
+| Psi Mem Full % | `psiMemFull` | Memory pressure stall, "full". |
+
+:::note[Duplicate JSON keys]
+`memoryUsage` and `diskUsage` each come from a GB column and a % column; the percentage is written
+last, so in JSON both hold the fraction, not the byte count.
+:::
+
+## Syslog
+
+Excel sheet `Syslog` · HTML `syslog.html` · JSON `syslog.json` · enabled by `Node.Syslog.Enabled`
+(off by default; the Full profile turns it on with `MaxCount` 1000).
+
+The systemd journal of every node that passes `Node.Names` and is not in unknown state, read from
+`/nodes/{node}/journal` one node after the other and appended to a single table. What is requested
+from each node:
+
+| Setting | Effect |
+|---|---|
+| `Node.Syslog.Since` | Sent as `since`, midnight UTC of that date. When set, no entry limit is sent. |
+| `Node.Syslog.Until` | Sent as `until`, end of that day (UTC). |
+| `Node.Syslog.MaxCount` | Sent as `lastentries` when `Since` is not set. Default 500; a value of 0 also sends 500. |
+
+Each line is split with the pattern `<month day> <hh:mm:ss> <host> <service>[<pid>]: <message>`.
+A line that does not match keeps only the Node and the whole line in Message. The table has no
+title, so `syslog.json` is a plain array of rows. The cover page counts nodes for this section,
+not lines.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Node | `node` | Node the journal was read from. |
+| Date | `date` | Month and day as text (for example `Mar 27`). |
+| Time | `time` | Time as text (`hh:mm:ss`). |
+| Host | `host` | Host name in the line. |
+| Service | `service` | Service or process name. |
+| Pid | `pid` | Process ID, when present in `service[pid]`. |
+| Message | `message` | Message text, or the whole line when it could not be parsed. |
+
+## Replication
+
+Excel sheet `Replication` · HTML `replication.html` · JSON `replication.json` · enabled by
+`Node.IncludeReplication` (on by default).
+
+Storage replication job status from `/nodes/{node}/replication` for every node that passes
+`Node.Names` and is not in unknown state, sorted by node. The job definitions themselves are in the
+Replication table of the Cluster section. The table has no title, so `replication.json` is a plain
+array of rows. **Node**, **Source** and **Target** link to the node detail pages; **Vm Id** links to
+the guest detail page.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Node | `node` | Node the status was read from. |
+| Id | `id` | Job ID (`<vmid>-<jobnum>`). |
+| Type | `type` | Job type. |
+| Vm Type | `vmType` | Guest type. |
+| Vm Id | `vmId` | Guest ID, as text. |
+| Guest Name | `guestName` | Guest name, when the guest exists in the cluster. |
+| Source | `source` | Source node. |
+| Target | `target` | Target node. |
+| Schedule | `schedule` | Replication schedule. |
+| Disable | `disable` | Job disabled (boolean; not a flag column). |
+| Fail Count | `failCount` | Consecutive failures. |
+| Error | `error` | Last error message. |
+| Duration | `duration` | Duration of the last run, in seconds. |
+| Rate | `rate` | Rate limit, as configured. |
+| Last Sync | `lastSync` | Last successful sync; empty when never. |
+| Next Sync | `nextSync` | Next scheduled sync; empty when not set. |
+| Last Try | `lastTry` | Last attempt; empty when never. |
+| Job Num | `jobNum` | Job number. |
+| Comment | `comment` | Job comment, wrapped. |

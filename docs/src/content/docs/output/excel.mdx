@@ -1,0 +1,50 @@
+---
+title: Excel
+description: The Excel workbook of cv4pve-report — sheets, hyperlinks, real Excel tables for filters and pivots.
+---
+
+`--format Xlsx` is the default. It writes a zip with one workbook and the network diagram:
+
+```
+Report_20260928_101500.zip
+  report.xlsx
+  network-diagram.svg
+```
+
+Open `report.xlsx` in Excel, LibreOffice Calc or any spreadsheet program. Pick Excel when you want to
+work on the data: sort the VMs by memory, filter the snapshots older than a month, build a pivot of disk
+usage per node.
+
+## Sheets
+
+One sheet per [section](/cv4pve-report/output/#sections), in this order: **Summary**, **Issues** (only
+when a call failed), the sections, then one detail sheet per node (`Node pve01`), per VM (`VM 100`) and per
+container (`CT 200`). VM and container sheets are ordered by ID as a number.
+
+The **Summary** sheet has the date, the cv4pve-report version, the node and guest filters, the RRD time
+frame and consolidation of each RRD section that is on, and a **Contents** table: every section with its
+description, row count and how long it took, each name linking to its sheet.
+
+## Working with the data
+
+- **Real Excel tables.** Every table is an Excel table with its autofilter on: sort, filter, slicers and
+  pivots work without copying the data anywhere.
+- **Units in the header.** Sizes are in gigabytes or megabytes as the column name says (`Memory Size GB`);
+  percentages are formatted as percentages; `X` marks a true flag.
+- **Hyperlinks.** A node, VM or container in a table links to its detail sheet, a storage to the Storages
+  sheet. Every detail sheet has a link back to its list (`← Nodes`, `← VMs`, `← Containers`), and every
+  sheet with titled tables starts with an **Index** that links to each of them.
+- **Health.** The Health column of Nodes, VMs, Containers and Storages is coloured on a red–yellow–green
+  scale — see [Health Score](/cv4pve-report/output/#health-score).
+
+## Sheet names
+
+Excel limits a sheet name to 31 characters. A longer name, such as `Node` followed by a long FQDN, is cut
+to 31 characters; two names that end up the same get `_2`, `_3`, … Hyperlinks always point to the name
+actually used.
+
+## Issues
+
+When an API call fails, the **Issues** sheet comes right after Summary and is the first row of its Contents
+table. Each row links to the sheet of the resource concerned. See
+[Troubleshooting](/cv4pve-report/troubleshooting/#the-issues-page).

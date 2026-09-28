@@ -11,3 +11,8 @@ License: MIT
 
 [ClosedXML](https://github.com/ClosedXML/ClosedXML)
 License: MIT
+
+## Artwork
+
+The document pictogram in `icon.svg` / `icon.png` comes from [Lucide](https://lucide.dev) (icon `file-text`)
+License: ISC

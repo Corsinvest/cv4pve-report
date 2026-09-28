@@ -1,0 +1,193 @@
+---
+title: Network and Firewall
+description: Columns and JSON keys of the Network and Firewall sections.
+---
+
+The Network section puts every node interface, SDN VNet and guest NIC in one place, so you can trace which bridge, VLAN tag and address each VM or container uses without opening each node.
+The Firewall section lists every rule, alias and IPSet across datacenter, nodes and guests in three flat tables you can filter by scope.
+
+How to read the tables:
+
+- **Excel / HTML** is the column header, the same in both formats. **JSON** is the key in the JSON file.
+- **Sizes** — `GB` or `MB` in the header — are in that unit in Excel and HTML, and raw bytes in JSON.
+- **Percentages** — `%` in the header — are formatted as percentages in Excel and HTML; JSON has the raw
+  value, a fraction from 0 to 1 for usage columns.
+- **Flags** show `X` in Excel, `✓` or `·` in HTML, `true` or `false` in JSON.
+- **Multi-line cells** hold one value per line; in JSON they are a string with line breaks (`\n`, or
+  `\r\n` when the report was generated on Windows).
+- **Links** to other pages exist in Excel and HTML; JSON has the plain value. Empty values are `null`
+  or `""` in JSON.
+- **Dates and times** are in UTC.
+- How the JSON files are shaped: see [JSON](/cv4pve-report/output/json/#shapes).
+
+## Network
+
+Excel sheet `Network` · HTML `network.html` · JSON `network.json` · no dedicated setting: the section is always written.
+
+The section reuses data collected by other sections: node interfaces are gathered while building the Nodes section, guest NICs while building the VMs and Containers sections. Node interfaces therefore follow `Node.Names`, guest NICs follow `Guest.Ids` and `Guest.IncludeQemuAgent` (see [/cv4pve-report/settings/](/cv4pve-report/settings/)). The same data feeds the network diagram.
+
+### Nodes Networks
+
+One row per interface of each node (`/nodes/{node}/network`), nodes in name order and interfaces sorted by name. Nodes that are offline or in unknown state have no rows. JSON key `nodesNetworks`.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Node | `node` | Node, hyperlinked to the node |
+| Active | `active` | Flag: interface is active |
+| Auto Start | `autoStart` | Flag: interface starts at boot |
+| Exists | `exists` | Flag: interface exists on the system |
+| Type | `type` | Interface type (eth, bridge, bond, vlan, OVS types, ...) |
+| Interface | `interface` | Interface name |
+| Link Type | `linkType` | Link type |
+| Method | `method` | IPv4 configuration method |
+| Cidr | `cidr` | IPv4 address in CIDR form |
+| Address | `address` | IPv4 address |
+| Netmask | `netmask` | IPv4 netmask |
+| Gateway | `gateway` | IPv4 gateway |
+| Method6 | `method6` | IPv6 configuration method |
+| Cidr6 | `cidr6` | IPv6 address in CIDR form |
+| Address6 | `address6` | IPv6 address |
+| Netmask6 | `netmask6` | IPv6 prefix length |
+| Gateway6 | `gateway6` | IPv6 gateway |
+| Priority | `priority` | Interface order priority |
+| Mtu | `mtu` | MTU |
+| Bond Mode | `bondMode` | Bond mode |
+| Bond Miimon | `bondMiimon` | Bond MII monitoring interval |
+| Bond Primary | `bondPrimary` | Bond primary interface |
+| Bond Xmit Hash Policy | `bondXmitHashPolicy` | Bond transmit hash policy |
+| Slaves | `slaves` | Bond member interfaces |
+| Bridge Stp | `bridgeStp` | Bridge STP setting |
+| Bridge Vlan Aware | `bridgeVlanAware` | Bridge VLAN-aware setting |
+| Bridge Vids | `bridgeVids` | VLAN ids allowed on a VLAN-aware bridge |
+| Bridge Fd | `bridgeFd` | Bridge forward delay |
+| Bridge Ports | `bridgePorts` | Bridge ports |
+| Vlan Id | `vlanId` | VLAN id |
+| Vlan Raw Device | `vlanRawDevice` | Parent device of the VLAN |
+| Vlan Protocol | `vlanProtocol` | VLAN protocol |
+| Ovs Bridge | `ovsBridge` | OVS bridge |
+| Ovs Bonds | `ovsBonds` | OVS bonds |
+| Ovs Ports | `ovsPorts` | OVS ports |
+| Ovs Options | `ovsOptions` | OVS options |
+| Ovs Tag | `ovsTag` | OVS VLAN tag |
+| Vxlan Id | `vxlanId` | VXLAN id |
+| Vxlan Local Tunnel Ip | `vxlanLocalTunnelIp` | VXLAN local tunnel IP |
+| Vxlan Phys Dev | `vxlanPhysDev` | VXLAN physical device |
+| Comments | `comments` | IPv4 comments (wrapped) |
+| Comments6 | `comments6` | IPv6 comments |
+
+### SDN Vnets
+
+One row per SDN VNet (`/cluster/sdn/vnets`), joined with its zone (`/cluster/sdn/zones`). JSON key `sdnVnets`.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Vnet | `vnet` | VNet id |
+| Zone | `zone` | Zone id |
+| Zone Type | `zoneType` | Type of the zone; `simple` when the zone is not found |
+| Zone Bridge | `zoneBridge` | Bridge of the zone |
+| Tag | `tag` | VLAN or VXLAN tag |
+| Alias | `alias` | Alias |
+| Nodes | `nodes` | Nodes of the zone, comma separated; all cluster nodes when the zone has no node restriction |
+
+### VM Networks
+
+One row per guest NIC: VMs first, then containers, each in guest id order; within a guest, configured NICs (`net0`, `net1`, ...) come first, then interfaces seen only by the guest agent. JSON key `vmNetworks`.
+
+Where the rows come from:
+
+- **Running VMs** with the QEMU guest agent enabled in their configuration, when `Guest.IncludeQemuAgent` is on and the agent answers within `Guest.QemuAgentTimeout`: one row per interface reported by the agent (`network-get-interfaces`), skipping interfaces with no MAC or an all-zero MAC. Each is matched by MAC address to the VM's `netN` configuration; interfaces with no match are marked **Is Internal**. A configured NIC that the agent does not report has no row.
+- **Other VMs** (stopped, agent disabled or not answering): one row per `netN` entry of the VM configuration.
+- **Containers**: one row per `netN` entry of the container configuration. For running containers, an address configured as `dhcp`, `auto` or `manual`, or left empty, is replaced with the live one from `/nodes/{node}/lxc/{vmid}/interfaces` (matched by MAC, link-local IPv6 skipped), with the mode kept in brackets after it. Static addresses are shown as configured.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Node | `node` | Node, hyperlinked to the node |
+| Vm Id | `vmId` | Guest id, hyperlinked to the guest |
+| Name | `name` | Guest name |
+| Type | `type` | `qemu` or `lxc` |
+| Status | `status` | Guest status |
+| Hostname | `hostname` | VMs: hostname from the agent, or a message such as `Agent not enabled!`, `Agent timeout!`, `Agent not running! (...)`. Containers: hostname from the configuration |
+| Is Internal | `isInternal` | Flag: interface reported by the agent with no matching `netN` entry |
+| Net Id | `netId` | Configuration key (`net0`, `net1`, ...); empty for internal interfaces |
+| Net Name | `netName` | Interface name |
+| Mac Address | `macAddress` | MAC address |
+| Bridge | `bridge` | Bridge the NIC is attached to |
+| Tag | `tag` | VLAN tag |
+| Trunks | `trunks` | VLAN trunks |
+| Model | `model` | NIC model |
+| Firewall | `firewall` | Flag: firewall enabled on the NIC |
+| Ip Address | `ipAddress` | IPv4 addresses; agent and live container addresses as `address/prefix`, one per line |
+| Ip Address6 | `ipAddress6` | IPv6 addresses, same format |
+| Gateway | `gateway` | IPv4 gateway |
+| Gateway6 | `gateway6` | IPv6 gateway |
+| Mtu | `mtu` | MTU |
+| Rate | `rate` | Rate limit |
+
+## Firewall
+
+Excel sheet `Firewall` · HTML `firewall.html` · JSON `firewall.json` · enabled by `Firewall.Enabled` (see [/cv4pve-report/settings/](/cv4pve-report/settings/)).
+
+Each table collects entries from every scope, in this order: datacenter (`/cluster/firewall/...`), nodes in name order (`/nodes/{node}/firewall/rules`), then guests in id order (`/nodes/{node}/qemu/{vmid}/firewall/...` or `/nodes/{node}/lxc/{vmid}/firewall/...`). Nodes and guests follow `Node.Names` and `Guest.Ids`; nodes or guests in unknown state are skipped. For nodes only rules are read.
+
+The first three columns identify the scope in all three tables:
+
+| Scope | Scope Type | Scope | Scope Name |
+|---|---|---|---|
+| Datacenter | `cluster` | `cluster` | empty |
+| Node | `node` | node name | empty |
+| Guest | `qemu` or `lxc` | guest id | guest name |
+
+:::note
+The datacenter firewall options are in the Cluster section (Firewall Options table). Firewall log lines, which `Firewall.MaxCount`, `Firewall.Since` and `Firewall.Until` control, are not part of this section: they are in the node and guest detail sheets.
+:::
+
+### Firewall Rules
+
+JSON key `firewallRules`.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Scope Type | `scopeType` | See the scope table above |
+| Scope | `scope` | See the scope table above |
+| Scope Name | `scopeName` | See the scope table above |
+| Positon | `positon` | Rule position |
+| Type | `type` | Direction or type (in, out, group) |
+| Action | `action` | Action (ACCEPT, DROP, REJECT, or security group name) |
+| Enable | `enable` | Flag: rule enabled |
+| Macro | `macro` | Macro |
+| Iface | `iface` | Interface the rule applies to |
+| Ip Version | `ipVersion` | IP version |
+| Protocol | `protocol` | Protocol |
+| Icmp Type | `icmpType` | ICMP type |
+| Source | `source` | Source address, alias or IPSet |
+| Dest | `dest` | Destination address, alias or IPSet |
+| Destination Port | `destinationPort` | Destination port |
+| Source Port | `sourcePort` | Source port |
+| Log | `log` | Log level |
+| Comment | `comment` | Comment (wrapped) |
+
+### Firewall Aliases
+
+Datacenter and guest aliases. JSON key `firewallAliases`.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Scope Type | `scopeType` | See the scope table above |
+| Scope | `scope` | See the scope table above |
+| Scope Name | `scopeName` | See the scope table above |
+| Name | `name` | Alias name |
+| Cidr | `cidr` | Address or network |
+| Ip Version | `ipVersion` | IP version |
+| Comment | `comment` | Comment (wrapped) |
+
+### Firewall IPSets
+
+Datacenter and guest IPSets. Only the IPSet itself is listed, not its members. JSON key `firewallIPSets`.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Scope Type | `scopeType` | See the scope table above |
+| Scope | `scope` | See the scope table above |
+| Scope Name | `scopeName` | See the scope table above |
+| Name | `name` | IPSet name |
+| Comment | `comment` | Comment (wrapped) |

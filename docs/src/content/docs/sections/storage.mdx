@@ -1,0 +1,124 @@
+---
+title: Storage
+description: The Storages, Storage Content and Backups sections, column by column, in Excel, HTML and JSON.
+---
+
+Use this part to see how full each storage is, what is sitting on it (ISO images, templates, disk
+images) and which backups exist per guest, with their size, protection, encryption and verification
+state.
+
+How to read the tables:
+
+- **Excel / HTML** is the column header, the same in both formats. **JSON** is the key in the JSON file.
+- **Sizes** — `GB` or `MB` in the header — are in that unit in Excel and HTML, and raw bytes in JSON.
+- **Percentages** — `%` in the header — are formatted as percentages in Excel and HTML; JSON has the raw
+  value, a fraction from 0 to 1 for usage columns.
+- **Flags** show `X` in Excel, `✓` or `·` in HTML, `true` or `false` in JSON.
+- **Multi-line cells** hold one value per line; in JSON they are a string with line breaks (`\n`, or
+  `\r\n` when the report was generated on Windows).
+- **Links** to other pages exist in Excel and HTML; JSON has the plain value. Empty values are `null`
+  or `""` in JSON.
+- **Dates and times** are in UTC.
+- How the JSON files are shaped: see [JSON](/cv4pve-report/output/json/#shapes).
+
+All three sections work on the same storage list: storages from `/cluster/resources`, where a
+shared storage appears once (its Node column shows `(shared)`) and a local storage appears once per
+node. The list is sorted by node, then by storage name. It is not filtered by `Node.Names`.
+
+## Storages
+
+Excel sheet `Storages` · HTML `storages.html` · JSON `storages.json` · always generated.
+
+The table has no title, so `storages.json` is a plain array of rows. The **Node** column links to the
+node detail page; the **Storage** column links to this Storages page.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Node | `node` | Node name, or `(shared)` for a shared storage. |
+| Storage | `storage` | Storage ID. |
+| Status | `status` | Storage status from `/cluster/resources`. |
+| Health | `healthScore` | Health score 0–100: 100 − disk usage %. |
+| Plugin Type | `pluginType` | Storage type (dir, lvmthin, zfspool, nfs, pbs…). |
+| Content | `content` | Allowed content types, sorted, one per line. |
+| Shared | `shared` | Flag: shared storage. |
+| Disk Size GB | `diskSize` | Total size. |
+| Disk Usage GB | `diskUsage` | Used space. |
+| Disk Usage % | `diskUsage` | Used / total. |
+
+:::note[Duplicate JSON key]
+`Disk Usage GB` and `Disk Usage %` both become the JSON key `diskUsage`. The percentage is written
+last, so in `storages.json` `diskUsage` holds the fraction (0–1), not the byte count.
+:::
+
+:::note[Health score]
+For storages the score comes from the Corsinvest API library: 100 − (used / size × 100), clamped to
+0–100 and rounded to one decimal (100 when size is 0). HTML colours it green from 80, yellow from 60
+and red below; Excel uses a red–yellow–green colour scale with 60 as the midpoint.
+:::
+
+## Storage Content
+
+Excel sheet `Storage Content` · HTML `storage-content.html` · JSON `storage-content.json` · enabled
+by `Storage.IncludeContent` (see [Settings](/cv4pve-report/settings/)).
+
+Everything stored on each storage except backups: ISO images, container templates, disk images and
+the other content types PVE lists. For every storage in the list that is not in unknown state, the
+report calls `/nodes/{node}/storage/{storage}/content` once (for a shared storage, through the node
+it was first listed on), up to `MaxParallelRequests` at a time. That single call also feeds the
+Backups section.
+
+The table has no title, so `storage-content.json` is a plain array of rows. **Node** links to the
+node detail page, **Storage** to the Storages page, **Vm Id** to the guest detail page.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Node | `node` | Node name, or `(shared)`. |
+| Storage | `storage` | Storage ID. |
+| Content | `content` | Content type (`iso`, `vztmpl`, `images`, `rootdir`…). |
+| File Name | `fileName` | Volume name (the part of the volume ID after `storage:`). |
+| Format | `format` | Format (`iso`, `raw`, `qcow2`, `subvol`, `tgz`…). |
+| Size GB | `size` | Volume size. |
+| Storage Usage % | `storageUsage` | Volume size / storage total size; empty when the storage size is 0. |
+| Vm Id | `vmId` | Owning guest ID, as text; empty when the volume has no owner. Links to the guest. |
+| Guest Name | `guestName` | Name of the owning guest, when it exists in the cluster. |
+| Creation Date | `creationDate` | Creation time. Excel and HTML show the date only; JSON keeps date and time. Volumes the API gives no creation time for (most disk images) show `1970-01-01`. |
+| Notes | `notes` | Notes, wrapped. |
+| Parent | `parent` | Parent volume (linked clones, base images). |
+
+## Backups
+
+Excel sheet `Backups` · HTML `backups.html` · JSON `backups.json` · enabled by
+`Storage.IncludeBackups` (see [Settings](/cv4pve-report/settings/)).
+
+Backups is not an entry of its own in the report's section list. It is written by the Storage
+Content step, from the same `/content` call, keeping only the volumes whose content type is
+`backup`. It gets its own sheet, page and file, placed right after Storage Content (in HTML it sits
+under the Storage group of the sidebar). Its row count is added to the **Storage Content** line of
+the cover page, and when `Storage.IncludeContent` is off but `Storage.IncludeBackups` is on, the
+Storage Content step still runs and only Backups is written.
+
+The table has no title, so `backups.json` is a plain array of rows. **Node** links to the node detail
+page, **Storage** to the Storages page, **Vm Id** to the guest detail page.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Node | `node` | Node name, or `(shared)`. |
+| Storage | `storage` | Storage ID. |
+| File Name | `fileName` | Backup volume name (the part of the volume ID after `storage:`). |
+| Format | `format` | Backup format (`pbs-vm`, `pbs-ct`, `vma.zst`, `tar.zst`…). |
+| Size GB | `size` | Backup size. |
+| Storage Usage % | `storageUsage` | Backup size / storage total size; empty when the storage size is 0. |
+| Vm Id | `vmId` | Backed-up guest ID, as text. Links to the guest. |
+| Guest Name | `guestName` | Name of the guest, when it still exists in the cluster; empty otherwise. |
+| Creation Date | `creationDate` | Backup time. Excel and HTML show the date only; JSON keeps date and time. |
+| Notes | `notes` | Backup notes, wrapped. |
+| Protected | `protected` | Flag: backup is protected from pruning and removal. |
+| Encrypted | `encrypted` | Flag: backup is encrypted. |
+| Verified | `verified` | Flag: last verification state is `ok` (Proxmox Backup Server). |
+| Parent | `parent` | Parent volume. |
+
+:::tip
+A backup with a **Vm Id** but an empty **Guest Name** belongs to a guest ID that is not in the
+cluster's resource list any more — a candidate for cleanup, unless another cluster writes to the same
+backup storage.
+:::
