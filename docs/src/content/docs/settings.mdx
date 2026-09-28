@@ -187,6 +187,13 @@ snapshots, tasks and firewall log are read for each one. The switches that cut t
 
 Or start from `--fast` and turn on only what you need.
 
+:::tip[A real example]
+On a production cluster of 25 nodes and about 2700 VMs, with the per-VM detail sheets off, the report
+took [12.7 minutes](https://github.com/Corsinvest/cv4pve-report/issues/10#issuecomment-4422977335) with the default `MaxParallelRequests: 5` and [about 7 minutes](https://github.com/Corsinvest/cv4pve-report/issues/10#issuecomment-4432966790) with `10`
+— most of the time in the guest agent calls, one per running VM. Measured by the cluster's administrator
+on version 2.x.
+:::
+
 `MaxParallelRequests` sets how many requests run together. More is faster, but every request is a real
 call to the node you connected to: too many slow down its API and use more memory on both sides. Raise it
 step by step and watch the time on the Summary.

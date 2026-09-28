@@ -67,6 +67,7 @@ Every node, VM and container links to its own sheet or page. Health is a 0–100
 - **Your own selection** — a settings file turns each section on or off; guests by ID, range, name, node, pool or tag.
 - **Nothing silently missing** — a call that fails lands on an Issues page with the Proxmox error, and the rest of the report is still written.
 - **Diff-friendly** — every table is sorted, so two reports of an unchanged cluster differ only in live values.
+- **Tested at scale** — a production cluster of 25 nodes and about 2700 VMs reports in [about 7 minutes](https://github.com/Corsinvest/cv4pve-report/issues/10#issuecomment-4432966790).
 - **Keeps running with a node down** — give it more than one host and it uses the first that answers.
 
 ---
