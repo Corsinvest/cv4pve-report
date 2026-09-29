@@ -4,7 +4,6 @@ description: Install cv4pve-report, connect it to a Proxmox VE cluster and expor
 ---
 
 import CliInstall from '@corsinvest/cv4pve-docs-theme/components/CliInstall.astro';
-import CliConnection from '@corsinvest/cv4pve-docs-theme/components/CliConnection.astro';
 
 cv4pve-report runs **outside the cluster** — on your workstation, a management VM or a scheduled job —
 and talks only to the Proxmox VE REST API on port 8006. Nothing is installed on the nodes.
@@ -13,15 +12,17 @@ and talks only to the Proxmox VE REST API on port 8006. Nothing is installed on 
 
 <CliInstall repo="cv4pve-report" />
 
-## Connect to the cluster
+## First run
 
-Create a dedicated user and API token first — see [Permissions](/cv4pve-report/permissions/). Then:
+Create a dedicated user and API token first — see [Permissions](/cv4pve-report/permissions/). Then point
+the tool at any node:
 
 ```bash
-cv4pve-report --host=pve1.local --api-token='report@pve!report=UUID' export
+cv4pve-report --host=pve1.local --api-token='report@pve!report=<uuid>' export
 ```
 
-<CliConnection user="report@pve" />
+Several nodes, username and password, certificates and response files for scheduled runs: see
+[Connection](/cv4pve-report/connection/).
 
 ## Run
 
@@ -45,14 +46,14 @@ Without `--fast` or `--full` the **standard** profile is used. The [profiles](/c
 page lists exactly what each one turns on.
 
 ```bash
-cv4pve-report --host=pve1 --api-token='report@pve!report=UUID' export                   # standard profile, Excel
-cv4pve-report --host=pve1 --api-token='report@pve!report=UUID' export --fast            # quick inventory of a large cluster
-cv4pve-report --host=pve1 --api-token='report@pve!report=UUID' export --full            # everything, for audits
-cv4pve-report --host=pve1 --api-token='report@pve!report=UUID' export --format Html -o cluster-2026-09
+cv4pve-report --host=pve1 --api-token='report@pve!report=<uuid>' export                   # standard profile, Excel
+cv4pve-report --host=pve1 --api-token='report@pve!report=<uuid>' export --fast            # quick inventory of a large cluster
+cv4pve-report --host=pve1 --api-token='report@pve!report=<uuid>' export --full            # everything, for audits
+cv4pve-report --host=pve1 --api-token='report@pve!report=<uuid>' export --format Html -o cluster-2026-09
 
 # Your own selection of sections
 cv4pve-report create-settings --full        # then edit settings.json
-cv4pve-report --host=pve1 --api-token='report@pve!report=UUID' --settings-file=settings.json export
+cv4pve-report --host=pve1 --api-token='report@pve!report=<uuid>' --settings-file=settings.json export
 ```
 
 `--format`, `--output`, `--fast` and `--full` go **after** `export`. `--settings-file` goes **before**

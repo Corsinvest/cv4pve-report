@@ -3,23 +3,13 @@ title: VMs & containers
 description: Reference for the VMs, Containers, per-guest detail, Disks, Partitions and Snapshots sections of the report, with every column and JSON key.
 ---
 
+import ReadingTables from '../../../components/ReadingTables.astro';
+
 These sections are the guest inventory: every QEMU VM and LXC container with its sizing, live usage, guest-agent data,
 configuration, disks, filesystems and snapshots. Use them to find VMs without a working guest agent, disks on the wrong
 storage or with backup disabled, filesystems close to full and snapshots nobody cleaned up.
 
-How to read the tables:
-
-- **Excel / HTML** is the column header, the same in both formats. **JSON** is the key in the JSON file.
-- **Sizes** — `GB` or `MB` in the header — are in that unit in Excel and HTML, and raw bytes in JSON.
-- **Percentages** — `%` in the header — are formatted as percentages in Excel and HTML; JSON has the raw
-  value, a fraction from 0 to 1 for usage columns.
-- **Flags** show `X` in Excel, `✓` or `·` in HTML, `true` or `false` in JSON.
-- **Multi-line cells** hold one value per line; in JSON they are a string with line breaks (`\n`, or
-  `\r\n` when the report was generated on Windows).
-- **Links** to other pages exist in Excel and HTML; JSON has the plain value. Empty values are `null`
-  or `""` in JSON.
-- **Dates and times** are in UTC.
-- How the JSON files are shaped: see [JSON](/cv4pve-report/output/json/#shapes).
+<ReadingTables />
 
 ## Which guests
 

@@ -1,0 +1,28 @@
+---
+title: Connection
+description: How cv4pve-report connects to a Proxmox VE cluster, and how to keep the options in a response file for scheduled runs.
+---
+
+import CliConnection from '@corsinvest/cv4pve-docs-theme/components/CliConnection.astro';
+import CliResponseFiles from '@corsinvest/cv4pve-docs-theme/components/CliResponseFiles.astro';
+
+cv4pve-report talks to the Proxmox VE REST API of any node of the cluster. Create the user and API token
+first — see [Permissions](/cv4pve-report/permissions/).
+
+## Options
+
+<CliConnection user="report@pve" />
+
+## Response files
+
+A monthly report run by cron or Task Scheduler repeats the same connection every time: keep it in a file.
+
+<CliResponseFiles
+  tool="cv4pve-report"
+  user="report@pve"
+  token="report"
+  extra={['# Your own selection of sections, see Settings', '# --settings-file=/etc/cv4pve/report-settings.json']}
+  run="export --format Html -o /srv/reports/cluster"
+/>
+
+`--settings-file` goes before `export`, so it can live in the same file as the connection.
