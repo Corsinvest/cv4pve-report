@@ -2,9 +2,18 @@
 
 ---
 
-## [Unreleased]
+## [2.8.0] — 2026-09-29
+
+### What's new
+
+- **Disk and partition totals in the VMs and Containers tables.** Disk Size is the boot disk for VMs and the root disk for containers, as in Proxmox VE, so it could not be compared with the total size of the guest. New columns sum the Disks and Partitions sheets per guest ([#72](https://github.com/Corsinvest/cv4pve-report/issues/72)):
+  - **Disks Size GB** (VMs and Containers): configured disks, CD-ROM, cloud-init and unused disks left out; for containers the root disk and the mount points.
+  - **Unused Disks Size GB** (VMs and Containers): unused disks (`unusedN`), space still taken on the storage by disks detached from the guest.
+  - **Partitions Total GB, Partitions Used GB, Partitions Used %** (VMs): guest filesystems from the agent, each device counted once, read-only images (snap packages, CD-ROMs) left out. Empty without the agent.
 
 ### Changed
+
+- **VM Disk Usage GB / % are the Proxmox VE values again**, always 0 for VMs. In 2.7.1 they came from the guest filesystems, a different source from Disk Size, so usage could exceed size. The guest filesystem usage is now in Partitions Used GB / %.
 - Windows executable icon
 - NuGet package description
 - Project metadata, symbols (Source Link, `.snupkg`) and code style aligned with the other cv4pve tools
