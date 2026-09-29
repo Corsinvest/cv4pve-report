@@ -83,7 +83,7 @@ wget https://github.com/Corsinvest/cv4pve-report/releases/latest/download/cv4pve
 unzip cv4pve-report-linux-x64.zip && chmod +x cv4pve-report
 
 # Run against any node of the cluster, with an API token
-./cv4pve-report --host=pve1.local --api-token='report@pve!report=UUID' export --format Html
+./cv4pve-report --host=pve1.local --api-token='report@pve!report=<uuid>' export --format Html
 ```
 
 The report is a `.zip` in the current folder. The API token needs the privileges listed in [Permissions](https://corsinvest.github.io/cv4pve-report/permissions/) — note that `PVEAuditor` alone cannot list backups.

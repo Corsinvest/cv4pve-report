@@ -3,24 +3,14 @@ title: Metrics and logs
 description: The RRD Nodes, RRD Storage, RRD Guests, Syslog and Replication sections, column by column, in Excel, HTML and JSON.
 ---
 
+import ReadingTables from '../../../components/ReadingTables.astro';
+
 Use this part when a snapshot is not enough: the RRD sections give the load history behind the
 current numbers (CPU, memory, I/O wait, pressure stall, network, storage growth), Syslog gives the
 journal of every node in one sortable table, and Replication shows which storage replication jobs
 are late or failing.
 
-How to read the tables:
-
-- **Excel / HTML** is the column header, the same in both formats. **JSON** is the key in the JSON file.
-- **Sizes** — `GB` or `MB` in the header — are in that unit in Excel and HTML, and raw bytes in JSON.
-- **Percentages** — `%` in the header — are formatted as percentages in Excel and HTML; JSON has the raw
-  value, a fraction from 0 to 1 for usage columns.
-- **Flags** show `X` in Excel, `✓` or `·` in HTML, `true` or `false` in JSON.
-- **Multi-line cells** hold one value per line; in JSON they are a string with line breaks (`\n`, or
-  `\r\n` when the report was generated on Windows).
-- **Links** to other pages exist in Excel and HTML; JSON has the plain value. Empty values are `null`
-  or `""` in JSON.
-- **Dates and times** are in UTC.
-- How the JSON files are shaped: see [JSON](/cv4pve-report/output/json/#shapes).
+<ReadingTables />
 
 ## RRD data: time frame and consolidation
 

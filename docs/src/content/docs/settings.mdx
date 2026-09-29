@@ -57,7 +57,7 @@ cv4pve-report create-settings            # standard profile
 cv4pve-report create-settings --fast     # or start from fast
 cv4pve-report create-settings --full     # or from full
 # edit settings.json, then:
-cv4pve-report --host=pve1 --api-token='report@pve!report=UUID' --settings-file=settings.json export
+cv4pve-report --host=pve1 --api-token='report@pve!report=<uuid>' --settings-file=settings.json export
 ```
 
 `create-settings` always writes `settings.json` in the current folder, overwriting it, and prints the
