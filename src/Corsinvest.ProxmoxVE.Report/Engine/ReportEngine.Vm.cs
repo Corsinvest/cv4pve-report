@@ -192,8 +192,10 @@ public partial class ReportEngine
 
             _pendingNetworkRows.AddRange(d.Networks);
 
-            // /cluster/resources always reports disk = 0 for QEMU guests: the agent knows the real usage
-            var agentDisk = GetAgentDiskUsage(d.FsInfo);
+            // /cluster/resources reports only the boot disk size and disk = 0 for QEMU guests:
+            // totals of all disks come from the config, real usage from the agent
+            var partitions = GetPartitionsUsage(d.FsInfo);
+            var disks = d.Config?.DisksAll ?? [];
 
             items.Add(new
             {
@@ -215,8 +217,13 @@ public partial class ReportEngine
                 MemoryUsagePct = item.MemoryUsagePercentage,
                 HostMemoryUsagePct = item.HostMemoryUsage,
                 DiskSizeGB = item.DiskSize,
-                DiskUsageGB = agentDisk?.Used ?? item.DiskUsage,
-                DiskUsagePct = agentDisk?.Pct ?? item.DiskUsagePercentage,
+                DiskUsageGB = item.DiskUsage,
+                DiskUsagePct = item.DiskUsagePercentage,
+                DisksSizeGB = GetDisksSize(disks),
+                UnusedDisksSizeGB = GetUnusedDisksSize(disks),
+                PartitionsTotalGB = partitions?.Total,
+                PartitionsUsedGB = partitions?.Used,
+                PartitionsUsedPct = partitions?.Pct,
                 Uptime = FormatHelper.UptimeInfo(item.Uptime),
                 d.Hostname,
                 OsName = d.AgentOsInfo?.Result?.Name,
@@ -280,7 +287,7 @@ public partial class ReportEngine
 
     private static readonly HashSet<string> ReadOnlyImageFsTypes = new(["squashfs", "iso9660", "udf"], StringComparer.OrdinalIgnoreCase);
 
-    internal static (ulong Used, double Pct)? GetAgentDiskUsage(IEnumerable<VmQemuAgentGetFsInfo.ResultInfo> fsInfo)
+    internal static (ulong Total, ulong Used, double Pct)? GetPartitionsUsage(IEnumerable<VmQemuAgentGetFsInfo.ResultInfo> fsInfo)
     {
         // Read-only images (snap packages, CD-ROMs) are always full and not guest disk space.
         // Same device mounted twice (bind mounts, btrfs subvolumes) must be counted once.
@@ -292,7 +299,7 @@ public partial class ReportEngine
         if (total == 0) { return null; }
 
         var used = filesystems.Aggregate(0UL, (sum, a) => sum + a.UsedBytes);
-        return (used, (double)used / total);
+        return (total, used, (double)used / total);
     }
 
     private async Task AddVmDetailAsync(VmFetchData d, ProgressTracker pt)

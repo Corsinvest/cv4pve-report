@@ -81,9 +81,14 @@ One row per VM.
 | Memory Usage GB | `memoryUsageBytes` | Memory in use (bytes in JSON, see the caution below) |
 | Memory Usage % | `memoryUsage` | Memory in use divided by memory assigned |
 | Host Memory Usage % | `hostMemoryUsage` | Memory in use divided by the node's memory. Filled only when Host Cpu Usage % is |
-| Disk Size GB | `diskSize` | Disk size from cluster resources (bytes in JSON) |
-| Disk Usage GB | `diskUsageBytes` | Used space of the guest filesystems reported by the agent (`get-fsinfo`), each device counted once, read-only images (`squashfs`, `iso9660`, `udf`) left out. Without agent data, the value from cluster resources, which Proxmox VE always reports as 0 for VMs (bytes in JSON, see the caution below) |
-| Disk Usage % | `diskUsage` | With agent data, used space divided by the total size of the guest filesystems; otherwise disk usage divided by disk size |
+| Disk Size GB | `diskSize` | Boot disk size from cluster resources, the "Bootdisk size" of the Proxmox VE GUI, not the sum of all disks (bytes in JSON) |
+| Disk Usage GB | `diskUsageBytes` | Disk usage from cluster resources, always 0 for VMs: Proxmox VE has no view inside the guest. See Partitions Used GB (bytes in JSON, see the caution below) |
+| Disk Usage % | `diskUsage` | Disk usage divided by disk size |
+| Disks Size GB | `disksSize` | Sum of the sizes of the configured disks, CD-ROM, cloud-init and unused disks left out: the total of the [Disks](#disks) rows of the VM. Empty when no disk has a size (bytes in JSON) |
+| Unused Disks Size GB | `unusedDisksSize` | Sum of the sizes of the unused disks (`unusedN`): space still taken on the storage by disks detached from the VM. Empty when there are none (bytes in JSON) |
+| Partitions Total GB | `partitionsTotal` | Total size of the guest filesystems reported by the agent (`get-fsinfo`): the total of the [Partitions](#partitions) rows of the VM, each device counted once, read-only images (`squashfs`, `iso9660`, `udf`) and filesystems of size 0 left out. Empty without agent data (bytes in JSON) |
+| Partitions Used GB | `partitionsUsedBytes` | Used space of the same filesystems. Empty without agent data (bytes in JSON, see the caution below) |
+| Partitions Used % | `partitionsUsed` | Partitions used divided by partitions total |
 | Uptime | `uptime` | Uptime as readable text |
 | Hostname | `hostname` | Guest hostname from the agent, or one of the status messages above |
 | Os Name | `osName` | OS name from the agent |
@@ -156,6 +161,8 @@ One row per container.
 | Disk Size GB | `diskSize` | Root disk size (bytes in JSON) |
 | Disk Usage GB | `diskUsageBytes` | Root disk usage (same JSON key clash as VMs) |
 | Disk Usage % | `diskUsage` | Disk usage divided by disk size |
+| Disks Size GB | `disksSize` | Sum of the sizes of the root disk and the mount points, unused disks left out: the total of the [Disks](#disks) rows of the container. Mount points that bind a host directory have no size and add nothing. Empty when no disk has a size (bytes in JSON) |
+| Unused Disks Size GB | `unusedDisksSize` | Sum of the sizes of the unused disks (`unusedN`). Empty when there are none (bytes in JSON) |
 | Uptime | `uptime` | Uptime as readable text |
 | Hostname | `hostname` | `hostname` from the config |
 | Os Version | `osVersion` | Decoded `ostype` from the config |
