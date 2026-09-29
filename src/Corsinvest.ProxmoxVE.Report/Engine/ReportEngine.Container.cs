@@ -127,6 +127,8 @@ public partial class ReportEngine
 
             _pendingNetworkRows.AddRange(d.Networks);
 
+            var disks = d.Config?.DisksAll ?? [];
+
             items.Add(new
             {
                 item.Node,
@@ -149,6 +151,8 @@ public partial class ReportEngine
                 DiskSizeGB = item.DiskSize,
                 DiskUsageGB = item.DiskUsage,
                 DiskUsagePct = item.DiskUsagePercentage,
+                DisksSizeGB = GetDisksSize(disks),
+                UnusedDisksSizeGB = GetUnusedDisksSize(disks),
                 Uptime = FormatHelper.UptimeInfo(item.Uptime),
                 d.Config?.Hostname,
                 OsVersion = d.Config?.OsTypeDecode,

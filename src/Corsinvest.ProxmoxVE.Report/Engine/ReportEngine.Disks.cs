@@ -18,6 +18,16 @@ public partial class ReportEngine
         _pendingDiskRows.Add((vm, disks));
     }
 
+    // CD-ROM and cloud-init are not guest disk space. Null when nothing to sum,
+    // e.g. bind mounts of host directories have no size.
+    internal static long? GetDisksSize(IEnumerable<VmDisk> disks)
+        => NullIfZero(disks.Where(a => a.Kind == VmDiskKind.Disk && !a.IsUnused).Sum(a => a.SizeBytes));
+
+    internal static long? GetUnusedDisksSize(IEnumerable<VmDisk> disks)
+        => NullIfZero(disks.Where(a => a.IsUnused).Sum(a => a.SizeBytes));
+
+    private static long? NullIfZero(long value) => value == 0 ? null : value;
+
     private int WriteDiskData()
     {
         if (_pendingDiskRows.Count == 0) { return 0; }
