@@ -15,7 +15,7 @@ namespace Corsinvest.ProxmoxVE.Report.Writers;
 /// writer-specific: XLSX collides on sheet names (31-char, case-insensitive),
 /// HTML and JSON collide on slugged file paths. The transformation up to the
 /// "candidate" name is the writer's job; the allocator only handles the
-/// "this candidate is already taken — give me a free variant" part.
+/// "this candidate is already taken, give me a free variant" part.
 /// </remarks>
 internal sealed class UniqueNameAllocator
 {
@@ -30,7 +30,7 @@ internal sealed class UniqueNameAllocator
 
     /// <summary>
     /// Returns <paramref name="candidate"/> the first time it's asked for; on
-    /// subsequent calls returns <c>candidate_2</c>, <c>candidate_3</c>, ... — skipping
+    /// subsequent calls returns <c>candidate_2</c>, <c>candidate_3</c>, ..., skipping
     /// any suffixed variant that was already allocated as a literal candidate.
     /// </summary>
     /// <param name="candidate">The desired name (already trimmed/slugged by the caller).</param>

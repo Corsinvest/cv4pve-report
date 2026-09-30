@@ -10,8 +10,8 @@ namespace Corsinvest.ProxmoxVE.Report.Writers.Xlsx;
 /// <summary>
 /// Buffers all section operations and replays them at <see cref="Dispose"/> time.
 /// The buffering exists so the per-sheet Index can reserve exactly N rows
-/// (where N = number of titled tables) at a known offset — between the first
-/// key/value block (the resource "identity" header) and the first table —
+/// (where N = number of titled tables) at a known offset, between the first
+/// key/value block (the resource "identity" header) and the first table,
 /// without using <c>InsertRowsAbove</c>, which desynchronises ClosedXML
 /// table ranges and breaks already-written hyperlinks.
 /// </summary>

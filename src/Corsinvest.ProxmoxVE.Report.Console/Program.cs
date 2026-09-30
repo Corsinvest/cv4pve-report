@@ -64,13 +64,13 @@ cmdExport.SetAction(async (action) =>
             return;
         }
 
-        // Lock the writes — Progress<T>.Report() can be invoked from multiple
+        // Lock the writes: Progress<T>.Report() can be invoked from multiple
         // threads concurrently and otherwise produces overlapping output on the line.
         lock (progressLock)
         {
             // \x1b[2K = ANSI "erase entire line"; \r returns the cursor to column 0.
             // Together they clear residue from any previous, longer message before
-            // writing the new one — no need to track length manually.
+            // writing the new one, no need to track length manually.
             Console.Write($"\r\x1b[2K{p}");
         }
     });

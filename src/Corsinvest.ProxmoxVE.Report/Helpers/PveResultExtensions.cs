@@ -97,7 +97,7 @@ internal static class PveResultExtensions
         return string.Join(" — ", parts);
     }
 
-    // 501 is silent — the endpoint doesn't exist on this PVE version, not an issue.
+    // 501 is silent: the endpoint doesn't exist on this PVE version, not an issue.
     // Everything else (403, 404, 5xx, network errors) is surfaced as a Warning so the
     // user can act on it.
     private static IssueSeverity? ClassifyHttpStatus(HttpStatusCode status)

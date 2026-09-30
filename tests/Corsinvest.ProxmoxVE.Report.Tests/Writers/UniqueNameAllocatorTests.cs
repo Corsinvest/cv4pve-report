@@ -52,7 +52,7 @@ public class UniqueNameAllocatorTests
     {
         // Edge case: "cc01" is taken, then someone asks for the literal "cc01_2".
         // The allocator must hand out "cc01_2" exactly once and then start adding
-        // a NEW suffix when collision happens — never reuse "cc01_2" twice.
+        // a NEW suffix when collision happens; never reuse "cc01_2" twice.
         var allocator = new UniqueNameAllocator();
 
         Assert.Equal("cc01", allocator.Allocate("cc01"));

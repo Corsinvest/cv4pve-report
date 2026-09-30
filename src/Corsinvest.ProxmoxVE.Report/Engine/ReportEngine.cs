@@ -83,7 +83,7 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
 
         _vmIds = [.. (await client.GetVmsAsync(settings.Guest.Ids)).Select(a => a.VmId)];
 
-        // Shared bootstrap data — fetched once, consumed by Cluster / Network sections and the SVG diagram.
+        // Shared bootstrap data, fetched once, consumed by Cluster / Network sections and the SVG diagram.
         var storageTask = client.Storage.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
         var sdnVnetsTask = client.Cluster.Sdn.Vnets.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);
         var sdnZonesTask = client.Cluster.Sdn.Zones.GetAsync().ToSafeEnum(_issues, "Cluster", LinkKey.Cluster);

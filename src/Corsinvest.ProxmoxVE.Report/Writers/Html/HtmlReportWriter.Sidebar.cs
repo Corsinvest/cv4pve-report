@@ -16,7 +16,7 @@ internal sealed partial class HtmlReportWriter
     /// Top-level entries that own children are rendered as &lt;details&gt; elements
     /// whose &lt;summary&gt; is itself a hyperlink to the parent page (e.g. clicking
     /// "Storage" navigates to storages.html; clicking the chevron toggles the
-    /// children — Storage Content, Backups, Disks, …). Single-page sections
+    /// children: Storage Content, Backups, Disks, …). Single-page sections
     /// (Network, Firewall, Replication) are rendered as flat links.
     /// </para>
     /// </summary>
@@ -56,7 +56,7 @@ internal sealed partial class HtmlReportWriter
             sb.AppendLine("""        <a href="network-diagram.html" class="overview">Network Diagram</a>""");
         }
 
-        // Cluster groups all the deep-dives together — the always-visible sidebar
+        // Cluster groups all the deep-dives together; the always-visible sidebar
         // makes grouping nicer than the trailing-block order used by XLSX / JSON.
         var clusterChildLabels = new Dictionary<string, string>
         {
@@ -85,7 +85,7 @@ internal sealed partial class HtmlReportWriter
 
     /// <summary>
     /// Renders a top-level group. The group name itself is just a label that toggles
-    /// expansion (no navigation). The first child is "Overview" — a link to the
+    /// expansion (no navigation). The first child is "Overview": a link to the
     /// parent page (e.g. storages.html). Subsequent children are the detail pages.
     /// </summary>
     private void AppendGroup(StringBuilder sb,
@@ -152,7 +152,7 @@ internal sealed partial class HtmlReportWriter
         sb.AppendLine($"""        <a href="{HtmlEncoder.Attr(FileFor(name))}">{HtmlEncoder.Text(name)}</a>""");
     }
 
-    /// <summary>Sorting key for "VM 100" / "CT 200" entries — sorts by numeric id.</summary>
+    /// <summary>Sorting key for "VM 100" / "CT 200" entries: sorts by numeric id.</summary>
     private static int VmIdSortKey(string name)
     {
         var parts = name.Split(' ');

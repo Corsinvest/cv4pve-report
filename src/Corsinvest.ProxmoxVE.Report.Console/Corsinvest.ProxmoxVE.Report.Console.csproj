@@ -5,7 +5,7 @@
     <AssemblyName>cv4pve-report</AssemblyName>
     <Product>Corsinvest for Proxmox VE Report</Product>
     <AssemblyTitle>Corsinvest for Proxmox VE Report</AssemblyTitle>
-    <Description>Report tool for Proxmox VE — exports full infrastructure inventory to Excel, HTML or JSON</Description>
+    <Description>Report tool for Proxmox VE: exports full infrastructure inventory to Excel, HTML or JSON</Description>
     <ApplicationIcon>..\..\icon.ico</ApplicationIcon>
     <IsPackable>false</IsPackable>
     <InvariantGlobalization>true</InvariantGlobalization>
