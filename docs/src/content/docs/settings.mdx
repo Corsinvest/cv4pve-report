@@ -4,7 +4,7 @@ description: Profiles, the settings.json file, which nodes and guests to include
 ---
 
 What goes into the report is decided by a set of switches. Three profiles cover the common cases; a
-settings file lets you choose each switch yourself — for example to skip the detail sheets on a cluster
+settings file lets you choose each switch yourself, for example to skip the detail sheets on a cluster
 with thousands of guests, or to add SMART data to the standard profile.
 
 ## Profiles
@@ -93,7 +93,7 @@ Defaults are those of the standard profile.
 
 | Setting | Default | What it does |
 |---|---|---|
-| `Node.Names` | `@all` | Nodes to include — see [Choosing nodes and guests](#choosing-nodes-and-guests) |
+| `Node.Names` | `@all` | Nodes to include, see [Choosing nodes and guests](#choosing-nodes-and-guests) |
 | `Node.Detail.Enabled` | `true` | One detail sheet per node. Turn off on large clusters to save time and size |
 | `Node.Detail.Disk.IncludeDiskDetail` | `true` | Physical disks, ZFS pools and directory mounts in the node sheet |
 | `Node.Detail.Disk.IncludeSmartData` | `false` | SMART attributes of every disk. One API call per disk: slow on nodes with many disks |
@@ -115,7 +115,7 @@ Defaults are those of the standard profile.
 
 | Setting | Default | What it does |
 |---|---|---|
-| `Guest.Ids` | `@all` | VMs and containers to include — see [Choosing nodes and guests](#choosing-nodes-and-guests) |
+| `Guest.Ids` | `@all` | VMs and containers to include, see [Choosing nodes and guests](#choosing-nodes-and-guests) |
 | `Guest.Detail.Enabled` | `true` | One detail sheet per VM and container. Turn off on large clusters to save time and size |
 | `Guest.Detail.Tasks.Enabled` | `true` | Recent tasks of the guest |
 | `Guest.Detail.Tasks.OnlyErrors` | `false` | Only failed tasks |
@@ -179,18 +179,18 @@ filtered by `Guest.Ids`. Both filters are shown on the Summary.
 The number of API calls grows with the number of guests and nodes: configuration, guest agent,
 snapshots, tasks and firewall log are read for each one. The switches that cut the most calls:
 
-- `Guest.Detail.Enabled: false` and `Node.Detail.Enabled: false` — no detail sheets.
-- `Guest.IncludeQemuAgent: false` — no agent calls; hostname, guest IPs and partitions stay empty, and the OS
+- `Guest.Detail.Enabled: false` and `Node.Detail.Enabled: false`: no detail sheets.
+- `Guest.IncludeQemuAgent: false`: no agent calls; hostname, guest IPs and partitions stay empty, and the OS
   column shows only the OS type from the VM configuration.
-- `Node.Detail.Disk.IncludeSmartData: false` — no call per disk.
-- `Guest.RrdData.Enabled: false` — the RRD history is the biggest part of the file.
+- `Node.Detail.Disk.IncludeSmartData: false`: no call per disk.
+- `Guest.RrdData.Enabled: false`: the RRD history is the biggest part of the file.
 
 Or start from `--fast` and turn on only what you need.
 
 :::tip[A real example]
 On a production cluster of 25 nodes and about 2700 VMs, with the per-VM detail sheets off, the report
-took [12.7 minutes](https://github.com/Corsinvest/cv4pve-report/issues/10#issuecomment-4422977335) with the default `MaxParallelRequests: 5` and [about 7 minutes](https://github.com/Corsinvest/cv4pve-report/issues/10#issuecomment-4432966790) with `10`
-— most of the time in the guest agent calls, one per running VM. Measured by the cluster's administrator
+took [12.7 minutes](https://github.com/Corsinvest/cv4pve-report/issues/10#issuecomment-4422977335) with the default `MaxParallelRequests: 5` and [about 7 minutes](https://github.com/Corsinvest/cv4pve-report/issues/10#issuecomment-4432966790) with `10`,
+most of the time in the guest agent calls, one per running VM. Measured by the cluster's administrator
 on version 2.x.
 :::
 
@@ -198,9 +198,9 @@ on version 2.x.
 call to the node you connected to: too many slow down its API and use more memory on both sides. Raise it
 step by step and watch the time on the Summary.
 
-If calls time out on a slow or distant cluster — they show up on the [Issues](/cv4pve-report/troubleshooting/#the-issues-page)
-page — raise `ApiTimeout`. If many VMs have the agent enabled but not running, each waits
+If calls time out on a slow or distant cluster (they show up on the [Issues](/cv4pve-report/troubleshooting/#the-issues-page)
+page), raise `ApiTimeout`. If many VMs have the agent enabled but not running, each waits
 `QemuAgentTimeout` seconds: lower it to `1` for a quick run.
 
-To see which calls are slow, run with `--debug`: every API call is logged with its duration — see
+To see which calls are slow, run with `--debug`: every API call is logged with its duration, see
 [Troubleshooting](/cv4pve-report/troubleshooting/).

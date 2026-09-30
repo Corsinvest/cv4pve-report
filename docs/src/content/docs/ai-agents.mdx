@@ -7,7 +7,7 @@ import AiSkill from '@corsinvest/cv4pve-docs-theme/components/AiSkill.astro';
 
 An AI assistant that can run shell commands can use cv4pve-report to answer questions about a
 Proxmox VE cluster: it exports the report as [JSON](/cv4pve-report/output/json/), extracts the zip and
-reads the files — which VMs are running, how many snapshots each guest has, which certificates expire
+reads the files: which VMs are running, how many snapshots each guest has, which certificates expire
 soon. The answers come from a dated export, not from the assistant's memory of your cluster.
 
 ## The cv4pve-report skill
@@ -24,6 +24,6 @@ soon. The answers come from a dated export, not from the assistant's memory of y
 
 The skill tells the assistant what to do; the token decides what it can do. The assistant can read the
 token and call the Proxmox VE API without cv4pve-report, and the skill cannot prevent that.
-Give it a read-only token — `PVEAuditor`, see [Permissions](/cv4pve-report/permissions/#privileges) — and
+Give it a read-only token (`PVEAuditor`, see [Permissions](/cv4pve-report/permissions/#privileges)) and
 put the connection in an [options file](/cv4pve-report/connection/#options-in-a-file), so the token stays
 out of the conversation.

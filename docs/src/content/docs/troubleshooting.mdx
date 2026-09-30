@@ -13,19 +13,19 @@ everything else is written.
 
 The failures are listed in an **Issues** section: the second sheet in Excel, right after Summary and first
 in its Contents; `issues.html` in HTML, second in the sidebar; `issues.json` in JSON. The section exists only
-when something failed — if it is not there, every call succeeded.
+when something failed: if it is not there, every call succeeded.
 
 | Column | Content |
 |---|---|
 | **Severity** | `Warning` |
-| **Section** | Where the failure happened, e.g. `RRD Storage`, `Firewall Log`, `Cluster`. Links to the page of the resource concerned — node, VM, container or section |
+| **Section** | Where the failure happened, e.g. `RRD Storage`, `Firewall Log`, `Cluster`. Links to the page of the resource concerned: node, VM, container or section |
 | **Message** | HTTP status code, the error returned by Proxmox VE and the failing call: `500 got wrong time resolution (60 != 1800) — Get /nodes/pve01/storage/local-ceph/rrddata` |
 | **Timestamp** | When the failure was recorded |
 
 A `501 Not Implemented` is not listed: it means the endpoint does not exist on that Proxmox VE version,
 so there is nothing to fix.
 
-A few calls are needed to start at all — the list of resources and guests, and with `Cluster.Include` the
+A few calls are needed to start at all: the list of resources and guests, and with `Cluster.Include` the
 cluster status and the Proxmox VE version. If one of them fails, the tool stops with `ERROR: …` and writes
 no report.
 
@@ -35,12 +35,12 @@ What the most common messages mean:
   and the privilege; see [Permissions](/cv4pve-report/permissions/).
 - **`500`, `595` or `596` on a node**: the node is offline or unreachable from the node you connected to.
 - **`500` on `…/rrddata`**: the RRD file of that resource is damaged. The rest of the report is fine.
-- **Timeouts**: raise `ApiTimeout`, or lower `MaxParallelRequests` — see [Performance](/cv4pve-report/settings/#performance).
+- **Timeouts**: raise `ApiTimeout`, or lower `MaxParallelRequests`, see [Performance](/cv4pve-report/settings/#performance).
 
 :::caution[An empty section is not always an error]
 Proxmox VE does not answer with an error when a token may see only part of the cluster: it leaves out what
 the token cannot see. A guest without `VM.Audit` is simply missing from the report, with nothing on the
-Issues page. If a report looks too small, check the privileges — see
+Issues page. If a report looks too small, check the privileges, see
 [Permissions](/cv4pve-report/permissions/).
 :::
 

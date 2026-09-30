@@ -2,7 +2,7 @@
 
 ---
 
-## [2.8.0] — 2026-09-29
+## [2.8.0] - 2026-09-29
 
 ### What's new
 
@@ -18,7 +18,7 @@
 - NuGet package description
 - Project metadata, symbols (Source Link, `.snupkg`) and code style aligned with the other cv4pve tools
 
-## [2.7.1] — 2026-09-28
+## [2.7.1] - 2026-09-28
 
 ### Fixes
 
@@ -26,7 +26,7 @@
 
 ---
 
-## [2.7.0] — 2026-09-28
+## [2.7.0] - 2026-09-28
 
 ### What's new
 
@@ -62,7 +62,7 @@
 
 ---
 
-## [2.6.0] — 2026-09-24
+## [2.6.0] - 2026-09-24
 
 ### What's new
 
@@ -82,21 +82,21 @@
 
 ---
 
-## [2.5.1] — 2026-06-01
+## [2.5.1] - 2026-06-01
 
 ### Fixes
 
-- **Hostnames with dashes are kept in HTML and JSON file names.** A node called `pve-host01` used to produce `pvehost01.html` and `pvehost01.json` — the dash was dropped. The file name now matches the hostname you actually use.
+- **Hostnames with dashes are kept in HTML and JSON file names.** A node called `pve-host01` used to produce `pvehost01.html` and `pvehost01.json`: the dash was dropped. The file name now matches the hostname you actually use.
 - **Links between HTML pages now work.** Clicking a node, VM or container in an overview table opened a 404 instead of the matching detail page. The links go to the right page again.
 - **Two nodes with similar names no longer share the same report page.** When two nodes ended up with the same file name (e.g. `cc.01` and `cc-01`), the second one used to overwrite the first one's HTML/JSON file silently. Each section now gets its own file.
 
 ---
 
-## [2.5.0] — 2026-05-27
+## [2.5.0] - 2026-05-27
 
 ### What's new
 
-- **Health Score column on Nodes / VMs / Containers / Storages.** Each row now carries a single 0–100 health number that summarises the resource's resource pressure (Node: weighted CPU/RAM/Disk; running VM/CT: weighted CPU/RAM; Storage: Disk usage). Higher is healthier. HTML renders it as a colour-coded badge (green ≥ 80, yellow ≥ 60, red below); Excel applies a green-yellow-red colour scale so the worst offenders pop visually and you can sort the column to surface them; JSON exposes the raw number under a `health` key. Stopped VMs / unavailable values are emitted as null / blank.
+- **Health Score column on Nodes / VMs / Containers / Storages.** Each row now carries a single 0-100 health number that summarises the resource's resource pressure (Node: weighted CPU/RAM/Disk; running VM/CT: weighted CPU/RAM; Storage: Disk usage). Higher is healthier. HTML renders it as a colour-coded badge (green ≥ 80, yellow ≥ 60, red below); Excel applies a green-yellow-red colour scale so the worst offenders pop visually and you can sort the column to surface them; JSON exposes the raw number under a `health` key. Stopped VMs / unavailable values are emitted as null / blank.
 
 ### Fixes
 
@@ -106,36 +106,36 @@
 
 ---
 
-## [2.4.0] — 2026-05-25
+## [2.4.0] - 2026-05-25
 
 ### What's new
 
-- **Cluster split into five sheets / pages / files.** On large clusters the single "Cluster" tab had grown past 4500 mixed-schema rows (status, users, ACL, HA, SDN, pools, mappings — all together). It is now broken into a main **Cluster** (status, options, firewall options, backup jobs, replication, storages, metric servers, mappings) plus four sibling deep-dives: **Cluster Access**, **Cluster SDN**, **Cluster HA**, **Cluster Pools**. JSON gets matching `cluster-access.json` / `cluster-sdn.json` / `cluster-ha.json` / `cluster-pools.json`; HTML lists them as children under the expandable `Cluster` entry in the sidebar alongside the existing Cluster Log and Cluster Tasks. Thanks @shaundeeb for the request (#42).
+- **Cluster split into five sheets / pages / files.** On large clusters the single "Cluster" tab had grown past 4500 mixed-schema rows (status, users, ACL, HA, SDN, pools, mappings, all together). It is now broken into a main **Cluster** (status, options, firewall options, backup jobs, replication, storages, metric servers, mappings) plus four sibling deep-dives: **Cluster Access**, **Cluster SDN**, **Cluster HA**, **Cluster Pools**. JSON gets matching `cluster-access.json` / `cluster-sdn.json` / `cluster-ha.json` / `cluster-pools.json`; HTML lists them as children under the expandable `Cluster` entry in the sidebar alongside the existing Cluster Log and Cluster Tasks. Thanks @shaundeeb for the request (#42).
 - **Section order reworked.** Reading order is now: at-a-glance **Cluster** first, then day-to-day **inventory** (Storages, Nodes, VMs, Containers, Network, …), then **time-series** (RRD, Syslog), and finally the **Cluster deep-dives** (Access, SDN, HA, Pools, Log, Tasks). Applies to Excel sheets, HTML sidebar, JSON file ordering, and the Summary contents table.
 - **HTML cover renamed `Home` → `Summary`** so it matches the Excel `Summary` sheet. The file is still `index.html`, no bookmark breaks.
 
 ### Breaking changes (JSON only)
 
-- **JSON values are now raw — bytes for sizes / IO, fractions `0–1` for percentages — and keys lose the unit suffix.** Excel and HTML output is unchanged (still `16.50 GB`, `0.02 MB`, `45.00 %`). Only JSON consumers see new keys/values: `"memorySize": 17179869184` instead of `"memorySizeGB": 16.5`, `"cpuUsage": 0.45` instead of `"cpuUsagePct": 0.45`. The change makes snapshot diffs lossless (a few-MB drift used to round to the same `16.5` GB; now the byte count tells you the truth) and keeps the JSON keys free of formatting hints. Applies to every table and to the `info` block of detail files. `metadata.json` now reports `"schemaVersion": 2`. Closes #45.
+- **JSON values are now raw (bytes for sizes / IO, fractions `0-1` for percentages) and keys lose the unit suffix.** Excel and HTML output is unchanged (still `16.50 GB`, `0.02 MB`, `45.00 %`). Only JSON consumers see new keys/values: `"memorySize": 17179869184` instead of `"memorySizeGB": 16.5`, `"cpuUsage": 0.45` instead of `"cpuUsagePct": 0.45`. The change makes snapshot diffs lossless (a few-MB drift used to round to the same `16.5` GB; now the byte count tells you the truth) and keeps the JSON keys free of formatting hints. Applies to every table and to the `info` block of detail files. `metadata.json` now reports `"schemaVersion": 2`. Closes #45.
 
 ### Fixes
 
-- **RRD Nodes: "Io Wait" column is no longer always `0`.** The value coming from Proxmox is a fraction `0–1` (typically tiny — `0.0002` = 0.02%), and the column wasn't being treated as a percentage, so the formatter rounded it to zero on every row. It now displays the real percentage. Thanks for the report (#43).
-- **HTML format guide listed `rrd-storages.html` (plural)** — the file is and always was `rrd-storage.html`.
+- **RRD Nodes: "Io Wait" column is no longer always `0`.** The value coming from Proxmox is a fraction `0-1` (typically tiny: `0.0002` = 0.02%), and the column wasn't being treated as a percentage, so the formatter rounded it to zero on every row. It now displays the real percentage. Thanks for the report (#43).
+- **HTML format guide listed `rrd-storages.html` (plural)**: the file is and always was `rrd-storage.html`.
 - **HTML cover page: the export button is now aligned with the title divider line.**
 
 ---
 
-## [2.3.0] — 2026-05-14
+## [2.3.0] - 2026-05-14
 
 ### What's new
 
-- **New JSON output format — `--format Json`.** A third rendering alongside Excel and HTML, designed for automation, scripting and integrations. Produces a single zip containing one file per section (`cluster.json`, `nodes.json`, `vms.json`, `storages.json`, …) plus per-resource detail under `nodes/<name>.json`, `vms/<id>.json` and `containers/<id>.json`, same logical layout as the Excel sheets and HTML pages. A `metadata.json` carries the schema version, timestamp, application info, the filter set and a per-section generation log. The network topology SVG is bundled in the same zip as `network-diagram.svg`. Keys are camelCase with stable shapes (overview files are flat arrays of rows; detail files are objects with a fixed `info` block plus one entry per table), so consumers can navigate the dataset without knowing resource names in advance. Full reference in [`docs/format-json.md`](docs/format-json.md) with file layout, naming conventions, `jq` recipes and a snapshot-diff workflow.
+- **New JSON output format: `--format Json`.** A third rendering alongside Excel and HTML, designed for automation, scripting and integrations. Produces a single zip containing one file per section (`cluster.json`, `nodes.json`, `vms.json`, `storages.json`, …) plus per-resource detail under `nodes/<name>.json`, `vms/<id>.json` and `containers/<id>.json`, same logical layout as the Excel sheets and HTML pages. A `metadata.json` carries the schema version, timestamp, application info, the filter set and a per-section generation log. The network topology SVG is bundled in the same zip as `network-diagram.svg`. Keys are camelCase with stable shapes (overview files are flat arrays of rows; detail files are objects with a fixed `info` block plus one entry per table), so consumers can navigate the dataset without knowing resource names in advance. Full reference in [`docs/format-json.md`](docs/format-json.md) with file layout, naming conventions, `jq` recipes and a snapshot-diff workflow.
 - **CD-ROM and cloud-init drives now listed in the Disks sheet.** The per-VM disk inventory used to skip `ide2`-style CD-ROMs and `cloudinit` drives, only showing real block devices. They now appear alongside the rest with a new `Kind` column (`Disk`, `CDRom`, `CloudInit`) so you can filter on what's actually a backed-up disk vs. a transient mount. Thanks for the report (#39).
 
 ---
 
-## [2.2.1] — 2026-05-13
+## [2.2.1] - 2026-05-13
 
 ### Fixes
 
@@ -148,22 +148,22 @@
 
 ---
 
-## [2.2.0] — 2026-05-11
+## [2.2.0] - 2026-05-11
 
 ### What's new
 
-- **Resilient collection — broken endpoints no longer abort the report.** A single failing Proxmox API call (a storage with a corrupt RRD file, a node returning `500`, missing permissions on a sub-resource) used to terminate the whole report. Failures are now collected into a dedicated **Issues** page that lists every problem with severity, section, the full Proxmox error message and the API endpoint that returned it. `501 Not Implemented` (endpoint missing in older PVE versions) stays silent — everything else surfaces as a `Warning` you can act on. Thanks @janrenard for the report (#33).
-- **Issues page — second tab after Summary / second link after Home.** The Issues page only appears when there is something to report: a dedicated sheet in Excel positioned right after `Summary`, and the second sidebar link after `Home` in HTML. Issue rows are hyperlinked back to the relevant detail page (the failing VM, node, storage, or the global section) so you can jump straight to the context where the failure happened.
-- **Cover/Summary now shows a Description column.** Both formats list every section in the Contents table with a one-line description of what's inside — consistent between Excel and HTML. Issue counts and per-section durations are unchanged.
+- **Resilient collection: broken endpoints no longer abort the report.** A single failing Proxmox API call (a storage with a corrupt RRD file, a node returning `500`, missing permissions on a sub-resource) used to terminate the whole report. Failures are now collected into a dedicated **Issues** page that lists every problem with severity, section, the full Proxmox error message and the API endpoint that returned it. `501 Not Implemented` (endpoint missing in older PVE versions) stays silent; everything else surfaces as a `Warning` you can act on. Thanks @janrenard for the report (#33).
+- **Issues page: second tab after Summary / second link after Home.** The Issues page only appears when there is something to report: a dedicated sheet in Excel positioned right after `Summary`, and the second sidebar link after `Home` in HTML. Issue rows are hyperlinked back to the relevant detail page (the failing VM, node, storage, or the global section) so you can jump straight to the context where the failure happened.
+- **Cover/Summary now shows a Description column.** Both formats list every section in the Contents table with a one-line description of what's inside, consistent between Excel and HTML. Issue counts and per-section durations are unchanged.
 
 ---
 
-## [2.1.0] — 2026-05-10
+## [2.1.0] - 2026-05-10
 
 ### Breaking changes
 
-- **All formats now produce a single `.zip`.** Excel output used to be a pair of loose files (`Report_*.xlsx` + `Report_*.svg`); it is now packed into one `Report_*.zip` containing `report.xlsx` and `network-diagram.svg`. Same logical content, more portable: easier to share, attach to email/tickets, archive, or upload as a CI artifact — and ready for the upcoming `--only` flag that will produce multiple workbooks per run. To use the workbook, extract the zip and open `report.xlsx` as before. The `--output` flag now always writes a `.zip`; the extension is appended automatically if missing.
-- **Settings renamed — `Sheet` suffix dropped from section toggles.** With three rendering formats (Excel, HTML, JSON-in-progress), the `Sheet` suffix in settings names was misleading: these flags toggle a *section* of the report, not a spreadsheet sheet. Rename your existing `settings.json` if you maintain one:
+- **All formats now produce a single `.zip`.** Excel output used to be a pair of loose files (`Report_*.xlsx` + `Report_*.svg`); it is now packed into one `Report_*.zip` containing `report.xlsx` and `network-diagram.svg`. Same logical content, more portable: easier to share, attach to email/tickets, archive, or upload as a CI artifact, and ready for the upcoming `--only` flag that will produce multiple workbooks per run. To use the workbook, extract the zip and open `report.xlsx` as before. The `--output` flag now always writes a `.zip`; the extension is appended automatically if missing.
+- **Settings renamed: `Sheet` suffix dropped from section toggles.** With three rendering formats (Excel, HTML, JSON-in-progress), the `Sheet` suffix in settings names was misleading: these flags toggle a *section* of the report, not a spreadsheet sheet. Rename your existing `settings.json` if you maintain one:
   - `Cluster.IncludeSheet` → `Cluster.Include`
   - `Cluster.IncludeTasksSheet` → `Cluster.IncludeTasks`
   - `Node.IncludeReplicationSheet` → `Node.IncludeReplication`
@@ -175,15 +175,15 @@
 
 ### What's new
 
-- **HTML — per-column filter.** Headers backed by short text, flag or hyperlinked values (`Node`, `VmId`, `Status`, `Type`, …) now carry a hover-revealed funnel icon. Click it to open a dedicated filter input under the column header — the global filter and the per-column filters combine with AND. The big winner is high-cardinality pages like *Snapshots* (~250 rows for 23 VMs) and *RRD Guests* (~1600 rows): drilling down to a single VM no longer requires scanning through false positives.
-- **HTML — match-mode toggle (`~` / `=`).** Both the global filter and each per-column filter expose a small toggle on the left of the input. `~` is the existing case-insensitive *contains* match (default). `=` is *exact whole-cell* match — essential for short numeric ids like a VM id where `100` would otherwise also match `1014`, `260509100047`, IP suffixes, ports, etc. The toggle re-applies the filter immediately so you can flip mode mid-query.
-- **HTML — three-state sort.** Clicking a sortable header now cycles `original → ascending → descending → original`. The third click restores the order the engine emitted (e.g. nodes by hostname, snapshots by date) instead of leaving the table sorted by whichever column you last touched.
+- **HTML: per-column filter.** Headers backed by short text, flag or hyperlinked values (`Node`, `VmId`, `Status`, `Type`, …) now carry a hover-revealed funnel icon. Click it to open a dedicated filter input under the column header: the global filter and the per-column filters combine with AND. The big winner is high-cardinality pages like *Snapshots* (~250 rows for 23 VMs) and *RRD Guests* (~1600 rows): drilling down to a single VM no longer requires scanning through false positives.
+- **HTML: match-mode toggle (`~` / `=`).** Both the global filter and each per-column filter expose a small toggle on the left of the input. `~` is the existing case-insensitive *contains* match (default). `=` is *exact whole-cell* match, essential for short numeric ids like a VM id where `100` would otherwise also match `1014`, `260509100047`, IP suffixes, ports, etc. The toggle re-applies the filter immediately so you can flip mode mid-query.
+- **HTML: three-state sort.** Clicking a sortable header now cycles `original → ascending → descending → original`. The third click restores the order the engine emitted (e.g. nodes by hostname, snapshots by date) instead of leaving the table sorted by whichever column you last touched.
 
 ### Fixes
 
-- **Per-sheet Index restored on Excel detail sheets.** The clickable index of tables at the top of every node/VM/container detail sheet (lost during the 2.0.0 writers refactor) is back. It now uses a 2-column compact layout — much friendlier on resources with many tables (VM detail with QEMU agent, node detail with full disk/SMART/APT data) — and sits right after the resource identity block instead of at the very top of the sheet.
-- **HTML — header alignment matches column type.** Numeric column headers (`VmId`, `Size GB`, `MaxCount`, …) are now right-aligned like their cells; flag headers are centred. A specificity bug introduced with the writers refactor was forcing every header to the left, breaking the visual axis on data-heavy pages.
-- **HTML — global filter input on the cover page.** The "Contents" table on `index.html` lacked the `.table-scroll` wrapper used elsewhere, which collapsed the gap between the row count and the filter input above it. Wrapped consistently with the rest of the report.
+- **Per-sheet Index restored on Excel detail sheets.** The clickable index of tables at the top of every node/VM/container detail sheet (lost during the 2.0.0 writers refactor) is back. It now uses a 2-column compact layout (much friendlier on resources with many tables: VM detail with QEMU agent, node detail with full disk/SMART/APT data) and sits right after the resource identity block instead of at the very top of the sheet.
+- **HTML: header alignment matches column type.** Numeric column headers (`VmId`, `Size GB`, `MaxCount`, …) are now right-aligned like their cells; flag headers are centred. A specificity bug introduced with the writers refactor was forcing every header to the left, breaking the visual axis on data-heavy pages.
+- **HTML: global filter input on the cover page.** The "Contents" table on `index.html` lacked the `.table-scroll` wrapper used elsewhere, which collapsed the gap between the row count and the filter input above it. Wrapped consistently with the rest of the report.
 
 ### Documentation
 
@@ -192,26 +192,26 @@
 
 ---
 
-## [2.0.1] — 2026-05-08
+## [2.0.1] - 2026-05-08
 
 ### Fixes
 
-- **Reports no longer crash on VM/CT detail pages** — a leftover code path in v2.0.0 still failed when a VM or container had a minimal config without extra fields. The detail page now renders cleanly in those cases. Thanks again @janrenard for spotting it (#24).
+- **Reports no longer crash on VM/CT detail pages**: a leftover code path in v2.0.0 still failed when a VM or container had a minimal config without extra fields. The detail page now renders cleanly in those cases. Thanks again @janrenard for spotting it (#24).
 
 ---
 
-## [2.0.0] — 2026-05-08
+## [2.0.0] - 2026-05-08
 
 ### What's new
 
-- **HTML output** — pick `--format Html` at the command line to get the report as a self-contained zipped website. Extract the zip and open `index.html` in any browser — works fully offline, no server needed. Built for large clusters (tested with **2700+ VMs**), with a sidebar to navigate every node/VM/container, click-to-sort and per-table search, light/dark theme, and an **Export** button on every detail page that lets you share a single page as a stand-alone file (ready to email, paste into a ticket or drop on a wiki). The Excel output (`--format Xlsx`, the default) is unchanged.
+- **HTML output**: pick `--format Html` at the command line to get the report as a self-contained zipped website. Extract the zip and open `index.html` in any browser: works fully offline, no server needed. Built for large clusters (tested with **2700+ VMs**), with a sidebar to navigate every node/VM/container, click-to-sort and per-table search, light/dark theme, and an **Export** button on every detail page that lets you share a single page as a stand-alone file (ready to email, paste into a ticket or drop on a wiki). The Excel output (`--format Xlsx`, the default) is unchanged.
 
 ### Fixes
 
-- **Reports no longer crash on VMs with empty cloud-init values** — a VM whose config has an empty `cicustom: ` field used to abort the whole report. The failing VM is now skipped cleanly. Thanks @janrenard for the report (#24).
-- **Reports no longer crash on user accounts with very long expiration dates** — accounts set to expire after the year 2038 caused the report to fail. All time-based fields (account expiry, scheduled next run, replication times, RRD timestamps, cluster log time…) now handle dates well into the future. Thanks @LordXearo for the report (#25).
-- **Reports no longer crash when the firewall log is empty** — an empty firewall log used to abort the report. Empty logs (firewall, system journal, task log, replication log) now produce an empty section instead. Thanks @LordXearo for the report (#26).
-- **Clearer error messages** — when a VM or container config fails to load, the error now identifies the offending guest (id, node and name) instead of a bare crash.
+- **Reports no longer crash on VMs with empty cloud-init values**: a VM whose config has an empty `cicustom: ` field used to abort the whole report. The failing VM is now skipped cleanly. Thanks @janrenard for the report (#24).
+- **Reports no longer crash on user accounts with very long expiration dates**: accounts set to expire after the year 2038 caused the report to fail. All time-based fields (account expiry, scheduled next run, replication times, RRD timestamps, cluster log time…) now handle dates well into the future. Thanks @LordXearo for the report (#25).
+- **Reports no longer crash when the firewall log is empty**: an empty firewall log used to abort the report. Empty logs (firewall, system journal, task log, replication log) now produce an empty section instead. Thanks @LordXearo for the report (#26).
+- **Clearer error messages**: when a VM or container config fails to load, the error now identifies the offending guest (id, node and name) instead of a bare crash.
 
 ### Documentation
 
@@ -219,24 +219,24 @@
 
 ---
 
-## [1.8.1] — 2026-05-04
+## [1.8.1] - 2026-05-04
 
 ### Fixes
 
-- **Compatibility with older PVE clusters** — the `/cluster/mapping/dir` endpoint was added in newer Proxmox VE releases; older clusters (e.g. 8.3.x) returned `501 Not Implemented` and crashed the report. The fetch now degrades gracefully: the **Mapping Dir** sheet is simply empty when the endpoint isn't available, and the rest of the report is unaffected. Thanks @janrenard for the report (#20).
+- **Compatibility with older PVE clusters**: the `/cluster/mapping/dir` endpoint was added in newer Proxmox VE releases; older clusters (e.g. 8.3.x) returned `501 Not Implemented` and crashed the report. The fetch now degrades gracefully: the **Mapping Dir** sheet is simply empty when the endpoint isn't available, and the rest of the report is unaffected. Thanks @janrenard for the report (#20).
 
 ---
 
-## [1.8.0] — 2026-04-15
+## [1.8.0] - 2026-04-15
 
 ### What's new
 
-- **Network topology diagram** — every export now produces an SVG diagram next to the Excel file, with the same name. For each Proxmox node it shows the full network path from physical NICs to bonds, bridges, firewall/router VMs, internal bridges and the VMs/CTs they serve, plus a dedicated row for network storage (NFS, CIFS, PBS, iSCSI, Ceph, RBD, GlusterFS). Open it in any browser — colours and arrows make routing, multi-homed gateways and inactive interfaces immediately visible.
+- **Network topology diagram**: every export now produces an SVG diagram next to the Excel file, with the same name. For each Proxmox node it shows the full network path from physical NICs to bonds, bridges, firewall/router VMs, internal bridges and the VMs/CTs they serve, plus a dedicated row for network storage (NFS, CIFS, PBS, iSCSI, Ceph, RBD, GlusterFS). Open it in any browser: colours and arrows make routing, multi-homed gateways and inactive interfaces immediately visible.
 
 ### Fixes
 
-- **VM data more resilient** — when a single QEMU agent call fails (e.g. `get-fsinfo` on OPNsense), the rest of the agent data (hostname, OS info, network) is still collected instead of being lost.
-- **Clearer error messages** — when the QEMU agent fails the `Hostname` column now shows the actual reason, not just "Agent not running".
+- **VM data more resilient**: when a single QEMU agent call fails (e.g. `get-fsinfo` on OPNsense), the rest of the agent data (hostname, OS info, network) is still collected instead of being lost.
+- **Clearer error messages**: when the QEMU agent fails the `Hostname` column now shows the actual reason, not just "Agent not running".
 
 ### Documentation
 
@@ -246,42 +246,42 @@
 
 ---
 
-## [1.7.0] — 2026-04-13
+## [1.7.0] - 2026-04-13
 
 ### What's new
 
-- **Host file in node detail** — the host name resolution table (`/etc/hosts`) is now included in each node's detail sheet, right after the network interfaces
-- **Offline nodes** — nodes that are offline are now skipped gracefully instead of producing errors in the report
+- **Host file in node detail**: the host name resolution table (`/etc/hosts`) is now included in each node's detail sheet, right after the network interfaces
+- **Offline nodes**: nodes that are offline are now skipped gracefully instead of producing errors in the report
 
 ---
 
-## [1.6.0] — 2026-04-11
+## [1.6.0] - 2026-04-11
 
 ### Fixes
 
-- **Disks sheet** — storage type and usage now show correctly for VMs with disks spread across multiple storages
-- **Nodes Networks sheet** — the Node column was always empty; it now shows the correct node for each network interface
-- **SSL certificate expiry** — days until expiry no longer crashes for certificates with no expiry date
-- **Replication sheet** — the Summary sheet now shows the correct number of replication jobs instead of the number of nodes
-- **Cluster sheet** — fixed a duplicate API call when loading the Two-Factor Authentication table
+- **Disks sheet**: storage type and usage now show correctly for VMs with disks spread across multiple storages
+- **Nodes Networks sheet**: the Node column was always empty; it now shows the correct node for each network interface
+- **SSL certificate expiry**: days until expiry no longer crashes for certificates with no expiry date
+- **Replication sheet**: the Summary sheet now shows the correct number of replication jobs instead of the number of nodes
+- **Cluster sheet**: fixed a duplicate API call when loading the Two-Factor Authentication table
 
 ### Performance
 
-- **Firewall** — rules, aliases and IP sets are now fetched in parallel for both cluster and each VM/CT, reducing report generation time on large clusters
-- **Replication** — replication status is now fetched from all nodes in parallel instead of one at a time
-- **Storage Content** — content and backup lists are now fetched and written in a single parallel pass
+- **Firewall**: rules, aliases and IP sets are now fetched in parallel for both cluster and each VM/CT, reducing report generation time on large clusters
+- **Replication**: replication status is now fetched from all nodes in parallel instead of one at a time
+- **Storage Content**: content and backup lists are now fetched and written in a single parallel pass
 
 ---
 
-## [1.5.0] — 2026-04-10
+## [1.5.0] - 2026-04-10
 
 ### What's new
 
-- **Response files** — host, username and password can be saved in a `config.rsp` file and passed as `@config.rsp`, so you don't have to repeat credentials on every run
-- **Generation stats in Summary** — the Summary sheet now shows how many rows each section produced and how long it took, plus a total duration at the bottom
-- **`ApiTimeout` setting** — new option to set the HTTP timeout in seconds for slow or high-latency clusters; leave at `0` to use the default (100 s)
-- **`QemuAgentTimeout` setting** — new option to control how long to wait for the QEMU guest agent before giving up; default is 3 seconds
-- **Firewall log now opt-in per section** — `Node.Detail.IncludeFirewallLog` and `Guest.Detail.IncludeFirewallLog` let you enable firewall logs independently for nodes and VMs/CTs
+- **Response files**: host, username and password can be saved in a `config.rsp` file and passed as `@config.rsp`, so you don't have to repeat credentials on every run
+- **Generation stats in Summary**: the Summary sheet now shows how many rows each section produced and how long it took, plus a total duration at the bottom
+- **`ApiTimeout` setting**: new option to set the HTTP timeout in seconds for slow or high-latency clusters; leave at `0` to use the default (100 s)
+- **`QemuAgentTimeout` setting**: new option to control how long to wait for the QEMU guest agent before giving up; default is 3 seconds
+- **Firewall log now opt-in per section**: `Node.Detail.IncludeFirewallLog` and `Guest.Detail.IncludeFirewallLog` let you enable firewall logs independently for nodes and VMs/CTs
 
 ### Fixes
 
@@ -290,21 +290,21 @@
 
 ### Performance
 
-- **Nodes fetched in parallel** — all nodes are now queried at the same time (status, version, subscription, DNS, time, network), the same way VMs and containers already worked
-- **Node detail queries parallelized** — for each node: services and SSL certificates, APT repositories/updates/versions, and directory/ZFS pools are now fetched simultaneously instead of one after another
-- **Network data written once** — node network interface rows are collected during node processing and written to the Network sheet in a single pass, instead of incrementally
+- **Nodes fetched in parallel**: all nodes are now queried at the same time (status, version, subscription, DNS, time, network), the same way VMs and containers already worked
+- **Node detail queries parallelized**: for each node: services and SSL certificates, APT repositories/updates/versions, and directory/ZFS pools are now fetched simultaneously instead of one after another
+- **Network data written once**: node network interface rows are collected during node processing and written to the Network sheet in a single pass, instead of incrementally
 
 ---
 
-## [1.4.0] — 2026-04-08
+## [1.4.0] - 2026-04-08
 
 ### What's new
 
-- **Custom settings** — generate a `settings.json` with `create-settings`, edit it, and pass it with `--settings-file` to fully control which sheets are generated
-- **Cluster sheet can be disabled** — new `Cluster.IncludeSheet` flag to skip the Cluster sheet entirely
-- **Per-node detail sheets can be disabled** — `Node.Detail.Enabled = false` skips all per-node detail sheets, useful on large clusters
-- **Per-VM/CT detail sheets can be disabled** — `Guest.Detail.Enabled = false` skips all per-VM/CT detail sheets, the most impactful option for clusters with hundreds of VMs
-- **Individual global sheets can be toggled** — `Guest.IncludeDisksSheet`, `Guest.IncludeSnapshotsSheet`, `Guest.IncludePartitionsSheet` to skip specific sheets
+- **Custom settings**: generate a `settings.json` with `create-settings`, edit it, and pass it with `--settings-file` to fully control which sheets are generated
+- **Cluster sheet can be disabled**: new `Cluster.IncludeSheet` flag to skip the Cluster sheet entirely
+- **Per-node detail sheets can be disabled**: `Node.Detail.Enabled = false` skips all per-node detail sheets, useful on large clusters
+- **Per-VM/CT detail sheets can be disabled**: `Guest.Detail.Enabled = false` skips all per-VM/CT detail sheets, the most impactful option for clusters with hundreds of VMs
+- **Individual global sheets can be toggled**: `Guest.IncludeDisksSheet`, `Guest.IncludeSnapshotsSheet`, `Guest.IncludePartitionsSheet` to skip specific sheets
 
 ### Changes
 
@@ -313,31 +313,31 @@
 - `MaxParallelRequests` unified to a single global setting (previously split per-section)
 - `IncludeReplication` renamed to `IncludeReplicationSheet`, `IncludeTasks` renamed to `IncludeTasksSheet` for consistency
 - Firewall settings simplified: `LogMaxCount` → `MaxCount`, `LogSince` → `Since`, `LogUntil` → `Until`
-- **Fast profile** now disables detail sheets and firewall — significantly faster on large clusters
+- **Fast profile** now disables detail sheets and firewall, significantly faster on large clusters
 - README reorganized: profiles and customization are now front and center
 
 ---
 
-## [1.3.0] — 2026-04-07
+## [1.3.0] - 2026-04-07
 
 ### What's new
 
-- **Syslog** — new global sheet with syslog from all nodes combined in one place
-- **Cluster Log** — cluster-wide event log (replaces "Audit Log")
-- **Cluster Tasks** — new sheet with all cluster-level tasks
-- **Firewall** — new global sheet with rules, aliases and IP sets across cluster, nodes, VMs and CTs
-- **Replication** — new global sheet with all replication jobs and status
-- **RRD Guests** — new global performance metrics sheet for VMs and CTs (disabled by default)
-- **Storage Content / Backups** — storage files and backups moved to dedicated global sheets
-- **Back links** — every node, VM and CT detail sheet now has a `← Back` link to its list
-- **More hyperlinks** — RRD, Replication, Firewall, Storage Content and Backups sheets now have clickable node, VM and storage links
+- **Syslog**: new global sheet with syslog from all nodes combined in one place
+- **Cluster Log**: cluster-wide event log (replaces "Audit Log")
+- **Cluster Tasks**: new sheet with all cluster-level tasks
+- **Firewall**: new global sheet with rules, aliases and IP sets across cluster, nodes, VMs and CTs
+- **Replication**: new global sheet with all replication jobs and status
+- **RRD Guests**: new global performance metrics sheet for VMs and CTs (disabled by default)
+- **Storage Content / Backups**: storage files and backups moved to dedicated global sheets
+- **Back links**: every node, VM and CT detail sheet now has a `← Back` link to its list
+- **More hyperlinks**: RRD, Replication, Firewall, Storage Content and Backups sheets now have clickable node, VM and storage links
 
 ### Changes
 
-- RRD data removed from individual VM/CT detail sheets — now in the global RRD Guests sheet
+- RRD data removed from individual VM/CT detail sheets, now in the global RRD Guests sheet
 - Each section (Node, Storage, Guest) has its own parallel request limit for RRD data
 - Settings reorganized: storage content options grouped under `Storage.Content`
-- `Guest.RrdData` disabled by default — can produce very large sheets on big clusters
+- `Guest.RrdData` disabled by default: can produce very large sheets on big clusters
 
 ### Fixes
 
@@ -347,23 +347,23 @@
 
 ---
 
-## [1.2.0] — 2026-04-03
+## [1.2.0] - 2026-04-03
 
 ### What's new
 
-- **Network sheet** — new dedicated sheet with a complete network inventory across the entire cluster: all node interfaces and all VM/CT network cards with MAC address, bridge, VLAN, IP addresses and OS info in one place
-- **Disks sheet** — new dedicated sheet with VM/CT disk inventory: storage, size, cache, backup flag, unused flag, mount point, passthrough
-- **VM IP addresses** — IP addresses from the QEMU agent are now visible directly in the VM overview and network tables
-- **VM overview** — new columns: Networks (MAC + bridge/VLAN), IP Addresses, Hostname
-- **VM network detail** — additional fields: Trunks, Disconnect, LinkDown, Gateway, Gateway6
-- **VM disk detail** — additional fields: MountPoint, MountSourcePath, Passthrough
-- **Node network detail** — full IPv6 fields now included: Cidr6, Address6, Netmask6, Gateway6, Method6
-- **Node disks** — reorganized settings: `SettingsDisk` class with `Enabled`, `IncludeSmartData`, `IncludeZfs`, `IncludeDirectory`
-- **Node detail** — new optional tables: Directory mount points, ZFS pools with vdev tree
-- **APT Repositories** — new `IncludeAptRepositories` option to show configured APT repositories in node detail
-- **Cluster Audit Log** — cluster event log can now be included in the Cluster sheet with `OnlyErrors` and `MaxCount` filters
-- **SkipEmptyCollections** — new global setting to skip empty collections (e.g., no snapshots) from the report
-- **README** — added "Where cv4pve-report fits" section with RVTools comparison table
+- **Network sheet**: new dedicated sheet with a complete network inventory across the entire cluster: all node interfaces and all VM/CT network cards with MAC address, bridge, VLAN, IP addresses and OS info in one place
+- **Disks sheet**: new dedicated sheet with VM/CT disk inventory: storage, size, cache, backup flag, unused flag, mount point, passthrough
+- **VM IP addresses**: IP addresses from the QEMU agent are now visible directly in the VM overview and network tables
+- **VM overview**: new columns: Networks (MAC + bridge/VLAN), IP Addresses, Hostname
+- **VM network detail**: additional fields: Trunks, Disconnect, LinkDown, Gateway, Gateway6
+- **VM disk detail**: additional fields: MountPoint, MountSourcePath, Passthrough
+- **Node network detail**: full IPv6 fields now included: Cidr6, Address6, Netmask6, Gateway6, Method6
+- **Node disks**: reorganized settings: `SettingsDisk` class with `Enabled`, `IncludeSmartData`, `IncludeZfs`, `IncludeDirectory`
+- **Node detail**: new optional tables: Directory mount points, ZFS pools with vdev tree
+- **APT Repositories**: new `IncludeAptRepositories` option to show configured APT repositories in node detail
+- **Cluster Audit Log**: cluster event log can now be included in the Cluster sheet with `OnlyErrors` and `MaxCount` filters
+- **SkipEmptyCollections**: new global setting to skip empty collections (e.g., no snapshots) from the report
+- **README**: added "Where cv4pve-report fits" section with RVTools comparison table
 
 ### Changes
 
@@ -377,21 +377,21 @@
 
 ---
 
-## [1.1.0] — 2026-03-30
+## [1.1.0] - 2026-03-30
 
 ### What's new
 
-- **HA (High Availability)** — the Cluster sheet now includes HA resources, groups and current status
-- **Resource Pools** — the Cluster sheet now lists all pools with their members (VMs, CTs and storages)
-- **SDN Ipams and Subnets** — SDN section now also covers IP address management and subnets per vnet
-- **Syslog** — each node detail sheet can now include the system log (disabled by default, enabled in Full profile)
-- **Firewall logs** — node and VM/CT firewall logs now support date range and line count filters
-- **Task filters** — tasks on nodes and VMs/CTs can now be filtered by errors only, limited by count, and filtered by source (node only, all, active)
-- **Full profile** — now includes syslog and firewall logs limited to the last 7 days (1000 lines max)
+- **HA (High Availability)**: the Cluster sheet now includes HA resources, groups and current status
+- **Resource Pools**: the Cluster sheet now lists all pools with their members (VMs, CTs and storages)
+- **SDN Ipams and Subnets**: SDN section now also covers IP address management and subnets per vnet
+- **Syslog**: each node detail sheet can now include the system log (disabled by default, enabled in Full profile)
+- **Firewall logs**: node and VM/CT firewall logs now support date range and line count filters
+- **Task filters**: tasks on nodes and VMs/CTs can now be filtered by errors only, limited by count, and filtered by source (node only, all, active)
+- **Full profile**: now includes syslog and firewall logs limited to the last 7 days (1000 lines max)
 
 ---
 
-## [1.0.0] — 2026-03-27
+## [1.0.0] - 2026-03-27
 
 ### Initial release
 
@@ -401,7 +401,7 @@
 - **Storages** sheet: storage list with links to per-storage detail sheets (content, RRD data)
 - **Nodes** sheet: node list with links to per-node detail sheets (services, network, disks, SMART data, replication, RRD data, APT updates, package versions, firewall rules, SSL certificates, tasks)
 - **Vms** sheet: VM/CT list with links to per-VM detail sheets (network, disks, RRD data, backups, snapshots, firewall, tasks, QEMU agent OS info/network/disks)
-- QEMU agent data (hostname, OS info, network interfaces, filesystems) read once per VM — no duplicate API calls
+- QEMU agent data (hostname, OS info, network interfaces, filesystems) read once per VM, no duplicate API calls
 - Agent status shown in overview: `Agent not enabled!`, `Agent not running!`, `Error Agent data!`
 - `--fast` / `--full` as options on `export` and `create-settings` subcommands (not global)
 - `--output|-o` option on `export` to specify output file path
@@ -409,6 +409,6 @@
 - Configurable RRD time frame and consolidation function
 - Three profiles: Fast, Standard (default), Full
 - Settings via `settings.json` (`create-settings` command)
-- Fully navigable — every node, VM and storage is a clickable hyperlink
+- Fully navigable: every node, VM and storage is a clickable hyperlink
 - Cross-platform (Windows, Linux, macOS)
 - API-based, no root/SSH access required

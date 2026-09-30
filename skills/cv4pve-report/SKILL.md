@@ -1,6 +1,6 @@
 ---
 name: cv4pve-report
-description: Export an inventory of a Proxmox VE cluster with cv4pve-report and answer questions about it from the JSON files — nodes, VMs, containers, storage, snapshots, backups, disks, network, firewall, certificates, HA, pools, tasks. Use it for inventory, audit and capacity questions answered from a dated export; for a live value or a change, use the Proxmox VE API instead. It only reads.
+description: "Export an inventory of a Proxmox VE cluster with cv4pve-report and answer questions about it from the JSON files: nodes, VMs, containers, storage, snapshots, backups, disks, network, firewall, certificates, HA, pools, tasks. Use it for inventory, audit and capacity questions answered from a dated export; for a live value or a change, use the Proxmox VE API instead. It only reads."
 ---
 
 # cv4pve-report

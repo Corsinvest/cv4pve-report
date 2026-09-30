@@ -1,10 +1,10 @@
 ---
 title: cv4pve-report
-description: The RVTools for Proxmox VE — exports the whole cluster, nodes, VMs, containers, storage, network and access, to Excel, a static HTML site or JSON, with a network diagram.
+description: "The RVTools for Proxmox VE: exports the whole cluster, nodes, VMs, containers, storage, network and access, to Excel, a static HTML site or JSON, with a network diagram."
 template: splash
 hero:
   title: Know what is in your <span class="accent-mark">Proxmox VE</span> cluster
-  tagline: Runs outside the nodes, API only — the RVTools for Proxmox VE. One command exports nodes, VMs, containers, storage, network, firewall, HA, SDN, users and tokens to an Excel workbook, a static HTML site or a JSON dataset, with an SVG network diagram.
+  tagline: "Runs outside the nodes, API only: the RVTools for Proxmox VE. One command exports nodes, VMs, containers, storage, network, firewall, HA, SDN, users and tokens to an Excel workbook, a static HTML site or a JSON dataset, with an SVG network diagram."
   actions:
     - text: Get started
       link: /cv4pve-report/getting-started/
@@ -29,15 +29,15 @@ export const features = [
   { title: "Excel, HTML or JSON", text: "A workbook with real Excel tables for filters and pivots, an offline HTML site to share, or one JSON file per section for scripts and diffs.", href: 'output/' },
   { title: "Network diagram", text: "Every export includes an SVG of each node: physical NICs, bonds, bridges, the VMs and containers behind them and the network storages.", href: 'output/network-diagram/' },
   { title: "Diff-friendly", text: "Every table is sorted, numbers inside names included, so two reports of an unchanged cluster differ only in live values.", href: 'output/json/#snapshot-diffs' },
-  { title: "Nothing silently missing", text: "A call that fails — a node down, a missing privilege, a broken RRD file — does not stop the report: it lands on an Issues page with the Proxmox error and the endpoint.", href: 'troubleshooting/#the-issues-page' },
-  { title: "Fast, standard or full", text: "Three profiles from a quick inventory of a large cluster to SMART, syslog and a week of RRD history — or a settings file that turns each section on or off.", href: 'settings/' },
+  { title: "Nothing silently missing", text: "A call that fails (a node down, a missing privilege, a broken RRD file) does not stop the report: it lands on an Issues page with the Proxmox error and the endpoint.", href: 'troubleshooting/#the-issues-page' },
+  { title: "Fast, standard or full", text: "Three profiles from a quick inventory of a large cluster to SMART, syslog and a week of RRD history, or a settings file that turns each section on or off.", href: 'settings/' },
 ];
 
 ```bash
 cv4pve-report --host=pve01 --api-token='report@pve!report=…' export --format Html
 ```
 
-A few rows of three pages of the report — node, VM and container names link to their own pages:
+A few rows of three pages of the report: node, VM and container names link to their own pages:
 
 <Tabs>
   <TabItem label="Cluster">
@@ -106,7 +106,7 @@ A few rows of three pages of the report — node, VM and container names link to
     { label: 'Agent Running' },
   ]}
   rows={[
-    ['pve02', '203', 'test-debian', 'stopped', '—', '2', '4.00', '0.00%', 'Linux 5.x - 2.6 Kernel', '·'],
+    ['pve02', '203', 'test-debian', 'stopped', '-', '2', '4.00', '0.00%', 'Linux 5.x - 2.6 Kernel', '·'],
     ['pve01', '1000', 'opnsense-01', 'running', '81', '4', '8.00', '35.13%', 'Linux 5.x - 2.6 Kernel', '·'],
     ['pve01', '1006', 'dc01', 'running', '66', '4', '8.00', '65.09%', 'Windows Server 2022 Datacenter', '✓'],
     ['pve02', '1012', 'mailstore', 'running', '76', '2', '4.00', '44.38%', 'Windows Server 2022 Standard', '✓'],
@@ -118,11 +118,11 @@ A few rows of three pages of the report — node, VM and container names link to
   </TabItem>
 </Tabs>
 
-Some of the columns only. Health is the [0–100 score](/cv4pve-report/output/#health-score) of the resource; a
+Some of the columns only. Health is the [0-100 score](/cv4pve-report/output/#health-score) of the resource; a
 stopped VM has none. Without a running guest agent, Os Version is the OS type set in the VM configuration.
 :::tip[Tested at scale]
 A production cluster of **25 nodes and about 2700 VMs** gets its full report in **about 7 minutes**
-with `MaxParallelRequests: 10`, and in [12.7 minutes](https://github.com/Corsinvest/cv4pve-report/issues/10#issuecomment-4422977335) with the default of 5 — measured by
+with `MaxParallelRequests: 10`, and in [12.7 minutes](https://github.com/Corsinvest/cv4pve-report/issues/10#issuecomment-4422977335) with the default of 5, measured by
 [its administrator](https://github.com/Corsinvest/cv4pve-report/issues/10#issuecomment-4432966790) on version 2.x, with the per-VM detail sheets off. See
 [Performance](/cv4pve-report/settings/#performance).
 :::
@@ -131,7 +131,7 @@ with `MaxParallelRequests: 10`, and in [12.7 minutes](https://github.com/Corsinv
 
 The Proxmox VE web interface shows one object at a time: a VM's hardware on one tab, its snapshots on
 another, the storage it lives on somewhere else. That is fine for daily work, but not when someone asks
-*how many VMs do we run, on which nodes, with how much memory, and who can log in?* — an auditor, a
+*how many VMs do we run, on which nodes, with how much memory, and who can log in?* (an auditor, a
 customer taking over the cluster, a capacity plan, a migration from VMware.
 
 cv4pve-report reads the whole cluster and writes it down in one file you can filter, share and keep.
@@ -150,12 +150,12 @@ used together.
 | **Purpose** | Inventory and reporting | Diagnostics and health checks |
 | **Result** | The full inventory: nodes, VMs, containers, storage, network, users… | A list of problems, each with a code, a severity and the resource it concerns |
 | **Formats** | Excel, static HTML site, multi-file JSON, plus an SVG network diagram | Text, HTML, JSON, Markdown, Excel |
-| **Compliance** | — | Findings tagged with the controls of 18 standards |
+| **Compliance** | - | Findings tagged with the controls of 18 standards |
 | **Access** | Proxmox VE API only, from outside the nodes | Proxmox VE API only, from outside the nodes |
 
 <LinkCard
   title="Coming from RVTools?"
-  description="Each RVTools tab mapped to the sheet that holds the same data on Proxmox VE — and what the report adds."
+  description="Each RVTools tab mapped to the sheet that holds the same data on Proxmox VE, and what the report adds."
   href="/cv4pve-report/coming-from-rvtools/"
 />
 
@@ -164,7 +164,7 @@ runs the same engine as its [System Report](https://corsinvest.github.io/cv4pve-
 
 ## Outside the nodes, API only
 
-cv4pve-report runs outside the cluster — on your workstation, a management VM or a scheduled job — and
+cv4pve-report runs outside the cluster (on your workstation, a management VM or a scheduled job) and
 talks only to the Proxmox VE REST API. Nothing is installed on the nodes and no SSH or root shell is
 needed: an API token with the privileges listed in [Permissions](/cv4pve-report/permissions/) is enough.
 Any node gives the view of the whole cluster; give it more than one and it connects to the first one that

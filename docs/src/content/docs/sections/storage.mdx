@@ -27,7 +27,7 @@ node detail page; the **Storage** column links to this Storages page.
 | Node | `node` | Node name, or `(shared)` for a shared storage. |
 | Storage | `storage` | Storage ID. |
 | Status | `status` | Storage status from `/cluster/resources`. |
-| Health | `healthScore` | Health score 0–100: 100 − disk usage %. |
+| Health | `healthScore` | Health score 0-100: 100 − disk usage %. |
 | Plugin Type | `pluginType` | Storage type (dir, lvmthin, zfspool, nfs, pbs…). |
 | Content | `content` | Allowed content types, sorted, one per line. |
 | Shared | `shared` | Flag: shared storage. |
@@ -37,8 +37,8 @@ node detail page; the **Storage** column links to this Storages page.
 
 :::note[Health score]
 For storages the score comes from the Corsinvest API library: 100 − (used / size × 100), clamped to
-0–100 and rounded to one decimal (100 when size is 0). HTML colours it green from 80, yellow from 60
-and red below; Excel uses a red–yellow–green colour scale with 60 as the midpoint.
+0-100 and rounded to one decimal (100 when size is 0). HTML colours it green from 80, yellow from 60
+and red below; Excel uses a red-yellow-green colour scale with 60 as the midpoint.
 :::
 
 ## Storage Content
@@ -104,6 +104,6 @@ page, **Storage** to the Storages page, **Vm Id** to the guest detail page.
 
 :::tip
 A backup with a **Vm Id** but an empty **Guest Name** belongs to a guest ID that is not in the
-cluster's resource list any more — a candidate for cleanup, unless another cluster writes to the same
+cluster's resource list any more: a candidate for cleanup, unless another cluster writes to the same
 backup storage.
 :::

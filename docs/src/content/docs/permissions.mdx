@@ -1,6 +1,6 @@
 ---
 title: Permissions
-description: The Proxmox VE user, API token and privileges cv4pve-report needs — and why PVEAuditor alone cannot list backups.
+description: The Proxmox VE user, API token and privileges cv4pve-report needs, and why PVEAuditor alone cannot list backups.
 ---
 
 cv4pve-report reads the cluster through the API, so what the report contains is exactly what its
@@ -30,15 +30,15 @@ permissions: grant the role to the token too, or cv4pve-report sees an empty clu
 | `Sys.Syslog` | `/` | Syslog, node firewall log, Cluster Log | Syslog and node firewall log: a Warning per node. Cluster Log: only the account's own entries |
 | `Sys.Modify` | `/nodes` | Apt Update: updates available on each node | A Warning per node |
 | `VM.Console` | `/vms` | Firewall log of VMs and containers | A Warning per guest |
-| `Datastore.AllocateSpace` + `VM.Backup` | `/storage`, `/vms` | Backups section | Backups are missing — see below |
-| `VM.Config.Disk` | `/vms` | Disk images in Storage Content | Disk images are missing — see below |
+| `Datastore.AllocateSpace` + `VM.Backup` | `/storage`, `/vms` | Backups section | Backups are missing, see below |
+| `VM.Config.Disk` | `/vms` | Disk images in Storage Content | Disk images are missing, see below |
 
 On Proxmox VE 8 `VM.GuestAgent.Audit` does not exist: the guest agent needs `VM.Monitor`, which
 `PVEAuditor` does not include. `Sys.Syslog` is read-only but not in `PVEAuditor`. The last five are more than read-only: they
 also allow changing node settings, opening consoles, running backups and changing disks. If your policy
-requires a strictly read-only account, leave them out and turn off what needs them —
+requires a strictly read-only account, leave them out and turn off what needs them
 `Node.Detail.IncludeApt`, `Guest.Detail.IncludeFirewallLog`, `Storage.IncludeBackups` in the
-[settings](/cv4pve-report/settings/) — so the Issues page stays clean.
+[settings](/cv4pve-report/settings/), so the Issues page stays clean.
 
 :::caution[PVEAuditor alone cannot list backups and disk images]
 Proxmox VE lists a backup volume only to a caller that has **both** `Datastore.AllocateSpace` on the
@@ -53,7 +53,7 @@ Backups section is empty and Storage Content shows only ISO images and templates
 Proxmox VE answers a request the caller is only partly entitled to by *filtering the response*, not
 by failing it. `/cluster/resources` drops the guests, storages and pools you cannot audit; a storage
 listing drops the volumes you cannot access. Both return `200 OK`, so a filtered result looks exactly
-like an empty one — a guest without `VM.Audit` simply does not appear in the report.
+like an empty one: a guest without `VM.Audit` simply does not appear in the report.
 
 A request that fails outright, such as the update list without `Sys.Modify`, becomes a **Warning** on the
 [Issues page](/cv4pve-report/troubleshooting/#the-issues-page), with the Proxmox error and the request;
