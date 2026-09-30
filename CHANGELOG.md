@@ -2,6 +2,13 @@
 
 ---
 
+## [2.8.1] - 2026-09-30
+
+### Changed
+
+- **No em dashes in the report output.** HTML page titles read `Nodes · cv4pve-report`, VM and container pages `100 (name)`, the footer `cv4pve-report v2.8.1 · Corsinvest Srl · date`; a missing Health value is `-`; Issues messages read `500 Reason: error (GET /path)`; network diagram tooltips read `VM: 100 (name)`.
+- Corsinvest.ProxmoxVE.Api 9.2.4
+
 ## [2.8.0] - 2026-09-29
 
 ### What's new
