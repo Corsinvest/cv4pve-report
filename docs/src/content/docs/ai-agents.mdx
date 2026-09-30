@@ -1,41 +1,29 @@
 ---
 title: AI assistants
-description: Let an AI assistant such as Claude Code or Codex answer questions about a Proxmox VE cluster from a cv4pve-report export — the cv4pve-report skill, a read-only token and sandbox settings.
+description: Let an AI assistant such as Claude Code or Codex answer questions about a Proxmox VE cluster from a cv4pve-report export, with the cv4pve-report skill and a read-only token.
 ---
 
-import AiSandbox from '@corsinvest/cv4pve-docs-theme/components/AiSandbox.astro';
 import AiSkill from '@corsinvest/cv4pve-docs-theme/components/AiSkill.astro';
 
 An AI assistant that can run shell commands can use cv4pve-report to answer questions about a
-Proxmox VE cluster: it exports the report as [JSON](/cv4pve-report/output/json/), extracts the zip and reads
-the files — which VMs are running, how many snapshots each guest has, which certificates expire soon. The
-answers come from a dated export, not from the assistant's memory of your cluster.
+Proxmox VE cluster: it exports the report as [JSON](/cv4pve-report/output/json/), extracts the zip and
+reads the files — which VMs are running, how many snapshots each guest has, which certificates expire
+soon. The answers come from a dated export, not from the assistant's memory of your cluster.
 
 ## The cv4pve-report skill
 
 <AiSkill tool="cv4pve-report">
 
 - connect only with the options file, passed with `@`, and never print it;
-- export with `--format Json`, reuse the latest export unless you ask for current data, and say which export
-  it read;
-- check `issues.json` first and tell you which sections are incomplete;
-- remember that the token may not see everything, and convert bytes and fractions for you.
+- read `issues.json` first, and say which export it read;
+- remember that the token may not see everything: an empty list is not proof of absence.
 
 </AiSkill>
 
 ## Give it a token of its own
 
-cv4pve-report only reads: it sends no request that changes the cluster. The token is still what decides
-how far the assistant can go, because the assistant can read the token from the options file and call the
-Proxmox VE API with it directly, without cv4pve-report. Give it a token that can only read: `PVEAuditor`
-on `/`, plus `Sys.Syslog` for syslog and, on Proxmox VE 9, `VM.GuestAgent.Audit` for guest agent data — see
-[Permissions](/cv4pve-report/permissions/#privileges). Without the privileges that also allow changes the
-report has no backups and no disk images in Storage Content, and the skill tells the assistant that an empty
-list is not proof of absence.
-
-Put the connection in an [options file](/cv4pve-report/connection/#options-in-a-file) and tell the assistant
-its path: the token does not need to appear in the conversation or in the commands the assistant writes.
-
-## Sandboxes
-
-<AiSandbox tool="cv4pve-report" />
+The skill tells the assistant what to do; the token decides what it can do. The assistant can read the
+token and call the Proxmox VE API without cv4pve-report, and the skill cannot prevent that.
+Give it a read-only token — `PVEAuditor`, see [Permissions](/cv4pve-report/permissions/#privileges) — and
+put the connection in an [options file](/cv4pve-report/connection/#options-in-a-file), so the token stays
+out of the conversation.
