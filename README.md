@@ -99,6 +99,7 @@ The report is a `.zip` in the current folder. The API token needs the privileges
 | [Permissions](https://corsinvest.github.io/cv4pve-report/permissions/) | Creating the user and API token, required privileges |
 | [Output](https://corsinvest.github.io/cv4pve-report/output/) | Excel, HTML, JSON, network diagram, Health Score |
 | [Sections](https://corsinvest.github.io/cv4pve-report/sections/cluster/) | Every table and column |
+| [AI assistants](https://corsinvest.github.io/cv4pve-report/ai-agents/) | Claude Code, Codex, the `cv4pve-report` skill |
 | [Settings](https://corsinvest.github.io/cv4pve-report/settings/) | Profiles, settings file, guest selection, performance |
 | [Troubleshooting](https://corsinvest.github.io/cv4pve-report/troubleshooting/) | The Issues page, and what the tool is doing when something goes wrong |
 

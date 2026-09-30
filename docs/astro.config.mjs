@@ -33,7 +33,7 @@ export default defineConfig({
       sidebar: [
         {
           label: 'Start here',
-          items: ['getting-started', 'permissions', 'connection', 'coming-from-rvtools', 'troubleshooting'],
+          items: ['getting-started', 'permissions', 'connection', 'coming-from-rvtools', 'ai-agents', 'troubleshooting'],
         },
         {
           label: 'Output',
