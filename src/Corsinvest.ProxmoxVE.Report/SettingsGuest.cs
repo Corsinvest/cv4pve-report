@@ -44,7 +44,7 @@ public class SettingsGuest
     public bool IncludePartitions { get; set; } = true;
 
     /// <summary>
-    /// Include QEMU agent info (network interfaces and filesystem info) — only for running VMs with agent enabled
+    /// Include QEMU agent info (network interfaces and filesystem info), only for running VMs with agent enabled
     /// </summary>
     public bool IncludeQemuAgent { get; set; } = true;
 

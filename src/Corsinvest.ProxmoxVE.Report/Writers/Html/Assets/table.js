@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
-// cv4pve-report — table interactions: global filter, per-column filter, sortable headers.
+// cv4pve-report: table interactions: global filter, per-column filter, sortable headers.
 // Loaded by every report page AND inlined into the standalone HTML export.
 (function () {
   'use strict';

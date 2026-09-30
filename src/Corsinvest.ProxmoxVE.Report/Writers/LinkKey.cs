@@ -22,7 +22,7 @@ internal static class LinkKey
     public const string ListVms = "list:vms";
     public const string ListContainers = "list:containers";
 
-    // Section pages — auto-registered by writers via ForSection(name) in AddSection.
+    // Section pages: auto-registered by writers via ForSection(name) in AddSection.
     public const string Cluster = "section:cluster";
     public const string ClusterAccess = "section:cluster-access";
     public const string ClusterSdn = "section:cluster-sdn";

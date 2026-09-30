@@ -16,7 +16,7 @@ public class SettingsNodeDisk
     public bool IncludeDiskDetail { get; set; } = true;
 
     /// <summary>
-    /// Include SMART health data per disk (one API call per disk — can be slow)
+    /// Include SMART health data per disk (one API call per disk, can be slow)
     /// </summary>
     public bool IncludeSmartData { get; set; }
 }

@@ -9,7 +9,7 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'cv4pve-report',
-      description: 'Inventory of a whole Proxmox VE cluster in Excel, HTML or JSON — the RVTools for Proxmox VE.',
+      description: 'Inventory of a whole Proxmox VE cluster in Excel, HTML or JSON: the RVTools for Proxmox VE.',
       // Brand, logo, GitHub and "Edit page" links, the Corsinvest sidebar group and
       // external links in a new tab come from the shared cv4pve theme.
       plugins: [

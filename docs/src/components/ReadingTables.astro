@@ -9,8 +9,8 @@
   <summary>How to read the tables</summary>
   <ul>
     <li><strong>Excel / HTML</strong> is the column header, the same in both formats. <strong>JSON</strong> is the key in the JSON file.</li>
-    <li><strong>Sizes</strong> — <code>GB</code> or <code>MB</code> in the header — are in that unit in Excel and HTML, and raw bytes in JSON.</li>
-    <li><strong>Percentages</strong> — <code>%</code> in the header — are formatted as percentages in Excel and HTML; JSON has the raw value, a fraction from 0 to 1 for usage columns.</li>
+    <li><strong>Sizes</strong> (<code>GB</code> or <code>MB</code> in the header) are in that unit in Excel and HTML, and raw bytes in JSON.</li>
+    <li><strong>Percentages</strong> (<code>%</code> in the header) are formatted as percentages in Excel and HTML; JSON has the raw value, a fraction from 0 to 1 for usage columns.</li>
     <li><strong>Flags</strong> show <code>X</code> in Excel, <code>✓</code> or <code>·</code> in HTML, <code>true</code> or <code>false</code> in JSON.</li>
     <li><strong>Multi-line cells</strong> hold one value per line; in JSON they are a string with line breaks (<code>{'\\n'}</code>, or <code>{'\\r\\n'}</code> when the report was generated on Windows).</li>
     <li><strong>Links</strong> to other pages exist in Excel and HTML; JSON has the plain value. Empty values are <code>null</code> or <code>""</code> in JSON.</li>

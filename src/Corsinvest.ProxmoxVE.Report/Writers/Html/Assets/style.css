@@ -3,22 +3,22 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
-/* cv4pve-report — HTML report stylesheet.
+/* cv4pve-report: HTML report stylesheet.
  * Design tokens reproduce Fluent UI v9 (Communication Blue brand, neutral palette,
- * depth/radius tokens) with vanilla CSS variables — no external dependency. */
+ * depth/radius tokens) with vanilla CSS variables, no external dependency. */
 
 :root {
-  /* Brand — Fluent Communication Blue */
+  /* Brand: Fluent Communication Blue */
   --color-primary: #0f6cbd;
   --color-primary-hover: #115ea3;
   --color-primary-soft: #ebf3fc; /* tinted background for hover/header */
   --color-link: #0f6cbd;
 
-  /* Neutrals — three-level surface ramp: tables brightest, body one step down, sidebar two. */
+  /* Neutrals: three-level surface ramp: tables brightest, body one step down, sidebar two. */
   --color-text: #242424;
   --color-text-muted: #616161;
   --color-bg: #fafafa; /* main canvas (between body & tables) */
-  --color-bg-sidebar: #efefef; /* sidebar — distinctly darker so it stands as a panel */
+  --color-bg-sidebar: #efefef; /* sidebar, distinctly darker so it stands as a panel */
   --color-bg-table: #ffffff; /* tables / cards on top */
   --color-border: #e0e0e0;
 
@@ -27,14 +27,14 @@
   --color-table-zebra: #fafafa;
   --color-table-hover: var(--color-primary-soft);
 
-  /* Form inputs — darker stroke than generic border so the field edge is visible on canvas. */
+  /* Form inputs: darker stroke than generic border so the field edge is visible on canvas. */
   --color-input-border: #b8b8b8;
 
-  /* Status — Fluent semantic */
+  /* Status: Fluent semantic */
   --color-flag-yes: #107c10;
   --color-flag-no: #c8c8c8;
 
-  /* Depth tokens — Fluent shadow ramp */
+  /* Depth tokens: Fluent shadow ramp */
   --shadow-2: 0 0 2px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.14);
   --shadow-4: 0 0 2px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.14);
   --shadow-8: 0 0 2px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.14);
@@ -51,7 +51,7 @@
     "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* Manual dark theme (set by the toggle button) — Fluent dark palette */
+/* Manual dark theme (set by the toggle button): Fluent dark palette */
 [data-theme="dark"] {
   --color-primary: #2899f5;
   --color-primary-hover: #479ef5;
@@ -284,7 +284,7 @@ a:hover {
   content: "";
 }
 
-/* Chevron icon — uses CSS mask so it inherits currentColor and stays crisp at any size. */
+/* Chevron icon: uses CSS mask so it inherits currentColor and stays crisp at any size. */
 .sidebar nav summary::before {
   content: "";
   width: 10px;
@@ -451,7 +451,7 @@ main h2 {
   font-size: 1.1rem;
 }
 
-/* Page-level table of contents — small panel at the top, anchor links to each section. */
+/* Page-level table of contents: small panel at the top, anchor links to each section. */
 .page-toc {
   background: var(--color-bg-table);
   border: 1px solid var(--color-border);
@@ -540,7 +540,7 @@ table.data tbody td {
   vertical-align: middle;
 }
 
-/* Sticky first column — row identifier (Node, VmId, …) stays visible during horizontal scroll. */
+/* Sticky first column: row identifier (Node, VmId, …) stays visible during horizontal scroll. */
 table.data thead th:first-child,
 table.data tbody td:first-child,
 table.data tfoot th:first-child {
@@ -635,7 +635,7 @@ table.data tfoot th {
   border-top: 2px solid var(--color-border);
 }
 
-/* Filter toolbar injected by JS — pushed right so the table title keeps the visual lead. */
+/* Filter toolbar injected by JS, pushed right so the table title keeps the visual lead. */
 .table-toolbar {
   display: flex;
   align-items: center;
@@ -709,7 +709,7 @@ table.data tfoot th {
   outline: none;
 }
 
-/* Per-column filter funnel — absolute-positioned to the right of the cell, just left of the sort indicator. */
+/* Per-column filter funnel: absolute-positioned to the right of the cell, just left of the sort indicator. */
 .col-filter-toggle {
   position: absolute;
   right: 1.1rem;

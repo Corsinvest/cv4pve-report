@@ -9,7 +9,7 @@ internal static class TaskExtensions
 {
     // Awaits all tasks in parallel; individual task failures are swallowed instead of
     // surfacing as AggregateException. Faulted tasks remain IsFaulted=true, so reading
-    // .Result on them would still throw — use ResultOrDefault() to read safely.
+    // .Result on them would still throw; use ResultOrDefault() to read safely.
     public static Task WhenAllSafe(params Task[] tasks)
         => Task.WhenAll(tasks.Select(async t => { try { await t; } catch { } }));
 

@@ -1,10 +1,10 @@
 ---
 title: JSON
-description: The JSON dataset of cv4pve-report — file layout, shapes, raw values, jq recipes and snapshot diffs.
+description: "The JSON dataset of cv4pve-report: file layout, shapes, raw values, jq recipes and snapshot diffs."
 ---
 
 `--format Json` writes one JSON file per section, for scripts, CI pipelines, Power BI or anything that
-reads JSON. Values are raw — bytes, fractions, booleans — so nothing is lost to formatting.
+reads JSON. Values are raw (bytes, fractions, booleans), so nothing is lost to formatting.
 
 ## Files in the zip
 
@@ -74,8 +74,8 @@ The [Sections](/cv4pve-report/sections/cluster/) pages give the JSON key of ever
 
 | Kind | Excel / HTML | JSON |
 |---|---|---|
-| Size — column ending in `GB` or `MB` | `16.00` in the unit of the header | Bytes: `17179869184`. The unit is dropped from the key: `Memory Size GB` → `memorySize` |
-| Percentage — column ending in `%` | `45.00%` | Fraction from 0 to 1: `0.45`. `Cpu Usage %` → `cpuUsage` |
+| Size: column ending in `GB` or `MB` | `16.00` in the unit of the header | Bytes: `17179869184`. The unit is dropped from the key: `Memory Size GB` → `memorySize` |
+| Percentage: column ending in `%` | `45.00%` | Fraction from 0 to 1: `0.45`. `Cpu Usage %` → `cpuUsage` |
 | Flag | Excel: `X` or empty. HTML: `✓` or `·` | `true` / `false` |
 | Multi-line text | Line breaks in the cell | String with `\n` (`\r\n` when the report runs on Windows) |
 | Date and time | Formatted date | ISO 8601 string |
@@ -85,8 +85,8 @@ Keys are the column name in camelCase, without spaces or unit: `Vm Id` → `vmId
 `Health` → `healthScore`.
 
 :::note[Size and percentage of the same measure]
-Where a table has both the size and the percentage of the same measure — `Memory Usage GB` and
-`Memory Usage %`, `Disk Usage GB` and `Disk Usage %` — the percentage keeps the plain key and the size
+Where a table has both the size and the percentage of the same measure (`Memory Usage GB` and
+`Memory Usage %`, `Disk Usage GB` and `Disk Usage %`), the percentage keeps the plain key and the size
 gets `Bytes`: `memoryUsage` is the fraction, `memoryUsageBytes` the bytes.
 :::
 
@@ -129,7 +129,7 @@ Present only when an API call failed. An array with one entry per failure:
   {
     "severity": "Warning",
     "section": "RRD Storage",
-    "message": "500 Internal Server Error — got wrong time resolution (60 != 1800) — GET /nodes/pve01/storage/local-ceph/rrddata",
+    "message": "500 Internal Server Error: got wrong time resolution (60 != 1800) (GET /nodes/pve01/storage/local-ceph/rrddata)",
     "timestamp": "2026-09-28T10:15:14.1234567+02:00",
     "linkKey": "node:pve01"
   }
@@ -183,7 +183,7 @@ diff -r old/ new/
 diff <(jq -S . old/vms/100.json) <(jq -S . new/vms/100.json)
 ```
 
-`jq -S` sorts the keys, so the diff shows only real changes. Live values — usage, uptime, RRD — change on
+`jq -S` sorts the keys, so the diff shows only real changes. Live values (usage, uptime, RRD) change on
 every run; compare the configuration blocks when you look for changes made by people.
 
 ## Size
@@ -196,4 +196,4 @@ Typical sizes, before compression:
 | 10 nodes, 200 VMs | ~ 1.5 MB | ~ 10 MB |
 | 25 nodes, 2700 VMs | ~ 5 MB | ~ 60 MB |
 
-JSON compresses well: the zip is typically 5–10× smaller.
+JSON compresses well: the zip is typically 5-10× smaller.

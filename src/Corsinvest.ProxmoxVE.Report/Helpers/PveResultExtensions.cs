@@ -85,19 +85,19 @@ internal static class PveResultExtensions
     }
 
     /// <summary>
-    /// Builds a diagnostic message from a Result: "&lt;code&gt; &lt;reason&gt; — &lt;api error&gt; — &lt;METHOD&gt; &lt;path&gt;".
+    /// Builds a diagnostic message from a Result: "&lt;code&gt; &lt;reason&gt;: &lt;api error&gt; (&lt;METHOD&gt; &lt;path&gt;)".
     /// The body error and request path are included when available so the Issues page is self-contained.
     /// </summary>
     private static string BuildMessage(Result r)
     {
-        var parts = new List<string> { $"{(int)r.StatusCode} {r.ReasonPhrase}" };
+        var message = $"{(int)r.StatusCode} {r.ReasonPhrase}";
         var apiError = r.GetError();
-        if (!string.IsNullOrWhiteSpace(apiError)) { parts.Add(apiError); }
-        if (!string.IsNullOrWhiteSpace(r.RequestResource)) { parts.Add($"{r.MethodType} {r.RequestResource}"); }
-        return string.Join(" — ", parts);
+        if (!string.IsNullOrWhiteSpace(apiError)) { message += $": {apiError}"; }
+        if (!string.IsNullOrWhiteSpace(r.RequestResource)) { message += $" ({r.MethodType} {r.RequestResource})"; }
+        return message;
     }
 
-    // 501 is silent — the endpoint doesn't exist on this PVE version, not an issue.
+    // 501 is silent: the endpoint doesn't exist on this PVE version, not an issue.
     // Everything else (403, 404, 5xx, network errors) is surfaced as a Warning so the
     // user can act on it.
     private static IssueSeverity? ClassifyHttpStatus(HttpStatusCode status)

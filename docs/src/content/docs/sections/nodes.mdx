@@ -28,7 +28,7 @@ node's detail page.
 |---|---|---|
 | Node | `node` | Node name. Links to the node detail page. |
 | Status | `status` | Node status from `/cluster/resources`. |
-| Health | `healthScore` | Health score 0–100, higher is healthier (see the note below). |
+| Health | `healthScore` | Health score 0-100, higher is healthier (see the note below). |
 | Uptime | `uptime` | Uptime as formatted text. |
 | Cpu Size | `cpuSize` | Number of CPUs from `/cluster/resources`. |
 | Cpu Cpus | `cpuCpus` | Logical CPUs (`cpuinfo.cpus`). |
@@ -68,8 +68,8 @@ node's detail page.
 
 :::note[Health score]
 The score comes from the Corsinvest API library: 100 − (CPU% × 0.4 + RAM% × 0.4 + Disk% × 0.2),
-clamped to 0–100 and rounded to one decimal. The HTML report colours it green from 80, yellow from
-60 and red below; Excel uses a red–yellow–green colour scale with 60 as the midpoint.
+clamped to 0-100 and rounded to one decimal. The HTML report colours it green from 80, yellow from
+60 and red below; Excel uses a red-yellow-green colour scale with 60 as the midpoint.
 :::
 
 ## Node detail

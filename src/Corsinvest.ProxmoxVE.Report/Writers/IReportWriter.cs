@@ -35,7 +35,7 @@ internal interface IReportWriter : IDisposable
 
     /// <summary>
     /// Provides the network topology SVG to the writer. Each format decides what to do
-    /// with it (Excel: no-op — the caller writes it next to the .xlsx; HTML: embedded
+    /// with it (Excel: no-op, the caller writes it next to the .xlsx; HTML: embedded
     /// inside the .zip as "network-diagram.svg" and linked from the sidebar/cover).
     /// </summary>
     void SetNetworkDiagram(string svg);

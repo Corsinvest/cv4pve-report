@@ -19,7 +19,7 @@ internal sealed class HtmlSectionWriter(HtmlReportWriter parent, string name, st
 
     public void AddBackLink(string label, string linkKey) { }
 
-    // First KV block in the section is the page header — title becomes the fixed "Info"
+    // First KV block in the section is the page header: title becomes the fixed "Info"
     // heading (mirrors the JSON writer's i == 0 → "info" rule applied across all sections).
     public void AddKeyValue(string title, IDictionary<string, object?> items)
         => _blocks.Add(new KeyValueBlock(IsFirstKv() ? "Info" : title, items));
@@ -40,7 +40,7 @@ internal sealed class HtmlSectionWriter(HtmlReportWriter parent, string name, st
             ColumnLinks = options?.ColumnLinks,
         };
 
-        // HTML has no row anchors yet — row-level links resolve to the section's page.
+        // HTML has no row anchors yet; row-level links resolve to the section's page.
         if (options?.RegisterRowKeys != null)
         {
             foreach (var row in rows)
@@ -74,7 +74,7 @@ internal sealed class HtmlSectionWriter(HtmlReportWriter parent, string name, st
     {
         var sb = new StringBuilder();
 
-        // Page-level TOC (mirrors the in-sheet "Index" used in Excel) — only useful
+        // Page-level TOC (mirrors the in-sheet "Index" used in Excel), only useful
         // when the page has 2+ anchored blocks, otherwise redundant with the <h1>.
         var anchored = _blocks.Where(b => b.AnchorId != null && !string.IsNullOrEmpty(b.Title))
                               .ToList();

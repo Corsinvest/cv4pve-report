@@ -90,7 +90,7 @@ internal sealed class TableBlock<T> : IBlock
         var classAttr = ClassFor(col.Kind);
 
         // Flag columns: ReportEngine pre-formats values as "X" (true) or "" (false).
-        // Render a green check / dash instead of a literal "X" — easier to scan visually.
+        // Render a green check / dash instead of a literal "X": easier to scan visually.
         if (col.Kind == ColumnKind.Flag)
         {
             var truthy = value is string s && s.Length > 0;
@@ -102,7 +102,7 @@ internal sealed class TableBlock<T> : IBlock
 
         if (col.Kind == ColumnKind.HealthScore)
         {
-            if (value is null) { return $"<td{classAttr}><span class=\"health health-na\">—</span></td>"; }
+            if (value is null) { return $"<td{classAttr}><span class=\"health health-na\">-</span></td>"; }
             var score = Convert.ToDouble(value, CultureInfo.InvariantCulture);
             var level = score >= 80 ? "good" : score >= 60 ? "warn" : "crit";
             return $"<td{classAttr}><span class=\"health health-{level}\">{score:F0}</span></td>";

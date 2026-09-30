@@ -1,11 +1,11 @@
 ---
 title: HTML
-description: The HTML report of cv4pve-report — an offline static site with sidebar, filters, sorting, light and dark theme, and standalone page export.
+description: "The HTML report of cv4pve-report: an offline static site with sidebar, filters, sorting, light and dark theme, and standalone page export."
 ---
 
 `--format Html` writes a static website in the zip. Extract it and open `index.html` in any browser: it
 works offline, with no server. Pick HTML to share the report with people who do not need to work on the
-data — a colleague, a customer, a ticket, a wiki.
+data: a colleague, a customer, a ticket, a wiki.
 
 ## Files in the zip
 
@@ -43,7 +43,7 @@ rules as the [JSON files](/cv4pve-report/output/json/#files-in-the-zip).
 - **Sidebar.** The same on every page, with the current page highlighted. Nodes, VMs and containers are
   groups you expand; their entries are loaded from `assets/sidebar-data.js` when you open the group, so the
   pages stay small on clusters with thousands of guests. The search box shows the entries whose text contains
-  what you type — a name or an ID — and opens the groups that have a match.
+  what you type (a name or an ID) and opens the groups that have a match.
 - **Links.** A node, VM or container in a table links to its page, a storage to the Storages page; the
   Section column of Issues links to the page of the resource concerned.
 - **Index.** A page with two or more tables starts with links to each of them.
@@ -54,16 +54,16 @@ rules as the [JSON files](/cv4pve-report/output/json/#files-in-the-zip).
 
 - **Row count** above every table, and the number of rows shown when a filter is on.
 - **Filter.** A `Filter rows…` box above every table. The toggle on its left switches between **contains**
-  (`~`, the default) and **exact** (`=`) — exact matches the whole cell and is useful for IDs, where `100`
+  (`~`, the default) and **exact** (`=`): exact matches the whole cell and is useful for IDs, where `100`
   would otherwise also match `1000`.
 - **Column filter.** The funnel icon in a column header opens a row of filters, one per column, each with
   its own `~` / `=` toggle. All the filters apply together.
 - **Sort.** Click a header to sort ascending, again for descending, a third time to go back to the original
   order. Numbers, sizes, percentages, Health and dates sort by value.
 - **Flags** show `✓` when true and `·` when false.
-- **Health** is a coloured badge — see [Health Score](/cv4pve-report/output/#health-score).
+- **Health** is a coloured badge, see [Health Score](/cv4pve-report/output/#health-score).
 
-For more than this — ranges, several conditions, pivots — use the [Excel](/cv4pve-report/output/excel/)
+For more than this (ranges, several conditions, pivots) use the [Excel](/cv4pve-report/output/excel/)
 format.
 
 ## Export one page

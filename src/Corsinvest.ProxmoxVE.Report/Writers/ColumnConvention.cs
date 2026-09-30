@@ -11,7 +11,7 @@ namespace Corsinvest.ProxmoxVE.Report.Writers;
 /// <summary>
 /// Classifies a property by its name suffix (<c>MemoryUsageGB</c>, <c>CpuUsagePct</c>,
 /// <c>IsTemplateFlag</c>, <c>NextRunDate</c>, <c>DescriptionWrap</c>) and, when no
-/// suffix matches, by its CLR type. Single source of truth used by every writer —
+/// suffix matches, by its CLR type. Single source of truth used by every writer:
 /// add a new <see cref="ColumnKind"/> here and the formats pick it up.
 /// </summary>
 internal static partial class ColumnConvention
@@ -19,7 +19,7 @@ internal static partial class ColumnConvention
     [GeneratedRegex("(?<=[a-z])([A-Z])|(?<=[A-Z])([A-Z][a-z])")]
     private static partial Regex PascalCaseSplitRegex();
 
-    /// <summary>Name-only parsing — no CLR type, plain-text values fall through to <see cref="ColumnKind.Text"/>.</summary>
+    /// <summary>Name-only parsing: no CLR type, plain-text values fall through to <see cref="ColumnKind.Text"/>.</summary>
     public static (ColumnKind Kind, string DisplayName) Parse(string name)
     {
         // Human-authored labels ("Memory GB", "CPU Usage %") keep their casing verbatim;

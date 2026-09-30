@@ -1,6 +1,6 @@
 ---
 title: Network diagram
-description: The SVG network diagram in every cv4pve-report export — from physical NICs to bridges, VMs and network storage, node by node.
+description: "The SVG network diagram in every cv4pve-report export: from physical NICs to bridges, VMs and network storage, node by node."
 ---
 
 import { Image } from 'astro:assets';
@@ -47,8 +47,8 @@ Network storages, each linked to the bridge that reaches its server
 | Blue `#4A90D9` | Physical NIC |
 | Red `#E74C3C` | Physical NIC with a gateway configured on the host |
 | Purple `#7B68EE` | Bond |
-| Green `#27AE60` | Bridge — Linux bridge or Open vSwitch bridge |
-| Orange `#FF9100` | Multi-homed VM or container: NICs on a bridge with an uplink and on an internal bridge — a candidate gateway |
+| Green `#27AE60` | Bridge: Linux bridge or Open vSwitch bridge |
+| Orange `#FF9100` | Multi-homed VM or container: NICs on a bridge with an uplink and on an internal bridge, a candidate gateway |
 | Light grey `#ECF0F1` | VM or container |
 | Teal `#00897B` | Network storage |
 | Grey `#95A5A6` | Inactive: NIC, bond or bridge down, guest not running, storage disabled |
@@ -59,19 +59,19 @@ The title is the name followed by its comment, when there is one: `vmbr0 · LAN`
 A guest shows its type, ID and name (`VM 1000 · firewall-01`), a storage its name and type
 (`nas-backup · nfs`). Then, depending on the type:
 
-- **NIC** — `DOWN` when inactive, the type when not Ethernet, address and gateway when the NIC has an IP on
+- **NIC**: `DOWN` when inactive, the type when not Ethernet, address and gateway when the NIC has an IP on
   the host, MTU.
-- **Bond** — `DOWN`, mode (e.g. `802.3ad`), hash policy, miimon, `← slaves`, MTU.
-- **Bridge** — `DOWN`, type when Open vSwitch, IPv4/IPv6 address and gateway, MTU, VLANs, `VLAN-aware`,
+- **Bond**: `DOWN`, mode (e.g. `802.3ad`), hash policy, miimon, `← slaves`, MTU.
+- **Bridge**: `DOWN`, type when Open vSwitch, IPv4/IPv6 address and gateway, MTU, VLANs, `VLAN-aware`,
   ports, Open vSwitch bonds and ports, `IntPort` with the address of Open vSwitch internal ports (often the
   host management IP).
-- **VM / CT** — the status when not running (`[stopped]`), the hostname when it differs from the name,
+- **VM / CT**: the status when not running (`[stopped]`), the hostname when it differs from the name,
   then one line per NIC in `net0`, `net1`, … order:
   `net0 (ens18) → vmbr0 VLAN 10 trunks 1-4094 IP:10.0.0.20/24 GW:10.0.0.1`. The name in brackets is the
   interface inside the guest: from the QEMU guest agent for a VM, from the configuration for a container.
   Loopback, `veth`, `docker`, `br-`, `tun` and `cni` interfaces are left out. A running container shows the
   address it has now, even with DHCP (`172.16.0.10/24 (dhcp)`).
-- **Storage** — `[disabled]`, `Shared`, `Server:`, `Target:` (export, datastore, pool or path), `Content:`.
+- **Storage**: `[disabled]`, `Shared`, `Server:`, `Target:` (export, datastore, pool or path), `Content:`.
 
 Hover a box for a tooltip with its details, status and comment; a guest's tooltip lists all its NICs,
 including the ones left out of the box. Tooltips work when the SVG is open on its own: in the HTML report,
@@ -83,26 +83,26 @@ A VM or container is orange when it has at least one NIC on a bridge **with** a 
 least one on a bridge **without** one. That is how a firewall or router VM looks from the outside, and it
 works without the guest agent.
 
-The flip side: a multi-homed guest that does not route — a backup server with a management NIC and a
-storage NIC — is orange too. Only the first level is highlighted: in a chain like
+The flip side: a multi-homed guest that does not route (a backup server with a management NIC and a
+storage NIC) is orange too. Only the first level is highlighted: in a chain like
 `WAN → fw1 → DMZ → fw2 → LAN`, `fw2` is not.
 
 ## Network storages
 
-Storages are in their own strip below each node, because they do not carry guest traffic — the node mounts
+Storages are in their own strip below each node, because they do not carry guest traffic: the node mounts
 them over a subnet. Types shown: `nfs`, `cifs`, `pbs`, `iscsi`, `iscsidirect`, `rbd`, `cephfs`,
 `glusterfs`, `zfs`, `esxi`. Local storages (`dir`, `lvm`, `lvmthin`, `zfspool`, `btrfs`, …) are left out.
 
-Each storage gets an arrow from the bridge whose subnet contains its server — or one of the Ceph monitors
+Each storage gets an arrow from the bridge whose subnet contains its server, or one of the Ceph monitors
 in `monhost`. The bridge subnet comes from its `cidr`, from `address` + `netmask`, or from an Open vSwitch
 internal port on it.
 
-A storage has no arrow when its server is a **host name** instead of an IP — there is no subnet to match —
+A storage has no arrow when its server is a **host name** instead of an IP (there is no subnet to match)
 or when no bridge covers its subnet. To get the arrow, use the IP in the storage configuration.
 
 ## Limits
 
-- The diagram is per node: a shared storage appears under every node that uses it. Cluster-wide networks —
-  corosync, migration — are not drawn as such.
+- The diagram is per node: a shared storage appears under every node that uses it. Cluster-wide networks
+  (corosync, migration) are not drawn as such.
 - Multi-homed guests that do not route are shown as gateways, and only the first level of a routing chain
   is recognised (see above).

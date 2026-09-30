@@ -8,7 +8,7 @@ namespace Corsinvest.ProxmoxVE.Report.Writers.Json;
 internal sealed partial class JsonReportWriter
 {
     /// <summary>
-    /// Builds the <c>metadata.json</c> payload — the JSON equivalent of the
+    /// Builds the <c>metadata.json</c> payload: the JSON equivalent of the
     /// XLSX "Summary" sheet and the HTML <c>index.html</c> cover page. Carries
     /// the schema version, generation timestamp, application info, the same
     /// subset of settings the Excel/HTML covers expose (node/guest filters and

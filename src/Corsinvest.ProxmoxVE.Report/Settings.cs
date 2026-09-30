@@ -58,7 +58,7 @@ public class Settings
         Converters = { new JsonStringEnumConverter() }
     };
 
-    /// <summary>Fast profile — structure only, no heavy data.</summary>
+    /// <summary>Fast profile: structure only, no heavy data.</summary>
     public static Settings Fast() => new()
     {
         Node = new()
@@ -85,10 +85,10 @@ public class Settings
         Firewall = new() { Enabled = false },
     };
 
-    /// <summary>Standard profile — all except SMART data. Default.</summary>
+    /// <summary>Standard profile: all except SMART data. Default.</summary>
     public static Settings Standard() => new();
 
-    /// <summary>Full profile — everything enabled, RRD on week timeframe.</summary>
+    /// <summary>Full profile: everything enabled, RRD on week timeframe.</summary>
     public static Settings Full()
     {
         var threeDaysAgo = DateOnly.FromDateTime(DateTime.Now.AddDays(-3));

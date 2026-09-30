@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
-// cv4pve-report — table sort + sidebar filter + theme toggle
+// cv4pve-report: table sort + sidebar filter + theme toggle
 (function () {
   'use strict';
 

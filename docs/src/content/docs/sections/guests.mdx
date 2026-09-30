@@ -13,7 +13,7 @@ storage or with backup disabled, filesystems close to full and snapshots nobody 
 
 ## Which guests
 
-Every section on this page covers only the guests selected by `Guest.Ids` (default `@all`) — see
+Every section on this page covers only the guests selected by `Guest.Ids` (default `@all`), see
 [Choosing nodes and guests](/cv4pve-report/settings/#choosing-nodes-and-guests). Rows are sorted by ID,
 with numbers compared as numbers. In every table, **Node** links to the node's page and **Vm Id** to the
 guest's page; in Disks, **Storage** links to the Storages section.
@@ -58,7 +58,7 @@ One row per VM.
 | Vm Id | `vmId` | VM ID (link to the VM detail) |
 | Name | `name` | VM name |
 | Status | `status` | `running`, `stopped`, … from cluster resources |
-| Health | `healthScore` | Health score 0–100, higher is healthier: 100 − (CPU%·0.5 + RAM%·0.5). Empty for a VM that is not running. HTML: green at 80 or more, yellow at 60 or more, red below. Excel: red–yellow–green colour scale |
+| Health | `healthScore` | Health score 0-100, higher is healthier: 100 − (CPU%·0.5 + RAM%·0.5). Empty for a VM that is not running. HTML: green at 80 or more, yellow at 60 or more, red below. Excel: red-yellow-green colour scale |
 | Pool | `pool` | Resource pool, if any |
 | Tags | `tags` | Proxmox tags, one per line |
 | Ha State | `haState` | HA state from cluster resources |
@@ -135,7 +135,7 @@ One row per container.
 | Vm Id | `vmId` | Container ID (link to the CT detail) |
 | Name | `name` | Container name |
 | Status | `status` | `running`, `stopped`, … |
-| Health | `healthScore` | Health score 0–100, same formula and colours as VMs. Empty when the container is not running |
+| Health | `healthScore` | Health score 0-100, same formula and colours as VMs. Empty when the container is not running |
 | Pool | `pool` | Resource pool, if any |
 | Tags | `tags` | Proxmox tags, one per line |
 | Ha State | `haState` | HA state |
@@ -173,7 +173,7 @@ One row per container.
 
 ## VM and container detail
 
-Excel sheet `VM <id>` / `CT <id>` · HTML `vms/<id>.html` / `containers/<id>.html` (page title `<id> — <name>`) ·
+Excel sheet `VM <id>` / `CT <id>` · HTML `vms/<id>.html` / `containers/<id>.html` (page title `<id> (<name>)`) ·
 JSON `vms/<id>.json` / `containers/<id>.json` · enabled by [`Guest.Detail.Enabled`](/cv4pve-report/settings/).
 
 There is one page per guest whose config could be read. It opens with a back link to the VMs or Containers list.
