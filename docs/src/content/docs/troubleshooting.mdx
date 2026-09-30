@@ -19,7 +19,7 @@ when something failed: if it is not there, every call succeeded.
 |---|---|
 | **Severity** | `Warning` |
 | **Section** | Where the failure happened, e.g. `RRD Storage`, `Firewall Log`, `Cluster`. Links to the page of the resource concerned: node, VM, container or section |
-| **Message** | HTTP status code, the error returned by Proxmox VE and the failing call: `500 got wrong time resolution (60 != 1800) — Get /nodes/pve01/storage/local-ceph/rrddata` |
+| **Message** | HTTP status code, the error returned by Proxmox VE and the failing call: `500 got wrong time resolution (60 != 1800) (Get /nodes/pve01/storage/local-ceph/rrddata)` |
 | **Timestamp** | When the failure was recorded |
 
 A `501 Not Implemented` is not listed: it means the endpoint does not exist on that Proxmox VE version,

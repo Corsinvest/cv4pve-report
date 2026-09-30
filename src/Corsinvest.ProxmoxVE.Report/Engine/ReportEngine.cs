@@ -178,7 +178,7 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
             new("VMs", "Virtual machines (QEMU) with agent info, OS name/version/kernel, bios, cpu, memory and disk details", AddVmsDataAsync),
             new("Containers", "LXC containers with hostname, swap, nameserver and privilege details", AddContainersDataAsync),
             new("Network", "Global network overview: node interfaces and VM/CT network inventory", () => Task.FromResult(WriteNetworkData())),
-            new("Storage Content", "Storage content inventory (ISO, templates, disk images — excludes backups)", AddStorageContentDataAsync),
+            new("Storage Content", "Storage content inventory (ISO, templates, disk images; excludes backups)", AddStorageContentDataAsync),
             new("Disks", "Global disk inventory: VM/CT disk configuration", () => Task.FromResult(WriteDiskData())),
             new("Partitions", "Guest filesystem partitions with used/total space from QEMU agent", () => Task.FromResult(WritePartitionData())),
             new("Snapshots", "Global snapshot inventory across all VMs and containers", AddSnapshotsDataAsync),
