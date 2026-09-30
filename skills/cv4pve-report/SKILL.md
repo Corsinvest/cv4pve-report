@@ -12,8 +12,6 @@ token) are in a file the user names: if you do not know its path, ask.
 ## Rules
 
 - Connect only with that file, passed with `@`. Do not print it or copy the token anywhere.
-- If the file already holds the command (a line `export`), do not repeat it: `@<options-file> --format Json`.
-  Repeated, it fails with `Unrecognized command or argument 'export'`.
 - Answer from the files of a report, and say which one: `generatedAt` in `metadata.json`, in UTC.
 - Reuse the latest report; export a new one when the user asks for current data or a section is missing.
 - Read `issues.json` first. It exists only when an API call failed: tell the user which sections are
