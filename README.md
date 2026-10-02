@@ -63,7 +63,7 @@ Every node, VM and container links to its own sheet or page. Health is a 0-100 s
 
 - **Three formats**: an Excel workbook with real Excel tables, an offline HTML site, or one JSON file per section, from one self-contained binary.
 - **Network diagram**: every export includes an SVG of each node: NICs, bonds, bridges, the VMs and containers behind them, network storages.
-- **Profiles**: `--fast` for a quick inventory of a large cluster, `--full` for audits: SMART, syslog, cluster log, a week of RRD history.
+- **Profiles**: `--fast` for a quick inventory of a large cluster, `--full` for audits and capacity planning: SMART, syslog, cluster log, a week of RRD history, average and peak usage of every guest and node.
 - **Your own selection**: a settings file turns each section on or off; guests by ID, range, name, node, pool or tag.
 - **Nothing silently missing**: a call that fails lands on an Issues page with the Proxmox error, and the rest of the report is still written.
 - **Diff-friendly**: every table is sorted, so two reports of an unchanged cluster differ only in live values.

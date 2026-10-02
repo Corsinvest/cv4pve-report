@@ -13,7 +13,7 @@ with thousands of guests, or to add SMART data to the standard profile.
 |---|---|---|
 | **Fast** | `export --fast` | A quick inventory of a large cluster: overviews only |
 | **Standard** | `export` | Daily or monthly reports: everything except SMART, syslog, cluster log and guest RRD |
-| **Full** | `export --full` | Audits and capacity planning: everything, RRD on a week |
+| **Full** | `export --full` | Audits and capacity planning: everything, RRD on a week, the Capacity Planning section |
 
 What each profile turns on (from `Settings.cs`):
 
@@ -43,6 +43,7 @@ What each profile turns on (from `Settings.cs`):
 | `Storage.IncludeBackups` | | ✓ | ✓ |
 | `Storage.RrdData.Enabled` | | ✓ Day | ✓ Week |
 | `Firewall.Enabled` | | ✓ | ✓ (log: last 3 days, `MaxCount` 1000) |
+| `CapacityPlanning.Enabled` | | | ✓ |
 
 The Full profile sets `Firewall.Since` to three days before the run: it limits the firewall log in the
 detail sheets. Syslog in Full has no date limit, only `MaxCount` 1000.
@@ -144,6 +145,12 @@ Defaults are those of the standard profile.
 | `Firewall.MaxCount` | `0` | Lines of each firewall log. `0` = no limit set by the report |
 | `Firewall.Since` / `Until` | `null` | Date range of the firewall logs, in UTC, both days included |
 
+### Capacity planning
+
+| Setting | Default | What it does |
+|---|---|---|
+| `CapacityPlanning.Enabled` | `false` | [Capacity Planning](/cv4pve-report/sections/capacity-planning/) section: average and peak usage of every guest and node, growth of every storage. Each table needs the `RrdData.Enabled` of its scope and uses its time frame. Reads the RRD data of guests and nodes a second time, with the `Maximum` consolidation, to get real peaks |
+
 The [Sections](/cv4pve-report/sections/cluster/) pages say which setting controls each table.
 
 ## Choosing nodes and guests
@@ -184,6 +191,7 @@ snapshots, tasks and firewall log are read for each one. The switches that cut t
   column shows only the OS type from the VM configuration.
 - `Node.Detail.Disk.IncludeSmartData: false`: no call per disk.
 - `Guest.RrdData.Enabled: false`: the RRD history is the biggest part of the file.
+- `CapacityPlanning.Enabled: false`: no second RRD call per guest and per node.
 
 Or start from `--fast` and turn on only what you need.
 

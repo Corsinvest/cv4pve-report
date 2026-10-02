@@ -64,6 +64,8 @@ internal sealed partial class XlsxReportWriter
             AddKV("Storage RRD Consolidation:", settings.Storage.RrdData.Consolidation.ToString());
         }
 
+        if (settings.CapacityPlanning.Enabled) { AddKV("Capacity Planning:", "Enabled"); }
+
         AddHeader("Contents");
 
         ws.Cell(row, 1).Value = "Sheet";

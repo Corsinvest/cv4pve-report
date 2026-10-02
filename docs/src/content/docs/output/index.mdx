@@ -23,14 +23,15 @@ be read, see [Troubleshooting](/cv4pve-report/troubleshooting/#the-issues-page).
 
 ## Sections
 
-Sections come in this order: the cluster at a glance, then the inventory, then time series, then the
-cluster deep-dives. A section whose setting is off is left out. The [Sections](/cv4pve-report/sections/cluster/)
+Sections come in this order: the sizing summary (when it is on), the cluster at a glance, then the
+inventory, then time series, then the cluster deep-dives. A section whose setting is off is left out. The [Sections](/cv4pve-report/sections/cluster/)
 pages list every table and column; [Settings](/cv4pve-report/settings/) explains each switch.
 
 | Section | What it holds | Written when |
 |---|---|---|
 | **Summary** | Date, application version, filters applied, every section with its row count and duration, linked | always |
 | **Issues** | API calls that failed while reading the cluster, see [Troubleshooting](/cv4pve-report/troubleshooting/#the-issues-page) | at least one call failed |
+| [**Capacity Planning**](/cv4pve-report/sections/capacity-planning/) | One row per guest, node and storage for sizing: allocated, average and peak CPU, memory and network, disk usage, storage growth and days to full | `CapacityPlanning.Enabled` |
 | [**Cluster**](/cv4pve-report/sections/cluster/#cluster) | Status, options, firewall options, backup jobs, replication, storages, metric servers, mappings | `Cluster.Include` |
 | [**Storages**](/cv4pve-report/sections/storage/) | Every storage with size, usage and type | always |
 | [**Nodes**](/cv4pve-report/sections/nodes/) | Every node with hardware, subscription, DNS, kernel | always |
@@ -39,9 +40,9 @@ pages list every table and column; [Settings](/cv4pve-report/settings/) explains
 | [**Network**](/cv4pve-report/sections/network-firewall/) | Node interfaces, SDN VNets and the NICs of every VM and container | always |
 | [**Storage Content**](/cv4pve-report/sections/storage/) | ISO images, templates, disk images | `Storage.IncludeContent` |
 | [**Backups**](/cv4pve-report/sections/storage/) | Backup files on every storage | `Storage.IncludeBackups` |
-| [**Disks**](/cv4pve-report/sections/guests/) | Disks of every VM and container | `Guest.IncludeDisks` |
-| [**Partitions**](/cv4pve-report/sections/guests/) | Filesystems seen inside running VMs by the guest agent | `Guest.IncludePartitions` |
-| [**Snapshots**](/cv4pve-report/sections/guests/) | Snapshots of every VM and container | `Guest.IncludeSnapshots` |
+| [**Disks**](/cv4pve-report/sections/storage/#disks) | Disks of every VM and container | `Guest.IncludeDisks` |
+| [**Partitions**](/cv4pve-report/sections/storage/#partitions) | Filesystems seen inside running VMs by the guest agent | `Guest.IncludePartitions` |
+| [**Snapshots**](/cv4pve-report/sections/storage/#snapshots) | Snapshots of every VM and container | `Guest.IncludeSnapshots` |
 | [**Firewall**](/cv4pve-report/sections/network-firewall/) | Firewall rules, aliases and IP sets of cluster, nodes, VMs and containers | `Firewall.Enabled` |
 | [**Replication**](/cv4pve-report/sections/metrics-logs/) | Replication jobs of every node: last and next sync, errors, duration | `Node.IncludeReplication` |
 | [**RRD Nodes**](/cv4pve-report/sections/metrics-logs/) | CPU, memory, swap, disk and network history of every node | `Node.RrdData.Enabled` |

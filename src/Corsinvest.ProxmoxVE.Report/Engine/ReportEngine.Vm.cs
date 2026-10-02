@@ -196,6 +196,9 @@ public partial class ReportEngine
             // totals of all disks come from the config, real usage from the agent
             var partitions = GetPartitionsUsage(d.FsInfo);
             var disks = d.Config?.DisksAll ?? [];
+            var disksSize = GetDisksSize(disks);
+
+            if (settings.CapacityPlanning.Enabled) { _guestDisks[item.VmId] = (disksSize, partitions?.Used); }
 
             items.Add(new
             {
@@ -219,7 +222,7 @@ public partial class ReportEngine
                 DiskSizeGB = item.DiskSize,
                 DiskUsageGB = item.DiskUsage,
                 DiskUsagePct = item.DiskUsagePercentage,
-                DisksSizeGB = GetDisksSize(disks),
+                DisksSizeGB = disksSize,
                 UnusedDisksSizeGB = GetUnusedDisksSize(disks),
                 PartitionsTotalGB = partitions?.Total,
                 PartitionsUsedGB = partitions?.Used,

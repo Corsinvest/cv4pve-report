@@ -31,6 +31,7 @@ public partial class ReportEngine
                                    .GetAsync(settings.Node.RrdData.TimeFrame, settings.Node.RrdData.Consolidation)
                                    .ToSafeEnum(_issues, "RRD Nodes", LinkKey.Node(item.Node));
             return (item,
+                    data,
                     rows: data.Select(a => new
                     {
                         item.Node,
@@ -56,6 +57,8 @@ public partial class ReportEngine
         });
 
         var rows = results.OrderBy(r => r.item.Id, NaturalStringComparer.Instance).SelectMany(r => r.rows).ToList();
+
+        if (settings.CapacityPlanning.Enabled) { _rrdNodes.AddRange(results.Select(r => (r.item, r.data))); }
 
         using var sw = _writer.AddSection("RRD Nodes");
         sw.AddTable(null,

@@ -62,7 +62,7 @@ public class LinkKeyTests
             "Cluster", "Cluster Access", "Cluster SDN", "Cluster HA", "Cluster Pools",
             "Cluster Log", "Cluster Tasks", "Storages", "Storage Content", "Backups",
             "Disks", "Partitions", "Snapshots", "Network", "Firewall", "Replication",
-            "RRD Nodes", "RRD Storage", "RRD Guests", "Syslog", "Issues",
+            "RRD Nodes", "RRD Storage", "RRD Guests", "Capacity Planning", "Syslog", "Issues",
         };
 
         var keys = allSections.Select(LinkKey.ForSection).ToList();

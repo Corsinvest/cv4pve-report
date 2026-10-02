@@ -13,6 +13,7 @@ Report_20260928_101500.zip
   metadata.json          report-wide info, always present
   issues.json            only when an API call failed
   network-diagram.svg
+  capacity-planning.json
   cluster.json
   storages.json
   nodes.json             overview of all nodes
@@ -57,8 +58,8 @@ the same, the second gets `_2`. The paths of a resource do not change from one r
   ]
   ```
 - **A section with several blocks** is an object: detail files (`vms/100.json`, `nodes/pve01.json`),
-  `cluster.json`, `network.json`, `firewall.json`, `cluster-access.json`, `cluster-sdn.json` and
-  `cluster-ha.json`. A key/value block that comes first is under `info`; every other block is under its
+  `cluster.json`, `network.json`, `firewall.json`, `capacity-planning.json`, `cluster-access.json`,
+  `cluster-sdn.json` and `cluster-ha.json`. A key/value block that comes first is under `info`; every other block is under its
   title in camelCase (`SSL Certificates` → `sslCertificates`); a table without a title is under `rows`.
   ```json
   {
@@ -107,7 +108,8 @@ The `info` block of a detail file takes its keys from the labels on the page (`M
     "guests": "@all",
     "nodeRrd":    { "timeFrame": "Day", "consolidation": "Average" },
     "guestRrd":   { "timeFrame": "Day", "consolidation": "Average" },
-    "storageRrd": { "timeFrame": "Day", "consolidation": "Average" }
+    "storageRrd": { "timeFrame": "Day", "consolidation": "Average" },
+    "capacityPlanning": false
   },
   "sections": [
     { "name": "Cluster", "count": 1, "durationSeconds": 0.18 },
@@ -117,8 +119,8 @@ The `info` block of a detail file takes its keys from the labels on the page (`M
 ```
 
 `schemaVersion` changes when the structure of the files changes, so a script can check it before reading.
-`generatedAt` is UTC. `filters` holds the node and guest filters and, for each RRD section that is on, its
-time frame and consolidation. `sections` is the same list as the Summary: rows and seconds per section.
+`generatedAt` is UTC. `filters` holds the node and guest filters, for each RRD section that is on its
+time frame and consolidation, and whether Capacity Planning is on. `sections` is the same list as the Summary: rows and seconds per section.
 
 ## issues.json
 

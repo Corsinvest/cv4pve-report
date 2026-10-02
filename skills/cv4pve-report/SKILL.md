@@ -30,7 +30,7 @@ current folder, and the last line is `Report generated: <path>`.
 ```bash
 cv4pve-report @<options-file> export --format Json          # standard profile
 cv4pve-report @<options-file> export --format Json --fast   # overview tables only, for a large cluster
-cv4pve-report @<options-file> export --format Json --full   # adds SMART, syslog, cluster log, a week of RRD
+cv4pve-report @<options-file> export --format Json --full   # adds SMART, syslog, cluster log, a week of RRD, capacity planning
 unzip -o <zip> -d <dir>                                     # PowerShell: Expand-Archive <zip> <dir> -Force
 ```
 

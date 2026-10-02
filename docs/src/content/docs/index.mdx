@@ -45,7 +45,7 @@ export const features = [
 cv4pve-report --host=pve01 --api-token='report@pve!report=…' export --format Html
 ```
 
-A few rows of three pages of the report: node, VM and container names link to their own pages:
+A few rows of five pages of the report: node, VM and container names link to their own pages:
 
 <Tabs>
   <TabItem label="Cluster">
@@ -124,10 +124,69 @@ A few rows of three pages of the report: node, VM and container names link to th
 />
 
   </TabItem>
+  <TabItem label="Partitions">
+
+<TerminalTable
+  command="partitions.html"
+  columns={[
+    { label: 'Node', style: 'muted' },
+    { label: 'Vm Id', style: 'code' },
+    { label: 'Vm Name' },
+    { label: 'Vm Status' },
+    { label: 'Mount Point' },
+    { label: 'Type', style: 'muted' },
+    { label: 'Total GB' },
+    { label: 'Used GB' },
+    { label: 'Used %' },
+  ]}
+  rows={[
+    ['pve01', '1006', 'dc01', 'running', 'C:\\', 'NTFS', '63.33', '37.32', '58.93%'],
+    ['pve02', '1012', 'mailstore', 'running', 'C:\\', 'NTFS', '54.35', '23.22', '42.73%'],
+    ['pve02', '1012', 'mailstore', 'running', 'F:\\', 'NTFS', '99.98', '85.30', '85.32%'],
+    ['pve01', '1020', 'erp01', 'running', 'C:\\', 'NTFS', '160.95', '92.46', '57.45%'],
+    ['pve01', '1104', 'gitlab', 'running', '/', 'ext4', '246.33', '83.67', '33.96%'],
+  ]}
+/>
+
+  </TabItem>
+  <TabItem label="Capacity Planning">
+
+<TerminalTable
+  command="capacity-planning.html › Guests"
+  columns={[
+    { label: 'Node', style: 'muted' },
+    { label: 'Vm Id', style: 'code' },
+    { label: 'Name' },
+    { label: 'Cpu Size' },
+    { label: 'Cpu Avg %' },
+    { label: 'Cpu Peak %', style: 'accent' },
+    { label: 'Cpu Peak Cores' },
+    { label: 'Memory Size GB' },
+    { label: 'Memory Peak GB' },
+    { label: 'Memory Peak Usage %' },
+    { label: 'Disks Used GB' },
+  ]}
+  rows={[
+    ['pve01', '1000', 'opnsense-01', '4', '2.23%', '11.17%', '0.45', '8.00', '2.98', '37.25%', ''],
+    ['pve01', '1006', 'dc01', '4', '3.94%', '39.85%', '1.59', '8.00', '6.41', '80.17%', '37.32'],
+    ['pve02', '1012', 'mailstore', '2', '3.80%', '52.52%', '1.05', '4.00', '3.48', '86.99%', '108.53'],
+    ['pve01', '1020', 'erp01', '4', '2.20%', '91.92%', '3.68', '6.00', '5.40', '90.04%', '92.46'],
+    ['pve01', '1104', 'gitlab', '4', '7.64%', '54.48%', '2.18', '10.00', '9.58', '95.79%', '83.67'],
+  ]}
+/>
+
+  </TabItem>
 </Tabs>
 
 Some of the columns only. Health is the [0-100 score](/cv4pve-report/output/#health-score) of the resource; a
 stopped VM has none. Without a running guest agent, Os Version is the OS type set in the VM configuration.
+
+Two pages the Proxmox VE web interface has no equivalent for.
+[Partitions](/cv4pve-report/sections/storage/#partitions) is the space used inside each VM, read from
+the guest agent: Proxmox VE itself reports no disk usage for VMs.
+[Capacity Planning](/cv4pve-report/sections/capacity-planning/) (on with `--full`) is the
+average and the peak of each guest and node over a week, with the growth of every storage: `erp01`
+above averages 2 % of its CPUs and peaks at 92 %.
 :::tip[Tested at scale]
 A production cluster of **25 nodes and about 2700 VMs** gets its full report in **about 7 minutes**
 with `MaxParallelRequests: 10`, and in [12.7 minutes](https://github.com/Corsinvest/cv4pve-report/issues/10#issuecomment-4422977335) with the default of 5, measured by

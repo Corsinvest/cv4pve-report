@@ -40,6 +40,10 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
     private IReadOnlyList<NetworkDiagramBuilder.SdnVnetRow> _sdnRows = [];
     private readonly List<(ClusterResource Vm, IEnumerable<VmDisk> Disks)> _pendingDiskRows = [];
     private readonly List<(ClusterResource Vm, IEnumerable<VmQemuAgentGetFsInfo.ResultInfo> Partitions)> _pendingPartitionRows = [];
+    private readonly List<(ClusterResource Item, IReadOnlyList<NodeRrdData> Data)> _rrdNodes = [];
+    private readonly List<(ClusterResource Item, IReadOnlyList<NodeStorageRrdData> Data)> _rrdStorages = [];
+    private readonly List<(ClusterResource Item, IReadOnlyList<VmRrdData> Data)> _rrdGuests = [];
+    private readonly Dictionary<long, (long? Size, ulong? Used)> _guestDisks = [];
     private HashSet<long> _vmIds = [];
     private readonly IssueTracker _issues = new();
     private IReportWriter _writer = null!;
@@ -188,6 +192,7 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
             new("RRD Nodes", "Historical performance data (CPU, memory, swap, disk, network) for all nodes", AddRrdNodeDataAsync),
             new("RRD Storage", "Historical performance data (size, used, usage%) for all storages", AddRrdStorageDataAsync),
             new("RRD Guests", "Historical performance data (CPU, memory, disk, network) for all VMs and containers", AddRrdGuestDataAsync),
+            new(CapacityPlanningSection, "Sizing summary, one row per guest, node and storage: allocated, average and peak CPU, memory and network, disk usage, storage growth and days to full", AddCapacityPlanningDataAsync),
             new("Syslog", "Systemd journal per node parsed into date, time, host, service, pid and message", AddSyslogDataAsync),
 
             new("Cluster Access", "Users, API tokens, two-factor authentication, groups, roles, ACL, domains", AddClusterAccessDataAsync),
@@ -205,6 +210,16 @@ public partial class ReportEngine(PveClient client, Settings settings, ReportInf
             ReportGlobal(s.Name);
             sw.Restart();
             stats.Add(new(s.Name, s.Description, await s.Action(), sw.Elapsed));
+        }
+
+        // Built on the RRD sections, so generated after them, but listed first as the sizing summary.
+        // When it is off it stays with the other empty rows instead of opening the list.
+        var capacityIndex = stats.FindIndex(a => a.Name == CapacityPlanningSection);
+        var capacityStat = stats[capacityIndex];
+        if (capacityStat.Count > 0)
+        {
+            stats.RemoveAt(capacityIndex);
+            stats.Insert(0, capacityStat);
         }
 
         // Generated last so it sees every section's failures.

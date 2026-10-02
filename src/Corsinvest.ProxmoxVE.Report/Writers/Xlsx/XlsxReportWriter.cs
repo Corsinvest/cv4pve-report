@@ -102,6 +102,7 @@ internal sealed partial class XlsxReportWriter : IReportWriter
 
         PlaceByPrefix("Summary");
         PlaceByPrefix("Issues");
+        PlaceByPrefix("Capacity Planning");
         PlaceExact("Cluster");
         PlaceByPrefix("Storages");
         PlaceByPrefix("Nodes");

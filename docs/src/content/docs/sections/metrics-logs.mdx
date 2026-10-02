@@ -6,7 +6,9 @@ description: The RRD Nodes, RRD Storage, RRD Guests, Syslog and Replication sect
 import ReadingTables from '../../../components/ReadingTables.astro';
 
 Use this part when a snapshot is not enough: the RRD sections give the load history behind the
-current numbers (CPU, memory, I/O wait, pressure stall, network, storage growth), Syslog gives the
+current numbers (CPU, memory, I/O wait, pressure stall, network, storage growth),
+[Capacity Planning](/cv4pve-report/sections/capacity-planning/) sums that history up in one row per
+guest, node and storage (average, peak, growth), Syslog gives the
 journal of every node in one sortable table, and Replication shows which storage replication jobs
 are late or failing.
 

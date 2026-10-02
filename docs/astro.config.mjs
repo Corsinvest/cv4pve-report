@@ -49,6 +49,7 @@ export default defineConfig({
           label: 'Sections',
           collapsed: true,
           items: [
+            'sections/capacity-planning',
             'sections/cluster',
             'sections/nodes',
             'sections/guests',

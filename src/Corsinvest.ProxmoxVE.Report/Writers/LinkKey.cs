@@ -42,6 +42,7 @@ internal static class LinkKey
     public const string RrdNodes = "section:rrd-nodes";
     public const string RrdStorage = "section:rrd-storage";
     public const string RrdGuests = "section:rrd-guests";
+    public const string CapacityPlanning = "section:capacity-planning";
     public const string Syslog = "section:syslog";
     public const string Issues = "section:issues";
 
@@ -71,6 +72,7 @@ internal static class LinkKey
             "RRD Nodes" => RrdNodes,
             "RRD Storage" => RrdStorage,
             "RRD Guests" => RrdGuests,
+            "Capacity Planning" => CapacityPlanning,
             "Syslog" => Syslog,
             "Issues" => Issues,
             _ => null,

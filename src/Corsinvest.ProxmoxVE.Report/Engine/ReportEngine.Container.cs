@@ -128,6 +128,10 @@ public partial class ReportEngine
             _pendingNetworkRows.AddRange(d.Networks);
 
             var disks = d.Config?.DisksAll ?? [];
+            var disksSize = GetDisksSize(disks);
+
+            // Stopped containers report no usage
+            if (settings.CapacityPlanning.Enabled) { _guestDisks[item.VmId] = (disksSize, item.DiskUsage > 0 ? item.DiskUsage : (ulong?)null); }
 
             items.Add(new
             {
@@ -151,7 +155,7 @@ public partial class ReportEngine
                 DiskSizeGB = item.DiskSize,
                 DiskUsageGB = item.DiskUsage,
                 DiskUsagePct = item.DiskUsagePercentage,
-                DisksSizeGB = GetDisksSize(disks),
+                DisksSizeGB = disksSize,
                 UnusedDisksSizeGB = GetUnusedDisksSize(disks),
                 Uptime = FormatHelper.UptimeInfo(item.Uptime),
                 d.Config?.Hostname,
