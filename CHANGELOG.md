@@ -2,6 +2,22 @@
 
 ---
 
+## [2.9.0] - 2026-10-02
+
+### What's new
+
+- **Capacity Planning section.** One row per guest, node and storage with the numbers a sizing starts from: what is allocated, what is used on average, what is used at the peak, and how fast each storage fills up. No metric server or Grafana needed: it is built on the RRD data the nodes already keep ([#85](https://github.com/Corsinvest/cv4pve-report/issues/85)).
+  - **Guests**: vCPUs, CPU average and peak (% and cores), memory size, average and peak, disks size and used, network average and peak.
+  - **Nodes**: the same usage columns, plus the vCPUs and the memory assigned to the running guests with their ratio to the node (above 1 the node is overcommitted).
+  - **Storage**: size, used, free, growth per day and days to full.
+  - Averages come from the RRD samples read with the `Average` consolidation, peaks from a second read with `Maximum`: the highest of the averaged samples is not the peak. One more API call per guest and per node, only when the section is on.
+  - Turned on by the new setting `CapacityPlanning.Enabled`: off by default, on with `--full`. Each table needs the `RrdData.Enabled` of its scope (guests, nodes, storage) and uses its time frame.
+  - It is a summary, so it comes first: after Summary and Issues in Excel and in the Contents table, under Network Diagram in the HTML sidebar. JSON: `capacity-planning.json`, and `filters.capacityPlanning` in `metadata.json`.
+
+### Changed
+
+- Documentation: new [Capacity Planning](https://corsinvest.github.io/cv4pve-report/sections/capacity-planning/) page; Disks, Partitions and Snapshots moved from the VMs & containers page to the [Storage](https://corsinvest.github.io/cv4pve-report/sections/storage/) page, as in the sidebar of the HTML report.
+
 ## [2.8.1] - 2026-09-30
 
 ### Changed
