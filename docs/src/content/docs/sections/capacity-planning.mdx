@@ -1,0 +1,172 @@
+---
+title: Capacity Planning
+description: "The Capacity Planning section: average and peak CPU, memory and network of every guest and node, real disk usage and storage growth, column by column, in Excel, HTML and JSON."
+---
+
+import ReadingTables from '../../../components/ReadingTables.astro';
+
+Excel sheet `Capacity Planning` · HTML `capacity-planning.html` · JSON `capacity-planning.json` ·
+enabled by `CapacityPlanning.Enabled` (off by default; the Full profile turns it on).
+
+Capacity Planning answers one question: **how much does the cluster really need?** For every guest,
+node and storage it puts on one row:
+
+- how much is **allocated** (vCPUs, memory, disks);
+- how much is used **on average** over the time frame;
+- how much is used **at the peak**;
+- how fast each storage **fills up**, and when it would be full.
+
+It is a summary page, so it comes first: right after Summary and Issues in Excel and in the Contents
+table, under Network Diagram at the top of the HTML sidebar.
+
+<ReadingTables />
+
+## Why it is different from the other sections
+
+Every other section is a photograph: what exists and how it is configured at the moment of the export.
+Capacity Planning is the only one that says how the cluster **behaved**. It reads the history of the
+time frame (a week in the Full profile) and gives back one number per resource.
+
+Allocated and used are rarely the same. A VM with 8 vCPUs that never goes above 1 is oversized; a VM
+that averages 5 % and touches 95 % every night is not idle. The inventory shows the first number of
+each pair, this section shows the second, side by side.
+
+Proxmox VE has the same data, but as graphs, one object at a time: to know the peak of fifty VMs you
+open fifty Summary panels and read fifty charts. To get it as a table you would normally add a metric
+server (InfluxDB or Prometheus) and Grafana, and wait for them to collect history. Here it comes with
+the inventory, from the RRD data every node already keeps: nothing to install, and the history is
+already there. The [RRD sections](/cv4pve-report/sections/metrics-logs/) hold that same history raw,
+one row per sample: good for a chart, not for a decision.
+
+## Who uses it
+
+| Who | Question | Where to look |
+|---|---|---|
+| Administrator planning a hardware refresh | How many cores and how much memory do the new nodes really need? | Nodes: Cpu Peak Cores, Memory Peak GB |
+| Consultant sizing a migration, for example from VMware | What does each VM need on the new platform? | Guests: Cpu Peak Cores, Memory Peak GB, Disks Used GB |
+| Anyone consolidating | Which guests have far more than they use, and how much room is left on each node? | Guests: Cpu Size against Cpu Peak Cores. Nodes: Cpu Assigned against Cpu Peak Cores |
+| Whoever owns the storage | When does it fill up? | Storage: Growth Per Day GB, Days To Full |
+| Provider selling resources on shared nodes | How overcommitted is each node? | Nodes: Cpu Assigned Ratio, Memory Assigned Ratio |
+| IT manager | Is the cluster still the right size, month after month? | The whole section, one report per month |
+
+## Average and peak
+
+The two answer different questions, and a sizing needs both:
+
+- **Average** is the typical load. It tells how many guests fit on a node.
+- **Peak** is the worst moment. It tells how much a guest or a node must have not to saturate.
+
+A guest with a 10 % average and a 95 % peak looks idle and is not. Size on the peak, check the density
+on the average.
+
+Averages are computed from RRD samples read with the `Average` consolidation, peaks from samples read
+with `Maximum`. An `Average` sample is the mean of its interval, and the longer the time frame the longer
+the interval: a five minute burst almost disappears in it. The highest of the averages is therefore not
+the peak, which is why the section reads the `Maximum` series too.
+
+:::note[One more API call per guest and per node]
+The RRD sections read each series once, with the consolidation set in `RrdData.Consolidation`.
+Capacity Planning reads guests and nodes a second time with the other consolidation. Storages need no
+second call.
+:::
+
+## What it needs
+
+Each table is built on the RRD data of its own scope, with the time frame set there:
+
+| Table | Needs | Time frame |
+|---|---|---|
+| Guests | `Guest.RrdData.Enabled` (off in the Standard profile) | `Guest.RrdData.TimeFrame` |
+| Nodes | `Node.RrdData.Enabled` | `Node.RrdData.TimeFrame` |
+| Storage | `Storage.RrdData.Enabled` | `Storage.RrdData.TimeFrame` |
+
+A table whose RRD setting is off is empty; with all three off the section is not written. Pick `Week`
+or `Month` for a sizing: `Day` only tells what happened in the last 24 hours. The Full profile uses
+`Week`.
+
+`capacity-planning.json` is an object with the three tables under `guests`, `nodes` and `storage`.
+
+## Guests
+
+One row per VM and container selected by `Guest.Ids`, sorted by guest. **Vm Id** links to the guest
+detail page, **Node** to the node detail page.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Node | `node` | Node hosting the guest. |
+| Type | `type` | `Qemu` or `Lxc`. |
+| Vm Id | `vmId` | Guest ID. |
+| Name | `name` | Guest name. |
+| Status | `status` | Status when the report ran. |
+| Cpu Size | `cpuSize` | Allocated vCPUs. |
+| Cpu Avg % | `cpuAvg` | Average CPU usage, as a share of the allocated vCPUs. |
+| Cpu Peak % | `cpuPeak` | Peak CPU usage. |
+| Cpu Avg Cores | `cpuAvgCores` | Average usage in vCPUs: Cpu Avg % × Cpu Size. |
+| Cpu Peak Cores | `cpuPeakCores` | Peak usage in vCPUs: what the guest really needs at its worst moment. |
+| Memory Size GB | `memorySize` | Configured memory. |
+| Memory Avg GB | `memoryAvg` | Average used memory. |
+| Memory Peak GB | `memoryPeak` | Peak used memory. |
+| Memory Peak Usage % | `memoryPeakUsage` | Memory Peak / Memory Size. |
+| Disks Size GB | `disksSize` | Configured disks, as in the VMs and Containers tables. |
+| Disks Used GB | `disksUsed` | Space used inside the guest. VMs: guest filesystems from the agent (Partitions Used GB of the VMs table), empty without the agent. Containers: root filesystem only, mount points not included; empty when stopped. |
+| Net In Avg MB | `netInAvg` | Network received per second, average. |
+| Net In Peak MB | `netInPeak` | Network received per second, peak. |
+| Net Out Avg MB | `netOutAvg` | Network sent per second, average. |
+| Net Out Peak MB | `netOutPeak` | Network sent per second, peak. |
+| Samples | `samples` | RRD samples with data behind the averages. Few samples (a guest newer than the time frame) mean less reliable numbers. |
+
+The time a guest was stopped counts as zero usage: a guest that ran half of the time frame shows half
+of its running average. The peak is not affected. Peaks are empty when the second RRD call failed (it
+is then listed on the Issues page).
+
+## Nodes
+
+One row per node that passes `Node.Names` and is not in unknown state. **Node** links to the node detail page.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Node | `node` | Node name. |
+| Status | `status` | Status when the report ran. |
+| Cpu Size | `cpuSize` | Logical CPUs. |
+| Cpu Avg % | `cpuAvg` | Average CPU usage of the node. |
+| Cpu Peak % | `cpuPeak` | Peak CPU usage of the node. |
+| Cpu Avg Cores | `cpuAvgCores` | Average usage in logical CPUs. |
+| Cpu Peak Cores | `cpuPeakCores` | Peak usage in logical CPUs. |
+| Cpu Assigned | `cpuAssigned` | vCPUs of the guests running on the node when the report ran. |
+| Cpu Assigned Ratio | `cpuAssignedRatio` | Cpu Assigned / Cpu Size. Above 1 the node is overcommitted: more vCPUs promised than logical CPUs. |
+| Memory Size GB | `memorySize` | Installed memory. |
+| Memory Avg GB | `memoryAvg` | Average used memory. It is the memory of the whole host, so it can include what the host itself uses (for example the ZFS cache) on top of the guests. |
+| Memory Peak GB | `memoryPeak` | Peak used memory. |
+| Memory Peak Usage % | `memoryPeakUsage` | Memory Peak / Memory Size. |
+| Memory Assigned GB | `memoryAssigned` | Configured memory of the guests running on the node when the report ran. |
+| Memory Assigned Ratio | `memoryAssignedRatio` | Memory Assigned / Memory Size. Above 1 more memory is promised to the guests than the node has. |
+| Net In Avg MB | `netInAvg` | Network received per second, average. |
+| Net In Peak MB | `netInPeak` | Network received per second, peak. |
+| Net Out Avg MB | `netOutAvg` | Network sent per second, average. |
+| Net Out Peak MB | `netOutPeak` | Network sent per second, peak. |
+| Samples | `samples` | RRD samples with data behind the averages. |
+
+Compare **Cpu Assigned** with **Cpu Peak Cores**, and **Memory Assigned GB** with **Memory Peak GB**:
+the distance between what is promised and what is used is the room for consolidation.
+
+## Storage
+
+One row per storage, as in the [RRD Storage](/cv4pve-report/sections/metrics-logs/#rrd-storage) section. **Node** links to the node detail page; **Storage**
+links to the Storages page.
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Node | `node` | Node name, or `(shared)`. |
+| Storage | `storage` | Storage ID. |
+| Size GB | `size` | Total size when the report ran. |
+| Used GB | `used` | Used space when the report ran. |
+| Free GB | `free` | Size minus used. |
+| Usage % | `usage` | Used / size. |
+| Growth Per Day GB | `growthPerDay` | Trend of the used space over the time frame, per day. Negative when space was freed. Empty with fewer than two samples. |
+| Days To Full | `daysToFull` | Free space / growth per day. Empty when the storage is not growing. |
+
+The growth is the slope of a straight line fitted to all the samples of the time frame, so a single
+backup or prune at either end does not decide it. Days To Full projects that line forward: it is an
+estimate, steadier with a longer time frame, and a very large number only means the storage is
+practically flat.
+

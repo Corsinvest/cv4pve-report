@@ -1,17 +1,19 @@
 ---
 title: Storage
-description: The Storages, Storage Content and Backups sections, column by column, in Excel, HTML and JSON.
+description: The Storages, Storage Content, Backups, Disks, Partitions and Snapshots sections, column by column, in Excel, HTML and JSON.
 ---
 
 import ReadingTables from '../../../components/ReadingTables.astro';
 
 Use this part to see how full each storage is, what is sitting on it (ISO images, templates, disk
 images) and which backups exist per guest, with their size, protection, encryption and verification
-state.
+state. The second half is the disk space of the guests: every configured disk, the space used inside
+each VM and the snapshots nobody cleaned up. These six sections are the Storage group of the sidebar in
+the HTML report.
 
 <ReadingTables />
 
-All three sections work on the same storage list: storages from `/cluster/resources`, where a
+Storages, Storage Content and Backups work on the same storage list: storages from `/cluster/resources`, where a
 shared storage appears once (its Node column shows `(shared)`) and a local storage appears once per
 node. The list is sorted by node, then by storage name. It is not filtered by `Node.Names`.
 
@@ -107,3 +109,97 @@ A backup with a **Vm Id** but an empty **Guest Name** belongs to a guest ID that
 cluster's resource list any more: a candidate for cleanup, unless another cluster writes to the same
 backup storage.
 :::
+
+:::note[Disks, Partitions and Snapshots follow the guest filter]
+The three sections below cover only the guests selected by `Guest.Ids` (default `@all`), see
+[Choosing nodes and guests](/cv4pve-report/settings/#choosing-nodes-and-guests). **Node** links to the
+node page, **Vm Id** to the guest page.
+:::
+
+## Disks
+
+Excel sheet `Disks` · HTML `disks.html` · JSON `disks.json` · enabled by
+[`Guest.IncludeDisks`](/cv4pve-report/settings/).
+
+All disk entries of every VM and container whose config could be read, one row per entry. VMs include CD-ROM and
+cloud-init drives. Rows are sorted by node, VM ID and entry id, with numbers compared as numbers (`scsi2` before `scsi10`). The storage columns are looked up in cluster resources
+by node and storage name. The section is left out when there are no rows.
+
+### Disks table
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Node | `node` | Node (link) |
+| Vm Id | `vmId` | Guest ID (link) |
+| Vm Name | `vmName` | Guest name |
+| Vm Type | `vmType` | `qemu` or `lxc` |
+| Vm Status | `vmStatus` | Guest status |
+| Kind | `kind` | `Disk` (data disks, `rootfs`, `mp*`, `efidisk*`, `tpmstate*`, `unusedN`), `Cdrom` (`media=cdrom`) or `CloudInit` (cloud-init drive) |
+| Id | `id` | Config key (`scsi0`, `virtio1`, `rootfs`, `mp0`, `unused0`, …) |
+| Storage | `storage` | Storage name (links to the Storages section) |
+| Storage Type | `storageType` | Storage plugin type (`zfspool`, `lvmthin`, `rbd`, …) |
+| Storage Shared | `storageShared` | Flag: the storage is shared |
+| File Name | `fileName` | Volume or file name |
+| Size GB | `size` | Size parsed from `size=` (bytes in JSON) |
+| Storage Usage % | `storageUsage` | Disk size divided by the storage's total size. Empty when the storage size is unknown |
+| Cache | `cache` | Cache mode |
+| Backup | `backup` | Flag: included in backups. VM disks unless `backup=0`; container `rootfs` always, `mp*` only with `backup=1`; CD-ROM and cloud-init drives never |
+| Is Unused | `isUnused` | Flag: detached (`unusedN`) but still on storage |
+| Device | `device` | Device |
+| Mount Point | `mountPoint` | Container mount point path |
+| Mount Source Path | `mountSourcePath` | Container bind-mount source path |
+| Passthrough | `passthrough` | Flag: passthrough device |
+| Prealloc | `prealloc` | Preallocation mode |
+| Format | `format` | `raw`, `qcow2`, `vmdk`, … |
+
+## Partitions
+
+Excel sheet `Partitions` · HTML `partitions.html` · JSON `partitions.json` · enabled by
+[`Guest.IncludePartitions`](/cv4pve-report/settings/) together with
+[`Guest.IncludeQemuAgent`](/cv4pve-report/settings/).
+
+Filesystems reported by the QEMU guest agent (`get-fsinfo`), one row per filesystem. Only VMs whose agent was running
+during the VMs pass are included; containers never appear here. The section is left out when there are no rows.
+
+### Partitions table
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Node | `node` | Node (link) |
+| Vm Id | `vmId` | VM ID (link) |
+| Vm Name | `vmName` | VM name |
+| Vm Type | `vmType` | Guest type (always `Qemu`) |
+| Vm Status | `vmStatus` | VM status |
+| Mount Point | `mountPoint` | Mount point inside the guest (`/`, `C:\`, …) |
+| Type | `type` | Filesystem type |
+| Total GB | `total` | Total size (bytes in JSON) |
+| Used GB | `usedBytes` | Used space (bytes in JSON: the size takes the `Bytes` suffix because the percentage has the plain key, see [Values](/cv4pve-report/output/json/#values)) |
+| Used % | `used` | Used divided by total. Empty when total is 0 |
+| Error | `error` | Error reported by the agent for this filesystem |
+| Name | `name` | Device name inside the guest |
+| Disks | `disks` | One line per backing disk: `dev (bus-type:bus:target:unit) [domain:bus:slot.function]`, PCI address in hex |
+
+## Snapshots
+
+Excel sheet `Snapshots` · HTML `snapshots.html` · JSON `snapshots.json` · enabled by
+[`Guest.IncludeSnapshots`](/cv4pve-report/settings/).
+
+Snapshots of every selected VM and container whose status is not `unknown`, read from
+`/nodes/{node}/qemu|lxc/{vmid}/snapshot`. Rows are sorted by guest, then by snapshot time. If a guest's snapshot list
+cannot be read, a warning goes to the Issues page and the guest is skipped. The `current` entry that Proxmox VE
+returns for the running state is not a snapshot and is left out.
+
+### Snapshots table
+
+| Excel / HTML | JSON | Content |
+|---|---|---|
+| Node | `node` | Node (link) |
+| Vm Id | `vmId` | Guest ID (link) |
+| Vm Name | `vmName` | Guest name |
+| Vm Type | `vmType` | `Qemu` or `Lxc` |
+| Snapshot | `snapshot` | Snapshot name |
+| Parent | `parent` | Parent snapshot |
+| Date | `date` | Snapshot time (`snaptime`) |
+| Include Ram | `includeRam` | Flag: the snapshot includes RAM state (`vmstate`) |
+| Size GB | `size` | Snapshot size (bytes in JSON). Filled only when the host application provides a size calculator: the command-line tool does not, so the column stays empty |
+| Description | `description` | Snapshot description |

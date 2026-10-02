@@ -41,6 +41,23 @@ public class SettingsTests
     }
 
     [Fact]
+    public void CapacityPlanning_OnlyInFullProfile()
+    {
+        Assert.False(Settings.Fast().CapacityPlanning.Enabled);
+        Assert.False(Settings.Standard().CapacityPlanning.Enabled);
+        Assert.True(Settings.Full().CapacityPlanning.Enabled);
+    }
+
+    // Settings files written before the option existed
+    [Fact]
+    public void Deserialize_WithoutCapacityPlanning_IsDisabled()
+    {
+        var settings = JsonSerializer.Deserialize<Settings>("""{ "Node": { "Names": "@all" } }""", Settings.JsonOptions)!;
+
+        Assert.False(settings.CapacityPlanning.Enabled);
+    }
+
+    [Fact]
     public void SyslogLimit_IsKeptWhenUntilOnly()
     {
         var syslog = new SettingsSyslog { Until = new DateOnly(2026, 1, 10) };

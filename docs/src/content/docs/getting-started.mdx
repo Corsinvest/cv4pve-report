@@ -40,7 +40,7 @@ Options of `export`:
 | `--format` | `Xlsx` (default), `Html` or `Json`, see [Output](/cv4pve-report/output/). |
 | `--output`, `-o` | Path of the `.zip` to write. Default: `Report_YYYYMMDD_HHmmss.zip` in the current folder. If the path does not end in `.zip`, `.zip` is appended. An existing file is overwritten. |
 | `--fast` | Fast profile, overview tables only: no detail sheets, snapshots, disks, partitions, guest agent data, RRD, storage content, backups or firewall. For a quick look at a large cluster. |
-| `--full` | Full profile: adds SMART data, syslog, cluster log and guest RRD, reads a week of RRD history instead of a day, and limits the firewall log to the last 3 days. |
+| `--full` | Full profile: adds SMART data, syslog, cluster log, guest RRD and the Capacity Planning section, reads a week of RRD history instead of a day, and limits the firewall log to the last 3 days. |
 
 Without `--fast` or `--full` the **standard** profile is used. The [profiles](/cv4pve-report/settings/#profiles)
 page lists exactly what each one turns on.

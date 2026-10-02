@@ -20,9 +20,9 @@ permissions: grant the role to the token too, or cv4pve-report sees an empty clu
 
 | Privilege | On | Used for | Without it |
 |---|---|---|---|
-| `Sys.Audit` | `/` | Cluster, nodes, node detail, RRD Nodes, Cluster Access, Cluster HA, datacenter and node firewall rules, all tasks | Required: without it the report stops at the cluster status |
-| `VM.Audit` | `/vms` | VMs, containers, snapshots, disks, RRD Guests, replication | Guests are missing from the report |
-| `Datastore.Audit` | `/storage` | Storages, RRD Storage, ISO images and templates | Storages are missing from the report |
+| `Sys.Audit` | `/` | Cluster, nodes, node detail, RRD Nodes, Capacity Planning (nodes), Cluster Access, Cluster HA, datacenter and node firewall rules, all tasks | Required: without it the report stops at the cluster status |
+| `VM.Audit` | `/vms` | VMs, containers, snapshots, disks, RRD Guests, Capacity Planning (guests), replication | Guests are missing from the report |
+| `Datastore.Audit` | `/storage` | Storages, RRD Storage, Capacity Planning (storage), ISO images and templates | Storages are missing from the report |
 | `Pool.Audit` | `/pool` | Cluster Pools, `@pool-…` in `Guest.Ids` | Pools are missing |
 | `SDN.Audit` | `/sdn` | Cluster SDN, SDN Vnets in Network, VNets in the network diagram | SDN is missing |
 | `Mapping.Audit` | `/mapping` | Mapping Dir, Mapping PCI and Mapping USB in the Cluster section | Mappings are missing |

@@ -47,6 +47,7 @@ internal sealed partial class JsonReportWriter
                                 consolidation = _settings.Storage.RrdData.Consolidation.ToString(),
                             }
                             : null,
+                capacityPlanning = _settings.CapacityPlanning.Enabled,
             },
             sections = _stats.Select(s => new
             {

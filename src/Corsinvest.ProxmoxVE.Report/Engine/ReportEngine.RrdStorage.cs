@@ -25,6 +25,7 @@ public partial class ReportEngine
                                    .GetAsync(settings.Storage.RrdData.TimeFrame, settings.Storage.RrdData.Consolidation)
                                    .ToSafeEnum(_issues, "RRD Storage", LinkKey.Node(item.Node));
             return (item,
+                    data,
                     rows: data.Select(a => new
                     {
                         Node = StorageNode(item),
@@ -37,6 +38,8 @@ public partial class ReportEngine
         });
 
         var rows = results.SelectMany(r => r.rows).ToList();
+
+        if (settings.CapacityPlanning.Enabled) { _rrdStorages.AddRange(results.Select(r => (r.item, r.data))); }
 
         using var sw = _writer.AddSection("RRD Storage");
         sw.AddTable(null,

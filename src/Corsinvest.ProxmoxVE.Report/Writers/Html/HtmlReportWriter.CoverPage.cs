@@ -88,5 +88,7 @@ internal sealed partial class HtmlReportWriter
             yield return new("Storage RRD TimeFrame", settings.Storage.RrdData.TimeFrame.ToString());
             yield return new("Storage RRD Consolidation", settings.Storage.RrdData.Consolidation.ToString());
         }
+
+        if (settings.CapacityPlanning.Enabled) { yield return new("Capacity Planning", "Enabled"); }
     }
 }

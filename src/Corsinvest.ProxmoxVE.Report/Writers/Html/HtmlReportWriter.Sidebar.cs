@@ -56,6 +56,11 @@ internal sealed partial class HtmlReportWriter
             sb.AppendLine("""        <a href="network-diagram.html" class="overview">Network Diagram</a>""");
         }
 
+        if (sectionNames.Contains("Capacity Planning"))
+        {
+            sb.AppendLine("""        <a href="capacity-planning.html" class="overview">Capacity Planning</a>""");
+        }
+
         // Cluster groups all the deep-dives together; the always-visible sidebar
         // makes grouping nicer than the trailing-block order used by XLSX / JSON.
         var clusterChildLabels = new Dictionary<string, string>

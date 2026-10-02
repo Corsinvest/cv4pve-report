@@ -40,6 +40,11 @@ public class Settings
     public SettingsFirewall Firewall { get; set; } = new();
 
     /// <summary>
+    /// Capacity planning settings (average and peak usage, storage growth)
+    /// </summary>
+    public SettingsCapacityPlanning CapacityPlanning { get; set; } = new();
+
+    /// <summary>
     /// Max parallel requests when fetching (1 = sequential)
     /// </summary>
     public int MaxParallelRequests { get; set; } = 5;
@@ -88,7 +93,7 @@ public class Settings
     /// <summary>Standard profile: all except SMART data. Default.</summary>
     public static Settings Standard() => new();
 
-    /// <summary>Full profile: everything enabled, RRD on week timeframe.</summary>
+    /// <summary>Full profile: everything enabled, RRD on week timeframe, capacity planning.</summary>
     public static Settings Full()
     {
         var threeDaysAgo = DateOnly.FromDateTime(DateTime.Now.AddDays(-3));
@@ -132,6 +137,7 @@ public class Settings
             {
                 RrdData = new() { TimeFrame = RrdDataTimeFrame.Week },
             },
+            CapacityPlanning = new() { Enabled = true },
         };
     }
 }

@@ -33,6 +33,7 @@ public partial class ReportEngine
                                                      settings.Guest.RrdData.Consolidation)
                                    .ToSafeEnum(_issues, "RRD Guests", LinkKey.Vm(item.VmId));
             return (item,
+                    data,
                     rows: data.Select(a => new
                     {
                         item.Node,
@@ -61,6 +62,8 @@ public partial class ReportEngine
         });
 
         var rows = results.OrderBy(r => r.item.Id, NaturalStringComparer.Instance).SelectMany(r => r.rows).ToList();
+
+        if (settings.CapacityPlanning.Enabled) { _rrdGuests.AddRange(results.Select(r => (r.item, r.data))); }
 
         using var sw = _writer.AddSection("RRD Guests");
         sw.AddTable(null,
