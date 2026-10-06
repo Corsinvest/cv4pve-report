@@ -10,7 +10,7 @@ export default defineConfig({
     starlight({
       title: 'cv4pve-report',
       description: 'Inventory of a whole Proxmox VE cluster in Excel, HTML or JSON: the RVTools for Proxmox VE.',
-      // Brand, logo, GitHub and "Edit page" links, the Corsinvest sidebar group and
+      // Brand, product icon, GitHub link, the Corsinvest sidebar group and
       // external links in a new tab come from the shared cv4pve theme.
       plugins: [
         corsinvestTheme({
@@ -21,15 +21,20 @@ export default defineConfig({
           admin: { module: 'system-report' },
           // Visits, without cookies.
           matomo: { url: 'https://matomo.corsinvest.it/', siteId: 5 },
-          // Install-and-run panel in the home hero.
-          install: {
-            targets: ['linux', 'macos', 'windows'],
-            run: ['--host=pve01', "--api-token='report@pve!report=…'", 'export'],
-            output: [{ text: 'Report generated: Report_20260928_101500.zip', tone: 'ok' }],
+          // Steps panel in the home hero: the same steps, in the same order, as Getting started
+          // (CliGettingStarted). The commands are in the page (CliInstall).
+          steps: {
+            title: 'Your first report in',
+            highlight: '4 steps',
+            items: [
+              'Install cv4pve-report',
+              { text: 'Create an API token', href: 'permissions/#user-and-token' },
+              'Run `cv4pve-report export`',
+              'Open the report',
+            ],
           },
         }),
       ],
-      lastUpdated: true,
       sidebar: [
         {
           label: 'Start here',

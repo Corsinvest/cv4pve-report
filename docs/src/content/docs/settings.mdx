@@ -17,7 +17,7 @@ with thousands of guests, or to add SMART data to the standard profile.
 | **Standard** | `export` | Daily or monthly reports: everything except SMART, syslog, cluster log and guest RRD |
 | **Full** | `export --full` | Audits and capacity planning: everything, RRD on a week, the Capacity Planning section |
 
-What each profile turns on (from `Settings.cs`):
+What each profile turns on:
 
 | Setting | Fast | Standard | Full |
 |---|:-:|:-:|:-:|
@@ -60,7 +60,7 @@ cv4pve-report create-settings            # standard profile
 cv4pve-report create-settings --fast     # or start from fast
 cv4pve-report create-settings --full     # or from full
 # edit settings.json, then:
-cv4pve-report --host=pve1 --api-token='report@pve!report=<uuid>' --settings-file=settings.json export
+cv4pve-report --host=pve01 --api-token='report@pve!report=<uuid>' --settings-file=settings.json export
 ```
 
 `create-settings` always writes `settings.json` in the current folder, overwriting it, and prints the

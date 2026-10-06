@@ -61,7 +61,7 @@ Every node, VM and container links to its own sheet or page. Health is a 0-100 s
 
 ## Features
 
-- **Three formats**: an Excel workbook with real Excel tables, an offline HTML site, or one JSON file per section, from one self-contained binary.
+- **Three formats**: an Excel workbook with real Excel tables, an offline HTML site, or one JSON file per section.
 - **Network diagram**: every export includes an SVG of each node: NICs, bonds, bridges, the VMs and containers behind them, network storages.
 - **Profiles**: `--fast` for a quick inventory of a large cluster, `--full` for audits and capacity planning: SMART, syslog, cluster log, a week of RRD history, average and peak usage of every guest and node.
 - **Your own selection**: a settings file turns each section on or off; guests by ID, range, name, node, pool or tag.
@@ -83,7 +83,7 @@ wget https://github.com/Corsinvest/cv4pve-report/releases/latest/download/cv4pve
 unzip cv4pve-report-linux-x64.zip && chmod +x cv4pve-report
 
 # Run against any node of the cluster, with an API token
-./cv4pve-report --host=pve1.local --api-token='report@pve!report=<uuid>' export --format Html
+./cv4pve-report --host=pve01 --api-token='report@pve!report=<uuid>' export
 ```
 
 The report is a `.zip` in the current folder. The API token needs the privileges listed in [Permissions](https://corsinvest.github.io/cv4pve-report/permissions/). Note that `PVEAuditor` alone cannot list backups.
@@ -117,6 +117,10 @@ Professional support and consulting available through [Corsinvest](https://www.c
 
 ---
 
-Part of [cv4pve](https://www.corsinvest.it/cv4pve) suite | Made with ❤️ in Italy by [Corsinvest](https://www.corsinvest.it)
+**By sysadmins, for sysadmins.**
+
+Part of [cv4pve](https://www.corsinvest.it/en/cv4pve/) suite | Made with ❤️ in Italy by [Corsinvest](https://www.corsinvest.it)
+
+Proxmox® is a registered trademark of Proxmox Server Solutions GmbH. cv4pve is developed by Corsinvest and is not a Proxmox product.
 
 Copyright © Corsinvest Srl

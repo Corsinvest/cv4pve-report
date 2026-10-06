@@ -31,20 +31,25 @@ import { LinkCard, Tabs, TabItem } from '@astrojs/starlight/components';
 import FeatureGrid from '@corsinvest/cv4pve-docs-theme/components/FeatureGrid.astro';
 import TerminalTable from '@corsinvest/cv4pve-docs-theme/components/TerminalTable.astro';
 import CtaBand from '@corsinvest/cv4pve-docs-theme/components/CtaBand.astro';
+import Motto from '@corsinvest/cv4pve-docs-theme/components/Motto.astro';
+import CliInstall from '@corsinvest/cv4pve-docs-theme/components/CliInstall.astro';
 import proxmoxLogo from '../../assets/proxmox-logo.svg';
 
 export const features = [
-  { title: "The whole cluster in one file", text: "Cluster, nodes, VMs, containers, storages, network, firewall, replication, HA, SDN, pools, users, tokens and TFA, plus one detail sheet per node, VM and container.", href: 'output/' },
-  { title: "Excel, HTML or JSON", text: "A workbook with real Excel tables for filters and pivots, an offline HTML site to share, or one JSON file per section for scripts and diffs.", href: 'output/' },
-  { title: "Network diagram", text: "Every export includes an SVG of each node: physical NICs, bonds, bridges, the VMs and containers behind them and the network storages.", href: 'output/network-diagram/' },
-  { title: "Diff-friendly", text: "Every table is sorted, numbers inside names included, so two reports of an unchanged cluster differ only in live values.", href: 'output/json/#snapshot-diffs' },
-  { title: "Nothing silently missing", text: "A call that fails (a node down, a missing privilege, a broken RRD file) does not stop the report: it lands on an Issues page with the Proxmox error and the endpoint.", href: 'troubleshooting/#the-issues-page' },
-  { title: "Fast, standard or full", text: "Three profiles from a quick inventory of a large cluster to SMART, syslog and a week of RRD history, or a settings file that turns each section on or off.", href: 'settings/' },
+  { icon: 'server', title: "The whole cluster in one file", text: "Cluster, nodes, VMs, containers, storages, network, firewall, replication, HA, SDN, pools, users, tokens and TFA, plus one detail sheet per node, VM and container.", href: 'output/' },
+  { icon: 'document', title: "Excel, HTML or JSON", text: "A workbook with real Excel tables for filters and pivots, an offline HTML site to share, or one JSON file per section for scripts and diffs.", href: 'output/' },
+  { icon: 'code-branch', title: "Network diagram", text: "Every export includes an SVG of each node: physical NICs, bonds, bridges, the VMs and containers behind them and the network storages.", href: 'output/network-diagram/' },
+  { icon: 'list-format', title: "Diff-friendly", text: "Every table is sorted, numbers inside names included, so two reports of an unchanged cluster differ only in live values.", href: 'output/json/#snapshot-diffs' },
+  { icon: 'warning', title: "Nothing silently missing", text: "A call that fails (a node down, a missing privilege, a broken RRD file) does not stop the report: it lands on an Issues page with the Proxmox error and the endpoint.", href: 'troubleshooting/#the-issues-page' },
+  { icon: 'rocket', title: "Fast, standard or full", text: "Three profiles from a quick inventory of a large cluster to SMART, syslog and a week of RRD history, or a settings file that turns each section on or off.", href: 'settings/' },
 ];
 
-```bash
-cv4pve-report --host=pve01 --api-token='report@pve!report=…' export --format Html
-```
+<Motto />
+
+<CliInstall
+  repo="cv4pve-report"
+  run={['--host=pve01', "--api-token='report@pve!report=…'", 'export']}
+/>
 
 A few rows of five pages of the report: node, VM and container names link to their own pages:
 
@@ -200,7 +205,7 @@ with `MaxParallelRequests: 10`, and in [12.7 minutes](https://github.com/Corsinv
 The Proxmox VE web interface shows one object at a time: a VM's hardware on one tab, its snapshots on
 another, the storage it lives on somewhere else. That is fine for daily work, but not when someone asks
 *how many VMs do we run, on which nodes, with how much memory, and who can log in?* (an auditor, a
-customer taking over the cluster, a capacity plan, a migration from VMware.
+customer taking over the cluster, a capacity plan, a migration from VMware).
 
 cv4pve-report reads the whole cluster and writes it down in one file you can filter, share and keep.
 Take one every month and you have the history of the cluster: what was running, where, and when.
